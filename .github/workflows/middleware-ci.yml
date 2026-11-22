@@ -25,6 +25,10 @@ jobs:
           npm ci --ignore-scripts --no-audit --no-fund
           npm test
           npm run build
+      - name: Install FFmpeg for audio tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
       - name: Backend checks
         working-directory: middleware
         run: |
