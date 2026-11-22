@@ -9,6 +9,67 @@ export ANDROID_HOME="$sdk"
 export PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH:-"$root/runtime/browsers"}
 [[ $(node -p 'process.versions.node.split(".")[0]') == 24 ]] || { echo 'Se necesita Node 24.' >&2; exit 1; }
 "$python" -c 'import sys; assert sys.version_info[:2] == (3,12), "Se necesita Python 3.12"'
+# Prepara el ZIP en la caché compartida con build_android.py antes de entrar en Bubblewrap.
+"$python" - "$root" "${GRADLE_USER_HOME:-$root/runtime/android/gradle-cache}" <<'PYGRADLE'
+import fcntl
+import hashlib
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+from urllib.parse import urlsplit
+
+root, cache = map(Path, sys.argv[1:])
+props = {}
+for line in (root / "android/gradle/wrapper/gradle-wrapper.properties").read_text().splitlines():
+    if line.strip() and not line.lstrip().startswith(("#", "!")):
+        key, value = line.split("=", 1)
+        props[key.strip()] = value.strip().replace(r"\:", ":")
+url = props["distributionUrl"]
+checksum = props["distributionSha256Sum"].lower()
+if not re.fullmatch(r"[0-9a-f]{64}", checksum):
+    sys.exit("distributionSha256Sum debe contener una suma SHA-256.")
+if props["zipStoreBase"] != "GRADLE_USER_HOME":
+    sys.exit("El proyecto debe usar GRADLE_USER_HOME para la distribución de Gradle.")
+
+# PathAssembler del wrapper identifica cada URL mediante su MD5 expresado en base 36.
+number = int.from_bytes(hashlib.md5(url.encode(), usedforsecurity=False).digest(), "big")
+digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+identifier = ""
+while number:
+    number, digit = divmod(number, 36)
+    identifier = digits[digit] + identifier
+name = Path(urlsplit(url).path).name
+folder = cache / props["zipStorePath"] / Path(name).stem / (identifier or "0")
+folder.mkdir(parents=True, exist_ok=True)
+archive = folder / name
+
+def matches(path):
+    with path.open("rb") as source:
+        return hashlib.file_digest(source, "sha256").hexdigest() == checksum
+
+# El wrapper utiliza el mismo bloqueo de fichero al consumir o descomprimir el ZIP.
+with (folder / (name + ".lck")).open("a+b") as lock:
+    fcntl.lockf(lock, fcntl.LOCK_EX)
+    if archive.exists():
+        if matches(archive):
+            sys.exit(0)
+        archive.unlink()
+        sys.exit("La suma del ZIP de Gradle en caché es incorrecta. Se ha retirado el archivo.")
+    with tempfile.NamedTemporaryFile(dir=folder, suffix=".part", delete=False) as out:
+        temporary = Path(out.name)
+    try:
+        subprocess.run(["curl", "--fail", "--silent", "--show-error", "--location", "--retry", "3",
+                        "--proto", "=https", "--proto-redir", "=https", "--output", str(temporary), url], check=True)
+        if not matches(temporary):
+            sys.exit("La suma SHA-256 de la descarga de Gradle es incorrecta.")
+        os.replace(temporary, archive)
+    finally:
+        temporary.unlink(missing_ok=True)
+PYGRADLE
+
 mkdir -p "$sdk/cmdline-tools" "$root/runtime"
 staging=$(mktemp -d "$sdk/.preparar-XXXXXXXX")
 trap 'rm -rf -- "$staging"' EXIT

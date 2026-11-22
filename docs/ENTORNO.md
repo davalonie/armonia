@@ -11,7 +11,7 @@ Versiones comprobadas el 22 de noviembre de 2026.
 | Android SDK Platform-Tools | 37.0.1 | Metadatos del paquete |
 | Android Emulator | 37.3.8 | Metadatos del emulador |
 | Imagen del emulador | API 35, `default;x86_64`, revisión 2 | Metadatos de la imagen |
-| Gradle | 9.7.1 | Distribución local y versión fijada por el wrapper |
+| Gradle | 9.7.1 | Distribución fijada en las propiedades del wrapper |
 | Python | 3.12.3 | Intérprete del entorno virtual |
 | Node.js y npm | 24.20.0 y 11.19.0 | Ejecutables del host |
 | Playwright para Python | 1.65.0 | Paquete instalado en el entorno virtual |
@@ -26,6 +26,8 @@ El SDK inventariado carece del directorio `cmdline-tools`. Los navegadores de es
 Instala Python 3.12 con `venv`, Node 24 con npm, JDK 25, Docker con Compose, Bubblewrap (`bwrap`), FFmpeg, curl y unzip. Exporta `JAVA_HOME` apuntando al JDK. Para los paquetes del sistema que requiera el navegador, Playwright ofrece `python -m playwright install-deps chromium webkit`. [Python](https://docs.python.org/3.12/library/venv.html) · [Node.js](https://nodejs.org/en/download) · [Docker Compose](https://docs.docker.com/compose/) · [Playwright](https://playwright.dev/python/docs/browsers).
 
 Ejecuta `tools/preparar-entorno.sh` desde el clon. Descarga las herramientas de Android, instala las dependencias de Python y la web, compila la web y genera 44 pistas ficticias. El SDK puede solicitar que aceptes sus licencias. El script verifica las revisiones instaladas. Las siete conversiones del laboratorio histórico eran productos de la caché de reproducción. [Android command-line tools](https://developer.android.com/studio#command-line-tools-only) · [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html).
+
+El instalador descarga `gradle-9.7.1-bin.zip` desde la URL de `android/gradle/wrapper/gradle-wrapper.properties` y contrasta el archivo con `distributionSha256Sum` de ese mismo fichero. Si la suma falla, descarta la descarga y termina con error. El ZIP verificado queda en `wrapper/dists/` dentro de `GRADLE_USER_HOME`. En su primer arranque, el wrapper puede descomprimirlo desde esa caché dentro de Bubblewrap. Si personalizas `GRADLE_USER_HOME`, exporta la misma ruta absoluta antes de preparar el entorno y antes de compilar. [Distribuciones oficiales de Gradle](https://gradle.org/releases/)
 
 | Variable | Uso | Valor por defecto |
 | --- | --- | --- |
