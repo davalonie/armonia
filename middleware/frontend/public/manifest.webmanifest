@@ -1,0 +1,15 @@
+{
+  "name": "Armonía",
+  "short_name": "Armonía",
+  "description": "Tu biblioteca de música personal.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d0b10",
+  "theme_color": "#0d0b10",
+  "icons": [
+    {"src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/armonia.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}

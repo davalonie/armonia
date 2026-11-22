@@ -1,0 +1,10 @@
+"""Ejecutar con tools/web/web.py contra el laboratorio de Armonía."""
+pg = page(1200, 820)
+pg.get_by_role("button", name="Inicio", exact=True).first.click()
+pg.get_by_role("heading", name="Inicio", exact=True).wait_for(state="attached")
+shot(pg, "inicio")
+pg.get_by_role("button", name="Biblioteca", exact=True).first.click()
+pg.get_by_role("heading", name="Biblioteca", exact=True).wait_for()
+pg.get_by_role("navigation", name="Contenido de la biblioteca").get_by_role("button", name="Álbumes", exact=True).click()
+pg.locator("section.collection.body").get_by_role("button", name="Abrir Mareas", exact=True).first.wait_for()
+shot(pg, "biblioteca")

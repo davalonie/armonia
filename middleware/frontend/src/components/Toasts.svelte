@@ -1,0 +1,28 @@
+<script>
+  import { toasts } from '../lib/stores/toastStore.js';
+  import { fly } from 'svelte/transition';
+</script>
+
+{#each $toasts as toast (toast.id)}
+  <div
+    in:fly={{ y: -10, duration: 200 }}
+    out:fly={{ y: -10, duration: 200 }}
+    class="bg-armonia-surface border border-white/10 shadow-2xl rounded-xl px-4 py-3 flex items-center gap-3 max-w-sm pointer-events-auto"
+  >
+    {#if toast.type === 'success'}
+      <div class="w-8 h-8 rounded-full bg-armonia-success/20 flex items-center justify-center text-armonia-success shrink-0">
+        <i class="ph-bold ph-check"></i>
+      </div>
+    {:else if toast.type === 'error'}
+      <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+        <i class="ph-bold ph-warning"></i>
+      </div>
+    {:else}
+      <div class="w-8 h-8 rounded-full bg-armonia-accent/20 flex items-center justify-center text-armonia-accent shrink-0">
+        <i class="ph-bold ph-info"></i>
+      </div>
+    {/if}
+    <p role="status" class="text-sm font-medium text-white">{toast.message}</p>
+    {#if toast.action}<button class="underline p-2" on:click={()=>{toast.action();toasts.update(t=>t.filter(x=>x.id!==toast.id));}}>Deshacer</button>{/if}
+  </div>
+{/each}

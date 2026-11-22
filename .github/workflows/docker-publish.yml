@@ -1,0 +1,14 @@
+# Publishing is an explicit operator task. No registry credentials in CI.
+name: Validate Docker image
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with: {persist-credentials: false}
+      - name: Build locally without pushing
+        run: docker build -t armonia:ci middleware

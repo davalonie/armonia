@@ -1,0 +1,41 @@
+services:
+  navidrome:
+    profiles: [full]
+    image: deluan/navidrome:0.64.2
+    container_name: armonia-navidrome
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${NAVIDROME_PORT:-4533}:4533"
+    volumes:
+      - ${MUSIC_DIR:-./runtime/music}:/music:ro
+      - ./runtime/navidrome:/data
+    environment:
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+      ND_SCANSCHEDULE: "0"
+      ND_ENABLEINSIGHTSCOLLECTOR: "false"
+    networks:
+      - armonia
+
+  middleware:
+    build: ./middleware
+    image: armonia:local
+    container_name: armonia-middleware
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${ARMONIA_PORT:-8000}:8000"
+    volumes:
+      - ${MUSIC_DIR:-./runtime/music}:/music
+      # Not read-only: yt-dlp rewrites the cookies file to persist refreshed cookies.
+      - ./secrets:/app/secrets
+      - ./runtime/armonia:/app/data
+    environment:
+      NAVIDROME_URL: ${NAVIDROME_URL:-http://navidrome:4533}
+      MUSIC_DIR: /music
+      YTDLP_COOKIES_FILE: ${YTDLP_COOKIES_FILE:-}
+    networks:
+      - armonia
+
+networks:
+  armonia:
+    driver: bridge

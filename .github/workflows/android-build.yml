@@ -1,0 +1,29 @@
+name: Android validation
+on:
+  push:
+    branches: [main]
+    paths: ["android/**", ".github/workflows/android-build.yml"]
+  pull_request:
+    paths: ["android/**", ".github/workflows/android-build.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with: {distribution: temurin, java-version: "25"}
+      - name: Build debug and run tests without publishing or release secrets
+        working-directory: android
+        run: |
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
+          bash gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: armonia-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7

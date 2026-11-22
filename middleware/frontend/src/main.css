@@ -1,0 +1,152 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Tailwind v4 only applies `hover:` on devices that can hover. Several controls
+  (e.g. track-row actions) are revealed on hover, and on touch screens the v3
+  behaviour (a tap triggers hover) is what makes them reachable — keep it.
+*/
+@custom-variant hover (&:hover);
+
+@theme {
+  --font-sans: Inter, system-ui, -apple-system, sans-serif;
+  --font-london: system-ui, sans-serif;
+
+  --color-armonia-bg: #121015;
+  --color-armonia-surface: #211c29;
+  --color-armonia-accent: #c4a3ff;
+  --color-armonia-accentHover: #ddc7ff;
+  --color-armonia-success: #2ec4b6;
+  --color-armonia-text: #ffffff;
+  --color-armonia-muted: #b3b3b3;
+
+  --animate-spin-slow: spin 1.5s linear infinite;
+  --animate-slide-up: slideUp 0.3s ease-out forwards;
+  --animate-bar1: musicBar 1s ease-in-out infinite;
+  --animate-bar2: musicBar 1s ease-in-out infinite 0.2s;
+  --animate-bar3: musicBar 1s ease-in-out infinite 0.4s;
+
+  @keyframes slideUp {
+    0% {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes musicBar {
+    0%,
+    100% {
+      transform: scaleY(0.25);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* v4 compatibility: keep the v3 defaults this UI was designed against. */
+
+  /* v4 no longer gives buttons a pointer cursor. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* v4 resets dialog margins, which un-centres every <dialog>. */
+  dialog {
+    margin: auto;
+  }
+
+  /* v4 placeholders default to 50% of the text colour; v3 used gray-400. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #121212; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.user-select-none { user-select: none; -webkit-user-select: none; }
+
+/* Marquee scroll for overflowing track titles */
+@keyframes marquee-scroll {
+  0%, 10%  { transform: translateX(0); }
+  45%, 55% { transform: translateX(var(--marquee-px, 0px)); }
+  90%, 100%{ transform: translateX(0); }
+}
+.marquee-active {
+  display: inline-block;
+  animation: marquee-scroll 6s ease-in-out infinite;
+}
+
+@keyframes marquee-continuous {
+  from { transform: translateX(0); }
+  to   { transform: translateX(var(--mlp)); }
+}
+
+/* Layout */
+:root { --mob-nav-h: 60px; }
+
+@media (max-width: 767px) {
+  #mini-player {
+    bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px));
+  }
+  #view {
+    padding-bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  body.player-visible #view {
+    padding-bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 64px + 8px);
+  }
+}
+
+/* Small shared additions for the fork; existing player and navigation stay intact. */
+.music-page { padding: clamp(1rem,3vw,2.5rem); padding-bottom: 12rem; max-width: 1100px; margin:auto; }
+.music-page h1 {font-size:2rem;font-weight:700;margin-bottom:.5rem;}
+.music-page h2 {font-size:1.25rem;font-weight:650;margin:1.8rem 0 .8rem;}
+.music-page h3 {font-size:1.1rem;margin:1rem 0;}
+.music-page .muted,.music-page small {color:#a7b0bc;}
+.music-page small {display:block;font-size:.82rem;margin-top:.25rem;}
+.music-page .actions {display:flex;flex-wrap:wrap;align-items:end;gap:.6rem;margin:.8rem 0;}
+.music-page button {border:1px solid #ffffff25;border-radius:.75rem;padding:.55rem .85rem;background:#ffffff09;cursor:pointer;text-align:left;}
+.music-page button:hover {background:#ffffff18;}
+.music-page button:disabled {opacity:.4;cursor:default;}
+.music-page button[aria-pressed=true] {border-color:var(--color-armonia-accent);}
+.music-page label {display:inline-flex;flex-direction:column;gap:.35rem;margin:.4rem .6rem .4rem 0;}
+.music-page input,.music-page select {border:1px solid #ffffff30;border-radius:.6rem;padding:.65rem;background:#141c26;max-width:100%;}
+.music-page .music-row {display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 0;border-bottom:1px solid #ffffff10;}
+.music-page .music-card {border:1px solid #ffffff18;border-radius:1rem;padding:1rem;margin:1rem 0;}
+.music-page .error {color:#fca5a5;padding:.8rem 0;overflow-wrap:anywhere;}
+
+:focus-visible { outline: 2px solid #c4a3ff; outline-offset: 3px; }
+[hidden] { display:none !important; }
+@media (max-width:767px) { button { min-height:44px; } .music-page { padding:1.2rem; } }
+@media (min-width:768px) { [role="row"] { padding-top:.5rem; padding-bottom:.5rem; } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; } }
