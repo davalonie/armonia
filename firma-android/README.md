@@ -14,9 +14,8 @@ Los nombres son los que usa la guía; puedes usar otros si ajustas las variables
 
 ## Por qué aquí y no en `secrets/`
 
-`docker-compose.yml` monta `secrets/` dentro del servidor (para las cookies de yt-dlp). La clave de firma no la necesita
-ningún contenedor, así que vive en una carpeta que no monta nada. La imagen Docker se construye desde `middleware/`, así
-que esta carpeta tampoco entra en ella.
+El stack completo monta los secretos de cada servicio por separado. El Compose mínimo monta `secrets/` dentro del
+servidor para las cookies de yt-dlp. La clave de firma vive en un directorio exclusivo de la compilación Android.
 
 ## Crear una clave nueva (si aún no tienes)
 

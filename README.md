@@ -1,6 +1,6 @@
 # Armonía
 
-Armonía es un reproductor de música autoalojado. El servidor conecta la biblioteca de Navidrome con una aplicación web y una aplicación Android compatible con Android Auto. Inicias sesión con tu cuenta de Navidrome y accedes a tus álbumes, canciones, favoritas y listas.
+Armonía es un stack de música autoalojado con una aplicación web y una aplicación Android compatible con Android Auto. Navidrome gestiona las cuentas y bibliotecas, Koito conserva las escuchas de cada usuario y Aurral proporciona las recomendaciones. El servidor de Armonía reúne esas funciones en una sola interfaz.
 
 ![Biblioteca web con álbumes ficticios del laboratorio](docs/screenshots/biblioteca.png)
 
@@ -13,19 +13,48 @@ Armonía es un reproductor de música autoalojado. El servidor conecta la biblio
 
 ![Inicio de Armonía en el laboratorio](docs/screenshots/inicio.png)
 
-## Instalar el servidor y la web
+## Instalar el stack de Armonía
 
-Desde la raíz del repositorio, prepara los directorios y la configuración local. La imagen de Armonía se ejecuta con UID y GID 1000. Ese usuario debe poder escribir en los directorios de música y datos de la aplicación.
+Para una instalación nueva en Linux con Docker Engine y Compose, ejecuta los pasos desde la raíz de este repositorio. El [Compose principal](docker-compose.yml) arranca el servidor con la web, Navidrome, Aurral y dos instancias privadas de Koito. Solo se publica Armonía, por defecto en `127.0.0.1:8000`.
+
+**1. Prepara los directorios y las credenciales de esta instalación.** Usa la cuenta de Linux que será propietaria de los datos. Si su UID o GID difiere de 1000, ajusta `MUSIC_UID` y `MUSIC_GID` en `.env` a los valores de `id -u` e `id -g`. El preparador crea los secretos que falten y conserva los existentes.
 
 ```sh
-mkdir -p runtime/music runtime/armonia runtime/navidrome secrets
 cp -n .env.example .env
-docker compose --profile full up --build -d
+python3 scripts/prepare.py
 ```
 
-Abre `http://localhost:4533` para crear la cuenta inicial de Navidrome. Después entra en `http://localhost:8000` con esa cuenta. Por defecto, los puertos escuchan en la interfaz local del servidor. Para acceder desde el móvil, expón la web mediante el acceso HTTPS privado de tu instalación.
+**2. Elige si Aurral podrá consultar artistas similares en Last.fm.** Para habilitarlo, registra una aplicación en [Last.fm](https://www.last.fm/api/account/create), guarda su **API key** en `secrets/lastfm-api.key` y activa el [Compose de metadatos](compose.metadata.yaml). La clave se introduce sin mostrarla en la terminal. El tráfico de metadatos de Aurral pasa por el servidor de Armonía.
 
-Si ya tienes Navidrome, configura `NAVIDROME_URL` con una dirección accesible desde el contenedor y `MUSIC_DIR` con la biblioteca compartida. Ejecuta `docker compose up --build -d`. Los ajustes de puertos y rutas están en [.env.example](.env.example).
+```sh
+python3 -c 'from getpass import getpass; from pathlib import Path; Path("secrets/lastfm-api.key").write_text(getpass("API key de Last.fm: ").strip()+"\n")'
+```
+
+Añade `COMPOSE_FILE=docker-compose.yml:compose.metadata.yaml` a `.env` para conservar esta selección en los siguientes arranques. Puedes omitir este paso si quieres empezar solo con biblioteca e historial. Para tres cuentas, añade también `COMPOSE_PROFILES=third-user` a `.env` antes del arranque.
+
+**3. Construye y arranca los servicios.**
+
+```sh
+docker compose config --quiet
+docker compose up --build -d --wait
+```
+
+**4. Crea y vincula las cuentas.** Desde el host Linux, usa Python 3.12 con `httpx`. Si ya preparaste el entorno de desarrollo, basta el último comando. Cambia `alice bob` por uno o dos nombres de tu elección, o tres con el perfil anterior. Conserva el orden si repites el aprovisionamiento.
+
+```sh
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -c middleware/requirements.lock httpx
+.venv/bin/python scripts/bootstrap.py --project armonia-stack --users alice bob
+```
+
+Las contraseñas generadas quedan en el archivo privado `secrets/bootstrap-users.json`. Entra en `http://localhost:8000` con tu cuenta y vincula Aurral desde **Ajustes → Recomendaciones** con las mismas credenciales. Para el móvil, configura un proxy HTTPS y fija `MUSIC_PUBLIC_ORIGIN` al origen correspondiente. Los datos persistentes quedan en `runtime/`; respalda también `secrets/` y tu configuración local.
+
+### Instalaciones anteriores y Navidrome externo
+
+El [Compose mínimo](compose.minimo.yaml) conserva la configuración anterior. Si ya tienes datos con ese Compose, sigue usándolo en el mismo directorio y con el mismo nombre de proyecto. Para probar el stack completo en paralelo, usa otro clon y otro `MUSIC_PORT` para mantener separados los datos y los secretos. Si Docker indica `all predefined address pools have been fully subnetted`, asigna subredes libres a las redes del proyecto de prueba mediante un Compose local adicional.
+
+- Con el Navidrome que incluía el perfil `full`: `docker compose -f compose.minimo.yaml --profile full up --build -d`. Navidrome escucha en `localhost:4533` y Armonía en `localhost:8000`.
+- Con un Navidrome externo: configura `NAVIDROME_URL` y la carpeta compartida `MUSIC_DIR` en `.env` y ejecuta `docker compose -f compose.minimo.yaml up --build -d`.
 
 Las asignaciones de biblioteca y los permisos de borrado se describen en la [guía de acceso](docs/ACCESO.md).
 

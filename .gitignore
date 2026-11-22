@@ -6,9 +6,10 @@ docker-compose.override.yml
 # Secrets (keep the example file, ignore everything else in secrets/)
 secrets/
 !secrets/cookies.txt.example
+/config/sources.json
 
 # Android signing key: the folder is tracked (README only), the key files never are.
-# Kept out of secrets/ because docker-compose.yml mounts secrets/ into the server.
+# Keep signing material separate from the server's runtime credentials.
 /firma-android/*
 !/firma-android/README.md
 
