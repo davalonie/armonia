@@ -7,6 +7,11 @@ docker-compose.override.yml
 secrets/
 !secrets/cookies.txt.example
 
+# Android signing key: the folder is tracked (README only), the key files never are.
+# Kept out of secrets/ because docker-compose.yml mounts secrets/ into the server.
+/firma-android/*
+!/firma-android/README.md
+
 # Bind-mounted data (top-level only — Android has its own data/ source package)
 /data/
 

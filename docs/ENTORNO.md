@@ -58,7 +58,7 @@ El servidor de pruebas se queda en primer plano en `127.0.0.1:18480`. En otra te
 
 ## Firma de Android
 
-Guarda el almacén de claves y su archivo de contraseña fuera del clon, con acceso exclusivo de tu usuario. Exporta `MUSIC_KEYSTORE_FILE` y `MUSIC_KEYSTORE_PASSWORD_FILE` con sus rutas absolutas y `MUSIC_KEY_ALIAS` con el alias de la entrada. Si la entrada tiene una contraseña distinta, el compilador admite `MUSIC_KEY_PASSWORD` en el entorno del proceso. Para invocar Gradle directamente, proporciona `MUSIC_KEYSTORE_PASSWORD` mediante tu gestor de secretos.
+Guarda el almacén de claves y su archivo de contraseña en `firma-android/` (git solo sigue su README; ver [`firma-android/README.md`](../firma-android/README.md)), con acceso exclusivo de tu usuario (`chmod 700 firma-android`, `chmod 600` en los archivos). No los pongas en `secrets/`: esa carpeta se monta en el servidor. Ten una copia cifrada fuera del equipo: sin ella no podrás instalar actualizaciones sobre la app ya instalada. No uses `git clean -x` en el clon, porque borra los archivos ignorados. Exporta `MUSIC_KEYSTORE_FILE` y `MUSIC_KEYSTORE_PASSWORD_FILE` con sus rutas absolutas y `MUSIC_KEY_ALIAS` con el alias de la entrada. Si la entrada tiene una contraseña distinta, el compilador admite `MUSIC_KEY_PASSWORD` en el entorno del proceso. Para invocar Gradle directamente, proporciona `MUSIC_KEYSTORE_PASSWORD` mediante tu gestor de secretos.
 
 ```sh
 python3 tools/android/build_android.py :app:assembleRelease :app:testDebugUnitTest --max-workers=1
