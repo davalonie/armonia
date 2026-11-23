@@ -19,7 +19,7 @@ jobs:
       - name: Build debug and run tests without publishing or release secrets
         working-directory: android
         run: |
-          sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
           printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
           bash gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
