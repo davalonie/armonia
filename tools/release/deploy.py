@@ -1,4 +1,4 @@
-"""Actualiza únicamente el servicio music de un stack ya instalado."""
+"""Actualiza unicamente el servicio music de un stack ya instalado."""
 import argparse
 import base64
 import fcntl
@@ -22,7 +22,7 @@ MAGIC = b"ARMONIA-APP-BACKUP-v1\n"
 def capture(args, cwd, env=None):
     result = subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True, timeout=180)
     if result.returncode:
-        raise RuntimeError(f"La operación de Docker falló con código {result.returncode}.")
+        raise RuntimeError(f"La operacion de Docker fallo con codigo {result.returncode}.")
     return result.stdout.strip()
 
 
@@ -32,7 +32,7 @@ def check_idle(stack):
                                "('pending','queued','downloading','running','processing','tagging','scanning') LIMIT 1").fetchone()
         imports = db.execute("SELECT 1 FROM playlist_imports WHERE json_extract(payload,'$.status')='running' LIMIT 1").fetchone()
         if downloads or imports:
-            raise RuntimeError("Hay una descarga o importación activa.")
+            raise RuntimeError("Hay una descarga o importacion activa.")
 
 
 def replace_env(path, contents):
@@ -64,7 +64,7 @@ def archive_before_upgrade(stack, files):
         os.fsync(out.fileno())
     raw = path.read_bytes()
     if cipher.decrypt(raw[len(MAGIC):len(MAGIC)+12], raw[len(MAGIC)+12:], MAGIC) != buf.getvalue():
-        raise RuntimeError("La copia de recuperación no coincide.")
+        raise RuntimeError("La copia de recuperacion no coincide.")
     return path
 
 
@@ -77,7 +77,7 @@ def main():
     parser.add_argument("-f", "--file", action="append", required=True, help="Archivo Compose activo, en orden")
     args = parser.parse_args()
     if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:/@-]*", args.image):
-        parser.error("Etiqueta de imagen inválida")
+        parser.error("Etiqueta de imagen invalida")
     os.umask(0o077)
     stack = args.stack.resolve(strict=True)
     files = [(stack / name).resolve(strict=True) for name in args.file]
@@ -115,32 +115,32 @@ def main():
         for image_env, expected in ((env, old["Config"]["Image"]), ({**env, "MUSIC_IMAGE": args.image}, args.image)):
             cfg = json.loads(run([*compose, "config", "--format", "json"], image_env))
             if cfg["services"]["music"]["image"] != expected:
-                raise RuntimeError("La configuración Compose de music debe seleccionar la imagen con MUSIC_IMAGE.")
+                raise RuntimeError("La configuracion Compose de music debe seleccionar la imagen con MUSIC_IMAGE.")
         check_idle(stack)
         previous = env_file.read_bytes() if env_file.exists() else None
         old_text = previous or b""
         pattern = rb"(?m)^(?:export\s+)?MUSIC_IMAGE\s*=.*$"
         if len(re.findall(pattern, old_text)) > 1:
-            raise RuntimeError("MUSIC_IMAGE tiene más de una definición.")
+            raise RuntimeError("MUSIC_IMAGE tiene mas de una definicion.")
         line = b"MUSIC_IMAGE=" + args.image.encode("ascii")
         updated = re.sub(pattern, line, old_text) if re.search(pattern, old_text) else old_text.rstrip(b"\n") + b"\n" + line + b"\n"
         restart = [*compose, "up", "-d", "--no-deps", "--no-build", "--pull", "never", "--wait", "--wait-timeout", "90", "music"]
         mounted = [Path(m["Source"]).resolve() for m in old["Mounts"] if m["Destination"].startswith("/run/secrets/")]
         if any(not path.is_relative_to(stack) for path in mounted):
-            raise RuntimeError("Revisa la ubicación de los secretos montados.")
+            raise RuntimeError("Revisa la ubicacion de los secretos montados.")
         run([*compose, "stop", "music"])
         changed = False
         try:
             check_idle(stack)
             backup = archive_before_upgrade(stack, [stack / "runtime/music-app", *files, env_file, stack / "config", *mounted])
             if (env_file.read_bytes() if env_file.exists() else None) != previous:
-                raise RuntimeError("El archivo .env cambió durante la actualización.")
+                raise RuntimeError("El archivo .env cambio durante la actualizacion.")
             replace_env(env_file, updated)
             changed = True
             run(restart)
             current = container()
             if current["Image"] != target["Id"] or not healthy(current):
-                raise RuntimeError("El servicio actualizado no alcanzó el estado esperado.")
+                raise RuntimeError("El servicio actualizado no alcanzo el estado esperado.")
         except BaseException:
             if changed:
                 if previous is None:
@@ -149,9 +149,9 @@ def main():
                     replace_env(env_file, previous)
             run(restart)
             if container()["Image"] != args.expected:
-                raise RuntimeError("La reversión requiere revisión manual.")
+                raise RuntimeError("La reversion requiere revision manual.")
             raise
-        print("Servicio music actualizado. Copia de recuperación:", backup.name)
+        print("Servicio music actualizado. Copia de recuperacion:", backup.name)
 
 
 if __name__ == "__main__":

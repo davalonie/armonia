@@ -11,7 +11,7 @@
   ];
   const SORT_TOGGLES = [
     { keys: ['title-asc', 'title-desc'],       labels: ['A → Z', 'Z → A'] },
-    { keys: ['duration-asc', 'duration-desc'], labels: ['Más cortas', 'Más largas'] },
+    { keys: ['duration-asc', 'duration-desc'], labels: ['Mas cortas', 'Mas largas'] },
   ];
 
   let allSongs = [];
@@ -126,8 +126,8 @@
   {:else if !allSongs.length}
     <div class="flex flex-col items-center justify-center py-20 opacity-50">
       <i class="ph ph-music-notes text-6xl mb-4"></i>
-      <p class="text-lg">Tu biblioteca está vacía.</p>
-      <p class="text-sm mt-1">Busca una canción y descárgala para empezar.</p>
+      <p class="text-lg">Tu biblioteca esta vacia.</p>
+      <p class="text-sm mt-1">Busca una cancion y descargala para empezar.</p>
     </div>
   {:else}
     <TrackList songs={sorted} scrollLabels={songLabels(sorted, sortKey)} tools={false} onRefresh={load} />

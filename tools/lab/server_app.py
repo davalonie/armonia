@@ -1,4 +1,4 @@
-"""Armonía real con los proveedores externos simulados (solo laboratorio).
+"""Armonia real con los proveedores externos simulados (solo laboratorio).
 
 Cualquier enlace de playlist devuelve una lista ficticia y las búsquedas externas devuelven
 candidatos ficticios: no se contacta con Spotify ni con YouTube.
@@ -68,7 +68,7 @@ if __import__("os").environ.get("ARMONIA_LAB_DESCARGAS") in ("1", "fallo"):
             raise DownloadError("fallo simulado del proveedor")
         target = Path(music_dir) / f"{ytdlp_service._sanitize(f'{artist} - {title}')}.m4a"
         shutil.copyfile(FIXTURE, target)
-        return str(target)
+        return str(target), {}
 
     ytdlp_service._download_staged = _download_staged
 

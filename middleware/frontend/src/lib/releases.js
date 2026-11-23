@@ -8,7 +8,7 @@ export function releaseDay(iso) {
   const [, m, d] = String(iso || '').split('-').map(Number);
   return m && d && MONTHS[m - 1] ? `${d} ${MONTHS[m - 1]}` : '';
 }
-/** The card's second line: «Artista · Álbum · Nuevo · 12 nov» or «… · Sale el 3 dic». */
+/** The card's second line: «Artista · Album · Nuevo · 12 nov» or «… · Sale el 3 dic». */
 export const releaseLine = r => `${r.artist} · ${r.type} · ${r.upcoming ? `Sale el ${releaseDay(r.date)}` : `Nuevo · ${releaseDay(r.date)}`}`;
 
 export const releaseCover = r => r.hasCover
@@ -23,8 +23,8 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 /** The release's songs; the server may still be finding them, so it is asked again for up to a minute. */
 export async function releaseRows(entry, still = () => true) {
   let response = await call(`/api/home/releases/${encodeURIComponent(entry.id)}`);
-  for (let i = 0; response.preparing && i < 24 && still(); i++) {
-    await wait(2500);
+  for (let i = 0; response.preparing && i < 27 && still(); i++) {
+    await wait(i < 3 ? 400 : 2500);
     response = await call(`/api/home/releases/${encodeURIComponent(entry.id)}`);
   }
   return {rows: response.items.map(item => refRow({track: item.track, cover: item.track.source === 'navidrome' ? undefined : entry.cover || undefined}))};

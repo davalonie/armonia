@@ -1,5 +1,5 @@
 <script>
-  // Ajustes y cuenta, in the same order as the app: Reproducción, Servidor, Buscar, Biblioteca, Cuenta. The phone-only
+  // Ajustes y cuenta, in the same order as the app: Reproduccion, Servidor, Buscar, Biblioteca, Cuenta. The phone-only
   // sections of the app (cache, data saving, music on the phone, Android Auto) have nothing to set in a browser.
   import {onMount} from 'svelte';
   import {getSession,setSession,logout,rescan as requestRescan,library as libApi,getStats} from '../lib/api.js';
@@ -32,7 +32,7 @@
     finally{rescanLoading=false;}
   }
 
-  // Recomendaciones (Aurral): a status line when linked, the form only when not (moved here from «Más»).
+  // Recomendaciones (Aurral): a status line when linked, the form only when not (moved here from «Mas»).
   let linked=null,linkError=false,linking=false,aurralUser='',aurralPassword='';
   async function refreshLink(){linkError=false;try{linked=(await api.aurralStatus()).linked;}catch{linked=null;linkError=true;}}
   async function link(){
@@ -44,10 +44,10 @@
 
   let logoutError='';
   async function doLogout(){
-    if(!confirm(`¿Cerrar sesión? Tendrás que volver a iniciar sesión para usar ${APP_NAME}.`))return;
+    if(!confirm(`¿Cerrar sesion? Tendras que volver a iniciar sesion para usar ${APP_NAME}.`))return;
     closePlayer();logoutError='';
     try{await logout();setSession(null);location.reload();}
-    catch{logoutError='No se pudo cerrar la sesión en el servidor. Reintenta cuando vuelva la conexión.';}
+    catch{logoutError='No se pudo cerrar la sesion en el servidor. Reintenta cuando vuelva la conexion.';}
   }
 
   function bar(label,used,total){const pct=total>0?used/total*100:0;return {label,used,total,pct,warn:pct>85};}
@@ -68,11 +68,11 @@
     <button class="icon" aria-label="Actualizar" title="Actualizar" on:click={refreshAll}><i aria-hidden="true" class="ph ph-arrows-clockwise"></i></button>
   </header>
 
-  <h2>Reproducción</h2>
+  <h2>Reproduccion</h2>
   <div class="card">
     <button class="row" role="switch" aria-checked={$continueSimilar} disabled={savingSimilar} on:click={toggleSimilar}>
-      <span><b>Continuar con música similar</b>
-        <small>{$continueSimilar?'Cuando termina lo que has elegido, siguen sonando canciones relacionadas.':'Desactivado: la reproducción se detiene al terminar la cola.'}</small>
+      <span><b>Continuar con musica similar</b>
+        <small>{$continueSimilar?'Cuando termina lo que has elegido, siguen sonando canciones relacionadas.':'Desactivado: la reproduccion se detiene al terminar la cola.'}</small>
         {#if similarError}<small class="error" role="alert">{similarError}</small>{/if}</span>
       <span class="switch" class:on={$continueSimilar} aria-hidden="true"><span></span></span>
     </button>
@@ -81,7 +81,7 @@
   <h2>Servidor</h2>
   <div class="card pad">
     <p class="status"><span class="dot" class:ok={serverStatus==='ok'} class:bad={serverStatus==='error'}></span>
-      <span><b>Navidrome</b><small>{serverStatus==='loading'?'Comprobando…':serverStatus==='ok'?`Conectado · v${serverVersion}`:'Sin conexión'}</small></span></p>
+      <span><b>Navidrome</b><small>{serverStatus==='loading'?'Comprobando…':serverStatus==='ok'?`Conectado · v${serverVersion}`:'Sin conexion'}</small></span></p>
     {#if statsLoading}<p class="muted" role="status">Cargando…</p>
     {:else if statsError}<p class="error" role="alert">No se pudieron leer los datos del servidor: {statsError}</p>
     {:else if stats}
@@ -96,8 +96,8 @@
 
   <h2>Buscar</h2>
   <div class="card pad">
-    <p class="muted">Dónde buscar y de dónde descargar música.</p>
-    <div class="segmented" role="radiogroup" aria-label="Fuente de búsqueda">
+    <p class="muted">Donde buscar y de donde descargar musica.</p>
+    <div class="segmented" role="radiogroup" aria-label="Fuente de busqueda">
       {#each [['youtube_music','YouTube Music'],['youtube','YouTube']] as [value,label]}
         <button role="radio" aria-checked={source===value} class:on={source===value} on:click={()=>setSource(value)}>{label}</button>
       {/each}
@@ -106,7 +106,7 @@
 
   <h2>Biblioteca</h2>
   <div class="card pad">
-    <p class="muted">Lanza un escaneo de la biblioteca de Navidrome para incorporar las canciones recién descargadas.</p>
+    <p class="muted">Lanza un escaneo de la biblioteca de Navidrome para incorporar las canciones recien descargadas.</p>
     <button class="primary" disabled={rescanLoading} on:click={rescan}>{#if rescanLoading}<i aria-hidden="true" class="ph ph-circle-notch spin"></i>{/if} Escanear biblioteca</button>
     {#if rescanMsg}<p class:ok={rescanOk} class:error={!rescanOk} role="status">{rescanMsg}</p>{/if}
   </div>
@@ -125,7 +125,7 @@
       </form>
     {:else if linkError}<button class="link" on:click={refreshLink}>Reintentar consulta de recomendaciones</button>
     {:else}<p class="muted" role="status">Consultando recomendaciones…</p>{/if}
-    <button class="danger" on:click={doLogout}>Cerrar sesión</button>
+    <button class="danger" on:click={doLogout}>Cerrar sesion</button>
     {#if logoutError}<p class="error" role="alert">{logoutError}</p>{/if}
   </div>
 

@@ -64,8 +64,8 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // ── Reproducción ─────────────────────────────────────────────────
-            SectionCard(title = "Reproducción") {
+            // ── Reproduccion ─────────────────────────────────────────────────
+            SectionCard(title = "Reproduccion") {
                 val continueSimilar by viewModel.continueSimilar.collectAsState()
                 LaunchedEffect(Unit) { viewModel.musicPlayer.refreshPlaybackSettings() }
                 Row(
@@ -73,10 +73,10 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Continuar con música similar", style = MaterialTheme.typography.bodyLarge)
+                        Text("Continuar con musica similar", style = MaterialTheme.typography.bodyLarge)
                         Text(
                             text = if (continueSimilar) "Cuando termina lo que has elegido, siguen sonando canciones relacionadas."
-                                   else "Desactivado: la reproducción se detiene al terminar la cola.",
+                                   else "Desactivado: la reproduccion se detiene al terminar la cola.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         )
@@ -113,7 +113,7 @@ fun SettingsScreen(
             SectionCard(title = "Buscar") {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Dónde buscar y de dónde descargar música.",
+                        text = "Donde buscar y de donde descargar musica.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
@@ -136,7 +136,7 @@ fun SettingsScreen(
             SectionCard(title = "Biblioteca") {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Lanza un escaneo de la biblioteca de Navidrome para incorporar las canciones recién descargadas.",
+                        text = "Lanza un escaneo de la biblioteca de Navidrome para incorporar las canciones recien descargadas.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
@@ -169,10 +169,10 @@ fun SettingsScreen(
             }
 
             // ── Streaming cache ───────────────────────────────────────────────
-            SectionCard(title = "Caché de reproducción") {
+            SectionCard(title = "Cache de reproduccion") {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Las canciones que escuchas se guardan en este teléfono, así que volver a escucharlas no gasta datos.",
+                        text = "Las canciones que escuchas se guardan en este telefono, asi que volver a escucharlas no gasta datos.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
@@ -195,18 +195,18 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "El nuevo límite se aplica la próxima vez que abras la aplicación.",
+                        text = "El nuevo limite se aplica la proxima vez que abras la aplicacion.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Guardar con Wi‑Fi lo que más escuchas", style = MaterialTheme.typography.bodyMedium)
+                            Text("Guardar con Wi‑Fi lo que mas escuchas", style = MaterialTheme.typography.bodyMedium)
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = "Con Wi‑Fi, la semanal, tus favoritas y las más escuchadas se guardan en el " +
-                                    "teléfono, así con datos suenan sin gastarlos. Usa como mucho el 40 % de la caché.",
+                                text = "Con Wi‑Fi, la semanal, tus favoritas y las mas escuchadas se guardan en el " +
+                                    "telefono, asi con datos suenan sin gastarlos. Usa como mucho el 40 % de la cache.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             )
@@ -220,13 +220,13 @@ fun SettingsScreen(
                         enabled = !viewModel.cacheClearing,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(if (viewModel.cacheClearing) "Vaciando…" else "Vaciar caché")
+                        Text(if (viewModel.cacheClearing) "Vaciando…" else "Vaciar cache")
                     }
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = "Música sin conexión (álbumes y playlists que has guardado): " +
+                        text = "Musica sin conexion (albumes y playlists que has guardado): " +
                             "${viewModel.offlineCollections} guardadas, ${formatBytes(viewModel.offlineUsedBytes)}. " +
-                            "Esto nunca se borra automáticamente. Las descargas solo se hacen con Wi‑Fi.",
+                            "Esto nunca se borra automaticamente. Las descargas solo se hacen con Wi‑Fi.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
@@ -235,7 +235,7 @@ fun SettingsScreen(
                         onClick = { viewModel.removeAllOffline() },
                         enabled = viewModel.offlineCollections > 0,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Quitar toda la música sin conexión") }
+                    ) { Text("Quitar toda la musica sin conexion") }
                 }
             }
 
@@ -260,17 +260,17 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Las canciones llegan a 64 kbps, la mitad de datos. Con mala conexión se usa " +
-                            "siempre, para que empiecen antes y no se corten. Lo que ya está en el teléfono suena " +
-                            "desde ahí, sin gastar nada. Con datos móviles, además, nunca se adelantan más de 30 s " +
-                            "de canción y las carátulas grandes llegan a tamaño medio.",
+                        text = "Las canciones llegan a 64 kbps, la mitad de datos. Con mala conexion se usa " +
+                            "siempre, para que empiecen antes y no se corten. Lo que ya esta en el telefono suena " +
+                            "desde ahi, sin gastar nada. Con datos moviles, ademas, nunca se adelantan mas de 30 s " +
+                            "de cancion y las caratulas grandes llegan a tamaño medio.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                     viewModel.dataUsage?.let { usage ->
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            text = "Este mes Armonía ha gastado ${formatBytes(usage.mobileBytes)} de datos móviles " +
+                            text = "Este mes Armonia ha gastado ${formatBytes(usage.mobileBytes)} de datos moviles " +
                                 "y ${formatBytes(usage.wifiBytes)} de Wi‑Fi.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
@@ -310,7 +310,7 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.error,
                         ),
                     ) {
-                        Text("Cerrar sesión")
+                        Text("Cerrar sesion")
                     }
                 }
             }
@@ -345,13 +345,13 @@ fun SettingsScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("¿Cerrar sesión?") },
-            text = { Text("Tendrás que volver a iniciar sesión para usar ${com.armonia.app.BuildConfig.APP_NAME}.") },
+            title = { Text("¿Cerrar sesion?") },
+            text = { Text("Tendras que volver a iniciar sesion para usar ${com.armonia.app.BuildConfig.APP_NAME}.") },
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutDialog = false
                     viewModel.logout(onLogout)
-                }) { Text("Cerrar sesión", color = MaterialTheme.colorScheme.error) }
+                }) { Text("Cerrar sesion", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) { Text("Cancelar") }
@@ -416,16 +416,16 @@ private fun AndroidAutoSection(viewModel: SettingsViewModel) {
     val muted = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     Column(modifier = Modifier.padding(16.dp)) {
         Text(
-            "Android Auto solo muestra ${com.armonia.app.BuildConfig.APP_NAME} mientras «Fuentes desconocidas» esté activado en los ajustes de " +
-                "desarrollador de Android Auto, y vuelve a comprobarlo después de cada actualización.",
+            "Android Auto solo muestra ${com.armonia.app.BuildConfig.APP_NAME} mientras «Fuentes desconocidas» este activado en los ajustes de " +
+                "desarrollador de Android Auto, y vuelve a comprobarlo despues de cada actualizacion.",
             style = MaterialTheme.typography.bodySmall,
             color = muted,
         )
         Spacer(Modifier.height(12.dp))
         val (ok, label) = when {
-            viewModel.backgroundRestricted -> false to "El uso en segundo plano de ${com.armonia.app.BuildConfig.APP_NAME} está restringido, así que Android Auto quizá no pueda iniciarla."
-            viewModel.batteryOptimized -> false to "La optimización de batería está activada y Android puede detener ${com.armonia.app.BuildConfig.APP_NAME} en segundo plano. Pon Batería en «Sin restricciones»."
-            else -> true to "Batería: sin restricciones"
+            viewModel.backgroundRestricted -> false to "El uso en segundo plano de ${com.armonia.app.BuildConfig.APP_NAME} esta restringido, asi que Android Auto quiza no pueda iniciarla."
+            viewModel.batteryOptimized -> false to "La optimizacion de bateria esta activada y Android puede detener ${com.armonia.app.BuildConfig.APP_NAME} en segundo plano. Pon Bateria en «Sin restricciones»."
+            else -> true to "Bateria: sin restricciones"
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -449,8 +449,8 @@ private fun AndroidAutoSection(viewModel: SettingsViewModel) {
         Spacer(Modifier.height(4.dp))
         if (connections.isEmpty()) {
             Text(
-                "Todavía ninguna. Tras un trayecto en el que ${com.armonia.app.BuildConfig.APP_NAME} no aparecía, mira aquí: si Android Auto no figura " +
-                    "a esa hora, es que Android Auto no llegó a pedírsela a ${com.armonia.app.BuildConfig.APP_NAME}.",
+                "Todavia ninguna. Tras un trayecto en el que ${com.armonia.app.BuildConfig.APP_NAME} no aparecia, mira aqui: si Android Auto no figura " +
+                    "a esa hora, es que Android Auto no llego a pedirsela a ${com.armonia.app.BuildConfig.APP_NAME}.",
                 style = MaterialTheme.typography.bodySmall,
                 color = muted,
             )

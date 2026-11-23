@@ -44,7 +44,7 @@ class ManualInboxTest {
         val input = TrackedInput(ByteArray(33))
         val sink = Buffer()
         val body = BoundedMp3Body({ input }, { true }, declaredSize = 1, maximum = 32)
-        assertTrue(expectIo { body.writeTo(sink) }.message!!.contains("límite"))
+        assertTrue(expectIo { body.writeTo(sink) }.message!!.contains("limite"))
         assertEquals(0L, sink.size)
         assertTrue(input.closed)
     }

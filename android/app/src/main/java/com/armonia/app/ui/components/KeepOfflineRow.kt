@@ -43,7 +43,7 @@ fun rememberOfflineToggle(isPinned: Boolean, onToggle: () -> Unit): () -> Unit {
     }
 }
 
-/** "Guardar sin conexión" toggle with download progress, shown under Play/Shuffle on album pages. */
+/** "Guardar sin conexion" toggle with download progress, shown under Play/Shuffle on album pages. */
 @Composable
 fun KeepOfflineRow(
     isPinned: Boolean,
@@ -60,7 +60,7 @@ fun KeepOfflineRow(
                 !isPinned -> {
                     Icon(Icons.Default.DownloadForOffline, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Guardar sin conexión")
+                    Text("Guardar sin conexion")
                 }
                 progress?.running == true -> {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -70,7 +70,7 @@ fun KeepOfflineRow(
                 else -> {
                     Icon(Icons.Default.DownloadDone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
-                    Text(if ((progress?.failed ?: 0) > 0) "En el teléfono (${progress!!.failed} con error)" else "Guardado sin conexión")
+                    Text(if ((progress?.failed ?: 0) > 0) "En el telefono (${progress!!.failed} con error)" else "Guardado sin conexion")
                 }
             }
         }

@@ -30,7 +30,7 @@
       class="flex flex-col items-center justify-center gap-0.5 flex-1 transition-colors {moreActive ? 'text-armonia-accent' : 'text-armonia-muted'}"
     >
       <i aria-hidden="true" class="ph ph-dots-three text-xl"></i>
-      <span class="text-xs font-medium">Más</span>
+      <span class="text-xs font-medium">Mas</span>
     </button>
   </div>
 </nav>

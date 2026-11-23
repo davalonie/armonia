@@ -18,7 +18,7 @@
   $: formOpen=newOpen??(!groups.pending.length&&!$activeImport);
   $: counts=importCounts($activeImport);
   $: done=$activeImport?!activePending:false;
-  const songs=n=>`${n||0} ${n===1?'canción':'canciones'}`;
+  const songs=n=>`${n||0} ${n===1?'cancion':'canciones'}`;
   let history=[], playlists=[], url='', target='', recoveryTarget='', error='', busy=false, queries={};
   let scroller, reviewSummary, notice='', pendingNotice=false, localFailures={}, mounted=false, loaded=false;
   $: groups=importHistoryGroups(history,$activeImport);
@@ -28,10 +28,10 @@
   $: if(visible&&mounted)void act(load);
   $: currentFailures=localFailures[$activeImport?.importId]||{};
   $: reviewItems=reviewImportItems($activeImport,currentFailures);
-  const states={source_unavailable:'Elemento no recuperado de la fuente',pending:'Pendiente',searching:'Buscando',downloading:'Descargando',indexing:'Pendiente de indexación',ready:'Lista',review:'Revisar coincidencia',not_found:'Sin resultados',search_failed:'Búsqueda fallida',download_failed:'Descarga fallida',skipped:'Omitida'};
-  const stages={source_partial:'Recuperación parcial de la fuente',acoustic:'Comprobando referencia acústica',playlist:'Obteniendo playlist',library_lookup:'Consultando biblioteca',search:'Buscando candidatos',comparison:'Comparando metadatos',audio_total:'Resolviendo y descargando audio',audio_resolution:'Resolviendo audio',download:'Descargando',processing:'Procesando audio',publication:'Guardando archivo',indexing:'Indexando en biblioteca',playlist_update:'Actualizando playlist',review:'Hay canciones para revisar',complete:'Proceso terminado',paused:'Pausada',interrupted:'Interrumpida: puedes continuar',recovery:'Necesita recuperación'};
-  const acousticStates={identity_conflict:'identidad de referencia contradictoria',candidate_audio_unavailable:'audio autorizado del candidato no disponible',not_exact_uncalibrated:'audio distinto; similitud aún sin calibrar',ambiguous:'varios candidatos equivalentes',budget_exhausted:'se alcanzó el límite de tiempo',reference_unavailable:'referencia no disponible o inválida'};
-  const reasons={'different recording version':'Versión distinta (directo, remix, cover…)','duration differs':'La duración difiere','duration unverified':'Duración sin verificar','title or artist is not exact enough':'Título o créditos de artistas diferentes','version detail differs':'Los detalles de la versión difieren','conflicting isrc':'ISRC diferente','conflicting recording_mbid':'Identificador de grabación diferente'};
+  const states={source_unavailable:'Elemento no recuperado de la fuente',pending:'Pendiente',searching:'Buscando',downloading:'Descargando',indexing:'Pendiente de indexacion',ready:'Lista',review:'Revisar coincidencia',not_found:'Sin resultados',search_failed:'Busqueda fallida',download_failed:'Descarga fallida',skipped:'Omitida'};
+  const stages={source_partial:'Recuperacion parcial de la fuente',acoustic:'Comprobando referencia acustica',playlist:'Obteniendo playlist',library_lookup:'Consultando biblioteca',search:'Buscando candidatos',comparison:'Comparando metadatos',audio_total:'Resolviendo y descargando audio',audio_resolution:'Resolviendo audio',download:'Descargando',processing:'Procesando audio',publication:'Guardando archivo',indexing:'Indexando en biblioteca',playlist_update:'Actualizando playlist',review:'Hay canciones para revisar',complete:'Proceso terminado',paused:'Pausada',interrupted:'Interrumpida: puedes continuar',recovery:'Necesita recuperacion'};
+  const acousticStates={identity_conflict:'identidad de referencia contradictoria',candidate_audio_unavailable:'audio autorizado del candidato no disponible',not_exact_uncalibrated:'audio distinto; similitud aun sin calibrar',ambiguous:'varios candidatos equivalentes',budget_exhausted:'se alcanzo el limite de tiempo',reference_unavailable:'referencia no disponible o invalida'};
+  const reasons={'different recording version':'Version distinta (directo, remix, cover…)','duration differs':'La duracion difiere','duration unverified':'Duracion sin verificar','title or artist is not exact enough':'Titulo o creditos de artistas diferentes','version detail differs':'Los detalles de la version difieren','conflicting isrc':'ISRC diferente','conflicting recording_mbid':'Identificador de grabacion diferente'};
   async function load(){
     const session=getSession();
     const saved=await call('/api/imports');
@@ -103,7 +103,7 @@
       startImport(next.importId,next.name,next.total,next);onRefresh();
       if(action==='confirm'||action==='skip'){
         pendingNotice=action==='skip'&&next.manualInboxAvailable===true&&next.items[index]?.manualPending===true;
-        notice=action==='confirm'?'Elección guardada. Puedes seguir revisando mientras se procesa.':pendingNotice?'Guardada en Pendientes de añadir. Puedes continuar con la importación.':'Canción omitida.';
+        notice=action==='confirm'?'Eleccion guardada. Puedes seguir revisando mientras se procesa.':pendingNotice?'Guardada en Pendientes de añadir. Puedes continuar con la importacion.':'Cancion omitida.';
         await tick();
         const nextRow=after.map(i=>scroller.querySelector(`[data-review-index="${i}"]`)).find(Boolean)
           ||scroller.querySelector('[data-review-index]');
@@ -124,7 +124,7 @@
   function showFailedDecision(current,id,index){return current?.importId===id && reviewImportItems(current).some(row=>row.index===index);}
   async function removeHistory(){
     const job=$activeImport;
-    if(!job||job.status==='running'||!confirm('¿Eliminar esta importación del historial? Se perderán sus elecciones y progreso de revisión. Las playlists y los archivos musicales se conservan.'))return;
+    if(!job||job.status==='running'||!confirm('¿Eliminar esta importacion del historial? Se perderan sus elecciones y progreso de revision. Las playlists y los archivos musicales se conservan.'))return;
     await call(`/api/import/${job.importId}`,{method:'DELETE',body:JSON.stringify({revision:job.revision})});
     stopPreview();clearImport();await load();
   }
@@ -132,32 +132,32 @@
 <div class="import-review" bind:this={scroller}>
   {#if formOpen}
     <section class="card new">
-      <h3>Nueva importación</h3>
+      <h3>Nueva importacion</h3>
       <form on:submit|preventDefault={()=>act(begin)}>
         <label class="field"><span>Enlace de la playlist de Spotify</span>
-          <input aria-label="Playlist pública de Spotify" bind:value={url} required={!file} disabled={!!file} inputmode="url" autocomplete="off" placeholder="https://open.spotify.com/playlist/…"></label>
-        <p class="hint">Tiene que ser pública. El enlace público puede mostrar solo las primeras 100 canciones.</p>
-        <details class="file" open={!!file}><summary>¿Es más larga? Sube el archivo exportado</summary>
-          <p class="hint">Exporta la lista completa a CSV con <a href="https://github.com/watsonbox/exportify" target="_blank" rel="noopener noreferrer">Exportify</a> (inicias sesión en Spotify en su página, no aquí). También vale un texto con una línea «Artista - Título» por canción.</p>
+          <input aria-label="Playlist publica de Spotify" bind:value={url} required={!file} disabled={!!file} inputmode="url" autocomplete="off" placeholder="https://open.spotify.com/playlist/…"></label>
+        <p class="hint">Tiene que ser publica. El enlace publico puede mostrar solo las primeras 100 canciones.</p>
+        <details class="file" open={!!file}><summary>¿Es mas larga? Sube el archivo exportado</summary>
+          <p class="hint">Exporta la lista completa a CSV con <a href="https://github.com/watsonbox/exportify" target="_blank" rel="noopener noreferrer">Exportify</a> (inicias sesion en Spotify en su pagina, no aqui). Tambien vale un texto con una linea «Artista - Titulo» por cancion.</p>
           <input class="pick" type="file" aria-label="Archivo exportado de la playlist" accept=".csv,.txt,text/csv,text/plain" bind:this={fileInput} on:change={pick}>
           {#if file}<label class="field"><span>Nombre de la playlist</span><input aria-label="Nombre de la playlist importada" bind:value={fileName} maxlength="150" required></label>{/if}
         </details>
-        <label class="field"><span>Destino</span><select aria-label="Destino de importación" bind:value={target}>
+        <label class="field"><span>Destino</span><select aria-label="Destino de importacion" bind:value={target}>
           <option value="">Crear una playlist nueva</option>
           {#each playlists as p}<option value={p.id}>Recuperar en «{p.name}»</option>{/each}
         </select></label>
-        {#if target}<p class="hint">Se comprobarán las canciones y el orden existentes. Las pendientes se mostrarán para revisión; las ya importadas se conservan.</p>{/if}
+        {#if target}<p class="hint">Se comprobaran las canciones y el orden existentes. Las pendientes se mostraran para revision; las ya importadas se conservan.</p>{/if}
         <button class="filled wide" disabled={busy||$activeImport?.status==='running'||(!url.trim()&&!file)}>{target?'Recuperar en esta playlist':'Importar'}</button>
       </form>
       {#if onImportAll}
         <hr>
         <p>¿Quieres traer todas tus playlists de una vez?</p>
         <button class="outlined wide" on:click={onImportAll}>Importar todo Spotify</button>
-        <p class="hint">Elige el archivo de Exportify o conecta con Spotify. El progreso aparece después aquí, en Importaciones pendientes.</p>
+        <p class="hint">Elige el archivo de Exportify o conecta con Spotify. El progreso aparece despues aqui, en Importaciones pendientes.</p>
       {/if}
     </section>
   {:else}
-    <button class="outlined wide" on:click={()=>newOpen=true}><i aria-hidden="true" class="ph ph-caret-down"></i> Nueva importación</button>
+    <button class="outlined wide" on:click={()=>newOpen=true}><i aria-hidden="true" class="ph ph-caret-down"></i> Nueva importacion</button>
   {/if}
 
   <h3 class="section">Importaciones pendientes{#if groups.pending.length}<span class="badge">{groups.pending.length}</span>{/if}</h3>
@@ -185,10 +185,10 @@
   {#if notice}<p role="status" class="notice">{notice}</p>{/if}
   {#if pendingNotice}<button class="outlined" on:click={onOpenPending}>Abrir Pendientes de añadir</button>{/if}
   {#if $activeImport && !activePending}
-    <div class="card job finished" role="status"><div class="job-head"><h4>{$activeImport.name}</h4><span class="state">Terminada</span></div><p>Importación finalizada. No quedan canciones por procesar aquí.</p>
-      {#if $activeImport.skipped}<p>Puedes gestionar las canciones omitidas desde «Pendientes de añadir»; no impiden terminar esta importación.</p><button on:click={onOpenPending}>Abrir Pendientes de añadir</button>{/if}
-      {#if groups.pending.length}<button disabled={busy} on:click={()=>act(()=>select(groups.pending[0].importId))}>Revisar siguiente importación pendiente</button>{/if}
-      <button disabled={busy} on:click={()=>act(removeHistory)}>Eliminar importación del historial</button>
+    <div class="card job finished" role="status"><div class="job-head"><h4>{$activeImport.name}</h4><span class="state">Terminada</span></div><p>Importacion finalizada. No quedan canciones por procesar aqui.</p>
+      {#if $activeImport.skipped}<p>Puedes gestionar las canciones omitidas desde «Pendientes de añadir»; no impiden terminar esta importacion.</p><button on:click={onOpenPending}>Abrir Pendientes de añadir</button>{/if}
+      {#if groups.pending.length}<button disabled={busy} on:click={()=>act(()=>select(groups.pending[0].importId))}>Revisar siguiente importacion pendiente</button>{/if}
+      <button disabled={busy} on:click={()=>act(removeHistory)}>Eliminar importacion del historial</button>
     </div>
   {:else if $activeImport}
     <section class="card job">
@@ -204,30 +204,30 @@
       {@const info=$activeImport.sourceInfo}
       {@const got=info.retrieved ?? $activeImport.total}
       <div class="partial" role="status">
-        <strong>{info.source_total==null&&got<99?'Lista sin total confirmado':'Importación parcial'}</strong>
+        <strong>{info.source_total==null&&got<99?'Lista sin total confirmado':'Importacion parcial'}</strong>
         {#if info.source_total!=null}
           <p>La fuente tiene {info.source_total} canciones y se han recuperado {info.retrieved ?? $activeImport.total}. Faltan {$activeImport.notRetrieved} por recuperar; no son canciones sin coincidencia.</p>
         {:else if got<99}
-          <p>Se han recuperado {got} canciones. El enlace público no indica cuántas tiene la lista: si son las mismas que ves en la lista original, está completa.</p>
+          <p>Se han recuperado {got} canciones. El enlace publico no indica cuantas tiene la lista: si son las mismas que ves en la lista original, esta completa.</p>
         {:else}
-          <p>Se han recuperado {info.retrieved ?? $activeImport.total} canciones, pero el enlace público no indica cuántas tiene la lista y solo muestra las primeras 100. Si tu lista es más larga, el resto todavía no se ha importado.</p>
+          <p>Se han recuperado {info.retrieved ?? $activeImport.total} canciones, pero el enlace publico no indica cuantas tiene la lista y solo muestra las primeras 100. Si tu lista es mas larga, el resto todavia no se ha importado.</p>
         {/if}
         <div class="actions">
           {#if info.metadata_source!=='file'}<button disabled={busy||$activeImport.status==='running'} on:click={()=>act(()=>decide('refresh_source'))}>Volver a consultar la fuente</button>{/if}
           <button disabled={busy||$activeImport.status==='running'} on:click={()=>completeInput.click()}>Completar con el archivo exportado</button>
-          <input type="file" hidden aria-label="Archivo exportado para completar la importación" accept=".csv,.txt,text/csv,text/plain" bind:this={completeInput} on:change={complete}>
+          <input type="file" hidden aria-label="Archivo exportado para completar la importacion" accept=".csv,.txt,text/csv,text/plain" bind:this={completeInput} on:change={complete}>
         </div>
         <p class="muted">Completar conserva las canciones ya importadas y su orden; solo añade las que faltan.</p>
       </div>
     {/if}
     {#if $activeImport.unavailable}<p>{$activeImport.unavailable} posiciones sin metadatos; no son rechazos de coincidencia.</p>{/if}
     {#if $activeImport.indexing}
-      <p role="status">{$activeImport.indexing} descargadas y guardadas, esperando la biblioteca; no necesitan elegir otra versión.
+      <p role="status">{$activeImport.indexing} descargadas y guardadas, esperando la biblioteca; no necesitan elegir otra version.
         {#if $activeImport.status==='running'}La biblioteca se comprueba al terminar las descargas.
         {:else}Pulsa «{onlyIndexing?'Comprobar biblioteca':'Reevaluar pendientes y continuar'}» para consultar de nuevo la biblioteca sin repetir estas descargas.{/if}
       </p>
     {/if}
-    {#if $activeImport.connectionError}<p role="status">Conexión interrumpida. El progreso está guardado; reconectando…</p>{/if}
+    {#if $activeImport.connectionError}<p role="status">Conexion interrumpida. El progreso esta guardado; reconectando…</p>{/if}
     {#if $activeImport.error}<p role="alert">{importErrorMessage($activeImport.error)}</p>{/if}
     {#if $activeImport.error==='playlist_missing'}
       <button disabled={busy||$activeImport.status==='running'} on:click={()=>act(()=>decide('create_new'))}>Crear nueva playlist con el progreso guardado</button>
@@ -238,14 +238,14 @@
     {/if}
     <div class="actions">
       <button disabled={busy} on:click={()=>act(()=>select($activeImport.importId))}>Actualizar</button>
-      <button disabled={busy||$activeImport.status==='running'} on:click={()=>act(removeHistory)}>Eliminar importación del historial</button>
+      <button disabled={busy||$activeImport.status==='running'} on:click={()=>act(removeHistory)}>Eliminar importacion del historial</button>
       {#if $activeImport.status==='running'}
         <button disabled={busy} on:click={()=>act(async()=>{await call(`/api/import/${$activeImport.importId}/cancel`,{method:'POST'});await select($activeImport.importId);})}>Pausar</button>
-      {:else}<button disabled={busy} on:click={()=>act(()=>decide('resume'))} title={onlyIndexing?'Consulta de nuevo la biblioteca sin repetir las descargas':'Vuelve a juzgar con las reglas actuales las canciones pendientes de revisar y continúa la importación'}>{onlyIndexing?'Comprobar biblioteca':'Reevaluar pendientes y continuar'}</button>{/if}
+      {:else}<button disabled={busy} on:click={()=>act(()=>decide('resume'))} title={onlyIndexing?'Consulta de nuevo la biblioteca sin repetir las descargas':'Vuelve a juzgar con las reglas actuales las canciones pendientes de revisar y continua la importacion'}>{onlyIndexing?'Comprobar biblioteca':'Reevaluar pendientes y continuar'}</button>{/if}
     </div>
     </section>
-    {#if reviewItems.length}<h3 class="section">Canciones que necesitan tu decisión<span class="badge">{reviewItems.length}</span></h3>
-    <p class="hint">Escucha y compara antes de confirmar. Los metadatos no garantizan que sea la misma grabación.</p>{/if}
+    {#if reviewItems.length}<h3 class="section">Canciones que necesitan tu decision<span class="badge">{reviewItems.length}</span></h3>
+    <p class="hint">Escucha y compara antes de confirmar. Los metadatos no garantizan que sea la misma grabacion.</p>{/if}
     {#each reviewItems as {item,index:i} (i)}
         <article class="music-card" data-review-index={i} tabindex="-1" aria-labelledby={`import-row-${i}`}>
 <strong id={`import-row-${i}`}>{i+1}. {importItemTitle(item)}</strong><p>{item.track.artist} · {Math.round(item.track.duration||0)} s</p>
@@ -254,26 +254,26 @@
           {:else if importItemFailure(item)}<p role="status">{importItemFailure(item)}</p>{/if}
           {#if item.selected}<p>Elegida: {item.selected.artist} — {item.selected.title}</p>{/if}
           {#if canSearchImportAlternatives(item)}
-          {#if !needsImportChoice(item)}<p class="muted">Puedes reintentar o buscar otra versión si lo necesitas.</p>{/if}
-          {#if item.acoustic && !item.acoustic.selected}<p class="muted">{item.acoustic.status==='no_reference'?'Sin referencia acústica autorizada e identificada; no se ha comparado audio.':`Comparación acústica: ${acousticStates[item.acoustic.status]||'evidencia insuficiente'}. No se ha confirmado la grabación.`}</p>{/if}
-          {#if item.comparison_reason==='multiple_compatible_sources'}<p class="muted">Varias fuentes coinciden en los metadatos. No se ha confirmado cuál es la misma grabación; elige la que prefieras.</p>{/if}
+          {#if !needsImportChoice(item)}<p class="muted">Puedes reintentar o buscar otra version si lo necesitas.</p>{/if}
+          {#if item.acoustic && !item.acoustic.selected}<p class="muted">{item.acoustic.status==='no_reference'?'Sin referencia acustica autorizada e identificada; no se ha comparado audio.':`Comparacion acustica: ${acousticStates[item.acoustic.status]||'evidencia insuficiente'}. No se ha confirmado la grabacion.`}</p>{/if}
+          {#if item.comparison_reason==='multiple_compatible_sources'}<p class="muted">Varias fuentes coinciden en los metadatos. No se ha confirmado cual es la misma grabacion; elige la que prefieras.</p>{/if}
           {#each item.candidates as c (c.track.source_id)}
             <div class="candidate">
               <button class="candidate-art" aria-label={`Preescuchar ${c.track.title}`} on:click={()=>audition({...toQueueTrack(c.track),_previewThumb:`https://i.ytimg.com/vi/${c.track.source_id}/mqdefault.jpg`})}>
                 <img src={`https://i.ytimg.com/vi/${c.track.source_id}/mqdefault.jpg`} alt="" loading="lazy" referrerpolicy="no-referrer" on:error={e=>e.currentTarget.style.visibility='hidden'}>
                 <span>{$previewState?.track?._musicTrack?.source_id===c.track.source_id && $playing?'Ⅱ':'▶'}</span>
               </button>
-              <div class="candidate-info"><p>{c.track.title}<br>{c.track.artist}<br><small>{c.track.album} · {c.track.duration?`${Math.round(c.track.duration)} s`:'Duración desconocida'}</small></p>
-              <p>{c.reasons.length?c.reasons.map(r=>reasons[r]||r).join(' · '):'Metadatos compatibles; revisa la grabación'}</p></div>
-              <button class="choose-version" aria-label={`Elegir esta versión: ${c.track.title}`} disabled={busy||!canDecideImportItem($activeImport,item)} on:click={()=>act(()=>decide('confirm',i,c.track.source_id))}>+</button>
+              <div class="candidate-info"><p>{c.track.title}<br>{c.track.artist}<br><small>{c.track.album} · {c.track.duration?`${Math.round(c.track.duration)} s`:'Duracion desconocida'}</small></p>
+              <p>{c.reasons.length?c.reasons.map(r=>reasons[r]||r).join(' · '):'Metadatos compatibles; revisa la grabacion'}</p></div>
+              <button class="choose-version" aria-label={`Elegir esta version: ${c.track.title}`} disabled={busy||!canDecideImportItem($activeImport,item)} on:click={()=>act(()=>decide('confirm',i,c.track.source_id))}>+</button>
             </div>
           {/each}
           <form on:submit|preventDefault={()=>act(()=>decide('search',i))}>
-            <label>Buscar otra opción<input aria-label={`Buscar otra opción para ${item.track.title}`} bind:value={queries[i]} placeholder={`${item.track.artist} ${item.track.title}`}></label>
+            <label>Buscar otra opcion<input aria-label={`Buscar otra opcion para ${item.track.title}`} bind:value={queries[i]} placeholder={`${item.track.artist} ${item.track.title}`}></label>
             <button disabled={busy||!canDecideImportItem($activeImport,item)}>Buscar candidatos</button>
           </form>
           {/if}
-          <div class="actions">{#if item.state!=='indexing'}<button disabled={busy||!canDecideImportItem($activeImport,item)} on:click={()=>act(()=>decide('skip',i))}>{needsImportChoice(item)?'Ninguna coincide':'Omitir canción'}</button>{/if}<button disabled={busy||!canDecideImportItem($activeImport,item)} on:click={()=>act(()=>decide('retry',i))}>Reintentar</button></div>
+          <div class="actions">{#if item.state!=='indexing'}<button disabled={busy||!canDecideImportItem($activeImport,item)} on:click={()=>act(()=>decide('skip',i))}>{needsImportChoice(item)?'Ninguna coincide':'Omitir cancion'}</button>{/if}<button disabled={busy||!canDecideImportItem($activeImport,item)} on:click={()=>act(()=>decide('retry',i))}>Reintentar</button></div>
         </article>
     {/each}
   {/if}

@@ -122,4 +122,4 @@ print('Aurral: separate ordinary accounts with flow permission; Koito: separate 
 check(ar.post('/api/auth/logout'))
 ar.close()
 nd.close()
-print('Provisioning complete. Generated credentials remain only in secrets/bootstrap-users.json. Link each Aurral account in the application.')
+print('Provisioning complete. Generated credentials remain only in secrets/bootstrap-users.json. The application links the assigned Aurral account at login.')

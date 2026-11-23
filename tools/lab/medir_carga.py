@@ -1,8 +1,8 @@
-"""Laboratorio: cuánto tarda en empezar a llegar una canción directa de Navidrome frente a pasando por Armonía.
+"""Laboratorio: cuánto tarda en empezar a llegar una canción directa de Navidrome frente a pasando por Armonia.
 
 Mismo código que r14, mismo Navidrome 0.64.2, cuenta ficticia «ana» y seis canciones ficticias de
 4 min 20 s a 128 kbps (unos 4,2 MB, como las reales). Todo en 127.0.0.1: la red no interviene, así que
-la diferencia es solo lo que añade Armonía.
+la diferencia es solo lo que añade Armonia.
 
 «Fría» = el archivo se saca antes de la caché de disco del sistema (posix_fadvise DONTNEED), como una
 canción que no se ha tocado hace tiempo. Cada medición abre una conexión nueva, como el primer toque.
@@ -106,4 +106,4 @@ for (way, temp), samples in results.items():
     print(f"{way:9} {temp:9} {cell(0):>14} {cell(1):>16} {cell(2):>19}")
 for temp in ("fria", "caliente"):
     extra = statistics.median(s[1] for s in results[("armonia", temp)]) - statistics.median(s[1] for s in results[("directo", temp)])
-    print(f"\nArmonía añade al primer byte ({temp}): {extra:+.1f} ms")
+    print(f"\nArmonia añade al primer byte ({temp}): {extra:+.1f} ms")

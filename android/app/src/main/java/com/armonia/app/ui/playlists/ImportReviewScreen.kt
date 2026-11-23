@@ -123,9 +123,9 @@ class ImportReviewViewModel @Inject constructor(
             if(applySnapshot(next,epoch)&&index!=null){
                 decisionFailures=decisionFailures-index
                 if(action=="confirm"||action=="skip"){
-                    notice=if(action=="confirm") "Elección guardada. El audio se procesa en segundo plano; puedes seguir con la siguiente canción."
-                        else if(next.manualInboxAvailable==true&&next.items.getOrNull(index)?.manualPending==true) "Guardada en Pendientes de añadir. Puedes aportar un MP3 propio después desde Biblioteca."
-                        else "Canción omitida. Puedes continuar revisando las demás."
+                    notice=if(action=="confirm") "Eleccion guardada. El audio se procesa en segundo plano; puedes seguir con la siguiente cancion."
+                        else if(next.manualInboxAvailable==true&&next.items.getOrNull(index)?.manualPending==true) "Guardada en Pendientes de añadir. Puedes aportar un MP3 propio despues desde Biblioteca."
+                        else "Cancion omitida. Puedes continuar revisando las demas."
                     nextImportReviewIndex(before,orderedImportReview(next,decisionFailures).map{it.index},index)?.let{
                         focusRequest=(++focusSerial) to it
                     }
@@ -151,7 +151,7 @@ class ImportReviewViewModel @Inject constructor(
 }
 
 private fun clock(seconds: Double?): String =
-    seconds?.toInt()?.takeIf { it > 0 }?.let { "%d:%02d".format(it / 60, it % 60) } ?: "duración desconocida"
+    seconds?.toInt()?.takeIf { it > 0 }?.let { "%d:%02d".format(it / 60, it % 60) } ?: "duracion desconocida"
 
 /** One block of the screen. Blocks have keys so a row can be scrolled to without counting headers by hand. */
 private class Block(val key: String, val content: @Composable () -> Unit)
@@ -177,7 +177,7 @@ fun ImportReviewScreen(onBack:()->Unit,onInbox:()->Unit={},vm:ImportReviewViewMo
         // With an import waiting, that import is what the screen is for: the form folds away.
         val formOpen=newOpen?:(sections.pending.isEmpty()&&job==null)
         if(!formOpen)add(Block("new-folded"){OutlinedButton(onClick={newOpen=true},modifier=Modifier.fillMaxWidth()){
-            Icon(Icons.Default.ExpandMore,null);Spacer(Modifier.width(6.dp));Text("Nueva importación")}})
+            Icon(Icons.Default.ExpandMore,null);Spacer(Modifier.width(6.dp));Text("Nueva importacion")}})
         else add(Block("new"){NewImportCard(url,{url=it},target,{target=it},vm.playlists,
             canStart=url.isNotBlank()&&!vm.busy&&job?.status!="running",onStart={vm.start(url,target);newOpen=null},
             importAll=vm.importAllUrl?.let{address->{runCatching{uriHandler.openUri(address)};Unit}})})
@@ -198,7 +198,7 @@ fun ImportReviewScreen(onBack:()->Unit,onInbox:()->Unit={},vm:ImportReviewViewMo
         vm.error?.let{message->add(Block("error"){Text(message,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodyMedium)})}
         if(job!=null){
             add(Block("job"){JobCard(job,vm,showDetails,{showDetails=!showDetails},onInbox)})
-            if(review.isNotEmpty())add(Block("review-title"){SectionTitle("Canciones que necesitan tu decisión",review.size)})
+            if(review.isNotEmpty())add(Block("review-title"){SectionTitle("Canciones que necesitan tu decision",review.size)})
             review.forEach{entry->add(Block("item:${job.importId}:${entry.index}"){
                 ReviewCard(job,entry.index,entry.value,vm,previewing)})}
         }
@@ -211,7 +211,7 @@ fun ImportReviewScreen(onBack:()->Unit,onInbox:()->Unit={},vm:ImportReviewViewMo
     }
     Scaffold(contentWindowInsets=WindowInsets(0),topBar={TopAppBar(
         title={Text("Importar playlist",style=MaterialTheme.typography.headlineMedium)},
-        navigationIcon={IconButton(onClick=onBack){Icon(Icons.AutoMirrored.Filled.ArrowBack,"Volver; la importación sigue en segundo plano")}},
+        navigationIcon={IconButton(onClick=onBack){Icon(Icons.AutoMirrored.Filled.ArrowBack,"Volver; la importacion sigue en segundo plano")}},
         colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.background))}){padding->
         LazyColumn(Modifier.padding(padding).fillMaxSize().imePadding(),state=listState,
             contentPadding=PaddingValues(start=16.dp,end=16.dp,top=4.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
@@ -241,11 +241,11 @@ private fun NewImportCard(url:String,onUrl:(String)->Unit,target:String?,onTarge
     val muted=MaterialTheme.colorScheme.onSurface.copy(alpha=.65f)
     Card(Modifier.fillMaxWidth(),colors=cardColors(),shape=RoundedCornerShape(14.dp)){
         Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-            Text("Nueva importación",style=MaterialTheme.typography.titleMedium)
+            Text("Nueva importacion",style=MaterialTheme.typography.titleMedium)
             OutlinedTextField(value=url,onValueChange=onUrl,label={Text("Enlace de la playlist de Spotify")},
                 placeholder={Text("https://open.spotify.com/playlist/…")},singleLine=true,
                 keyboardOptions=KeyboardOptions(imeAction=ImeAction.Go),keyboardActions=KeyboardActions(onGo={if(canStart)onStart()}),
-                supportingText={Text("Tiene que ser pública. El enlace público puede mostrar solo las primeras 100 canciones.")},
+                supportingText={Text("Tiene que ser publica. El enlace publico puede mostrar solo las primeras 100 canciones.")},
                 modifier=Modifier.fillMaxWidth())
             Box{
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
@@ -269,7 +269,7 @@ private fun NewImportCard(url:String,onUrl:(String)->Unit,target:String?,onTarge
                 HorizontalDivider(color=MaterialTheme.colorScheme.onSurface.copy(alpha=.08f))
                 Text("¿Quieres traer todas tus playlists de una vez?",style=MaterialTheme.typography.bodyMedium)
                 OutlinedButton(onClick=importAll,modifier=Modifier.fillMaxWidth()){Text("Importar todo Spotify")}
-                Text("Se abre en el navegador: inicia sesión en Armonía y elige el archivo de Exportify o conecta con Spotify. El progreso aparece después aquí, en Importaciones pendientes.",
+                Text("Se abre en el navegador: inicia sesion en Armonia y elige el archivo de Exportify o conecta con Spotify. El progreso aparece despues aqui, en Importaciones pendientes.",
                     style=MaterialTheme.typography.bodySmall,color=muted)
             }
         }
@@ -318,7 +318,7 @@ private fun JobCard(job:ImportJob,vm:ImportReviewViewModel,showDetails:Boolean,o
             LinearProgressIndicator(progress={if(job.total>0)progress.processed.toFloat()/job.total else 0f},
                 modifier=Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)))
             Text("${progress.processed} de ${job.total} procesadas",style=MaterialTheme.typography.bodyMedium)
-            if(done)Text("Importación terminada. Puedes volver a abrirla desde Historial.",style=MaterialTheme.typography.bodySmall,color=muted)
+            if(done)Text("Importacion terminada. Puedes volver a abrirla desde Historial.",style=MaterialTheme.typography.bodySmall,color=muted)
             vm.notice?.let{Text(it,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.primary)}
             FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
                 Count(progress.ready,"listas",MaterialTheme.colorScheme.primary)
@@ -330,15 +330,15 @@ private fun JobCard(job:ImportJob,vm:ImportReviewViewModel,showDetails:Boolean,o
                 Count(progress.skipped,"omitidas")
             }
             if(progress.indexing>0)Text(
-                "${progress.indexing} descargadas y guardadas, esperando la biblioteca; no necesitan elegir otra versión. "+
+                "${progress.indexing} descargadas y guardadas, esperando la biblioteca; no necesitan elegir otra version. "+
                     (if(job.status=="running")"La biblioteca se comprueba al terminar las descargas."
                     else "Pulsa «$resumeLabel» para consultar de nuevo la biblioteca sin repetir estas descargas."),
                 style=MaterialTheme.typography.bodySmall,color=muted)
             if(job.sourceInfo?.get("source_complete")?.asBoolean==false){
                 val total=job.sourceInfo.get("source_total")?.takeIf{!it.isJsonNull}?.asInt
-                Text(if(total!=null)"Importación parcial: la fuente tiene $total canciones y se han recuperado ${job.total}. Las que faltan no son canciones sin coincidencia."
-                    else if(job.total<99)"Se han recuperado ${job.total} canciones. El enlace público no indica el total: si son las mismas que ves en la lista original, está completa."
-                    else "Importación parcial: se han recuperado ${job.total} canciones. El enlace público solo muestra las primeras 100 y no indica el total.",
+                Text(if(total!=null)"Importacion parcial: la fuente tiene $total canciones y se han recuperado ${job.total}. Las que faltan no son canciones sin coincidencia."
+                    else if(job.total<99)"Se han recuperado ${job.total} canciones. El enlace publico no indica el total: si son las mismas que ves en la lista original, esta completa."
+                    else "Importacion parcial: se han recuperado ${job.total} canciones. El enlace publico solo muestra las primeras 100 y no indica el total.",
                     style=MaterialTheme.typography.bodySmall,color=Color(0xFFFFC46B))
                 Text("Para completarla sin duplicados, usa «Completar con el archivo exportado» en la web.",style=MaterialTheme.typography.bodySmall,color=muted)
             }
@@ -360,7 +360,7 @@ private fun JobCard(job:ImportJob,vm:ImportReviewViewModel,showDetails:Boolean,o
             if(showDetails){
                 Text("${job.downloaded} descargadas ahora · ${job.existing} ya estaban en tu biblioteca",style=MaterialTheme.typography.bodySmall,color=muted)
                 if(progress.unavailable>0)Text("${progress.unavailable} posiciones sin metadatos en la fuente; no son rechazos de coincidencia.",style=MaterialTheme.typography.bodySmall,color=muted)
-                job.error?.let{Text("Último error: $it",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error)}
+                job.error?.let{Text("Ultimo error: $it",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error)}
             }
         }
     }
@@ -379,9 +379,9 @@ private fun ReviewCard(job:ImportJob,index:Int,item:ImportItem,vm:ImportReviewVi
         if((item.reviewOrder?:0)>0)Text(importFailureReason(item.reason),color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
         if(canSearchImportAlternatives(item.state)){
             if(item.state=="download_failed")item.selected?.let{Text("Elegida: ${it.artist} — ${it.title}. Puedes reintentar la descarga o buscar otra fuente.",style=MaterialTheme.typography.bodySmall)}
-            if(item.state=="source_unavailable")Text("Faltan metadatos de esta posición. Puedes buscarla manualmente o completar la fuente con el archivo exportado desde la web.",style=MaterialTheme.typography.bodySmall)
-            if(item.acoustic?.get("status")?.asString=="no_reference")Text("Sin referencia acústica autorizada; no se ha comparado audio.",style=MaterialTheme.typography.bodySmall,color=muted)
-            if(item.comparisonReason=="multiple_compatible_sources")Text("Varias fuentes coinciden en los metadatos. No se ha confirmado cuál es la misma grabación; elige la que prefieras.",style=MaterialTheme.typography.bodySmall)
+            if(item.state=="source_unavailable")Text("Faltan metadatos de esta posicion. Puedes buscarla manualmente o completar la fuente con el archivo exportado desde la web.",style=MaterialTheme.typography.bodySmall)
+            if(item.acoustic?.get("status")?.asString=="no_reference")Text("Sin referencia acustica autorizada; no se ha comparado audio.",style=MaterialTheme.typography.bodySmall,color=muted)
+            if(item.comparisonReason=="multiple_compatible_sources")Text("Varias fuentes coinciden en los metadatos. No se ha confirmado cual es la misma grabacion; elige la que prefieras.",style=MaterialTheme.typography.bodySmall)
             item.candidates.forEach{c->
                 val song=remember(c.track.sourceId){c.track.toSong()}
                 val sounding=previewing==song.id
@@ -405,14 +405,14 @@ private fun ReviewCard(job:ImportJob,index:Int,item:ImportItem,vm:ImportReviewVi
                         contentPadding=PaddingValues(horizontal=14.dp)){Text("Elegir")}
                 }
             }
-            if(item.candidates.isNotEmpty())Text("Toca una miniatura para escuchar 10 segundos (del centro de la canción si se conoce su duración). Tu reproducción queda en pausa y vuelve al parar.",
+            if(item.candidates.isNotEmpty())Text("Toca una miniatura para escuchar 10 segundos (del centro de la cancion si se conoce su duracion). Tu reproduccion queda en pausa y vuelve al parar.",
                 style=MaterialTheme.typography.bodySmall,color=muted)
-            if(previewing!=null)TextButton(onClick={vm.player.stopAudition()},contentPadding=PaddingValues(0.dp)){Text("Volver a mi reproducción en pausa")}
-            OutlinedTextField(value=query,onValueChange={query=it},placeholder={Text("Buscar otra opción")},singleLine=true,
+            if(previewing!=null)TextButton(onClick={vm.player.stopAudition()},contentPadding=PaddingValues(0.dp)){Text("Volver a mi reproduccion en pausa")}
+            OutlinedTextField(value=query,onValueChange={query=it},placeholder={Text("Buscar otra opcion")},singleLine=true,
                 keyboardOptions=KeyboardOptions(imeAction=ImeAction.Search),
                 keyboardActions=KeyboardActions(onSearch={if(query.isNotBlank()&&canDecide)vm.decide("search",index,query=query)}),
                 trailingIcon={IconButton(onClick={vm.decide("search",index,query=query)},enabled=query.isNotBlank()&&canDecide){
-                    Icon(Icons.Default.Search,"Buscar otra opción para ${item.track.title}")}},
+                    Icon(Icons.Default.Search,"Buscar otra opcion para ${item.track.title}")}},
                 shape=RoundedCornerShape(12.dp),modifier=Modifier.fillMaxWidth())
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
                 TextButton(onClick={vm.decide("skip",index)},enabled=canDecide){Text("Ninguna coincide")}
@@ -422,7 +422,7 @@ private fun ReviewCard(job:ImportJob,index:Int,item:ImportItem,vm:ImportReviewVi
             item.selected?.let{Text("Elegida: ${it.artist} — ${it.title}",style=MaterialTheme.typography.bodySmall)}
             TextButton(onClick={vm.decide("retry",index)},enabled=canDecide){Text("Reintentar")}
         }else{
-            Text("Pulsa «Continuar» para reanudar el procesamiento; todavía no hay una elección que revisar.",style=MaterialTheme.typography.bodySmall,color=muted)
+            Text("Pulsa «Continuar» para reanudar el procesamiento; todavia no hay una eleccion que revisar.",style=MaterialTheme.typography.bodySmall,color=muted)
         }
     }}
 }

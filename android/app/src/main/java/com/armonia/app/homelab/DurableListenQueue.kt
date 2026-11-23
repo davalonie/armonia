@@ -21,7 +21,7 @@ class DurableListenQueue(
             check(it == pending) { "Listening event ID reused with different data" }
             return@withLock
         }
-        check(events.size < 5000) { "La cola de escuchas está llena" }
+        check(events.size < 5000) { "La cola de escuchas esta llena" }
         write(account, events + pending)
     }
 

@@ -45,6 +45,9 @@ def init():
         version = c.execute("PRAGMA user_version").fetchone()[0]
         if version > 4:
             raise RuntimeError("Music database is newer than this application")
+        c.execute("CREATE TABLE IF NOT EXISTS playlist_covers (kind TEXT, id TEXT, owner TEXT NOT NULL, "
+                  "token TEXT NOT NULL UNIQUE, image BLOB NOT NULL, PRIMARY KEY(kind,id))")
+        c.execute("CREATE TABLE IF NOT EXISTS aurral_unlinked (owner TEXT PRIMARY KEY)")
         if version < 1:
             c.executescript("BEGIN IMMEDIATE;" + _SCHEMA + "PRAGMA user_version=1; COMMIT;")
         if version < 2:
@@ -110,6 +113,8 @@ def playlists(user):
         covers = [{"source": r[f"s{i}"], "source_id": r[f"i{i}"], "cover": None} for i in range(4) if r[f"s{i}"] and r[f"i{i}"]]
         result.append({"id": r["id"], "name": r["name"], "revision": r["revision"], "updated": r["updated"],
                        "item_count": r["item_count"], "covers": covers})
+    from homelab import playlist_covers
+    playlist_covers.attach(result, "mixed")
     return result
 
 
@@ -118,7 +123,10 @@ def playlist(user, key):
         row = c.execute("SELECT * FROM playlists WHERE owner=? AND id=?", (user, key)).fetchone()
     if not row:
         raise HTTPException(404, "playlist not found")
-    return _playlist(row)
+    result = _playlist(row)
+    from homelab import playlist_covers
+    playlist_covers.attach([result], "mixed")
+    return result
 
 
 def write_playlist(user, body, key=None):
@@ -153,3 +161,4 @@ def delete_playlist(user, key, revision):
         if row[0] != revision:
             raise HTTPException(409, "playlist changed; reload before deleting")
         c.execute("DELETE FROM playlists WHERE owner=? AND id=?", (user, key))
+        c.execute("DELETE FROM playlist_covers WHERE kind='mixed' AND id=? AND owner=?", (key, user))

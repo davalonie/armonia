@@ -15,8 +15,8 @@ object OfflineSkip {
     }
 
     fun notice(skipped: Int): String =
-        if (skipped == 1) "Sin conexión: se salta una canción que no está en el teléfono."
-        else "Sin conexión: se saltan $skipped canciones que no están en el teléfono."
+        if (skipped == 1) "Sin conexion: se salta una cancion que no esta en el telefono."
+        else "Sin conexion: se saltan $skipped canciones que no estan en el telefono."
 
-    const val NOTHING_ON_PHONE = "Sin conexión: ninguna de las siguientes canciones está guardada en el teléfono."
+    const val NOTHING_ON_PHONE = "Sin conexion: ninguna de las siguientes canciones esta guardada en el telefono."
 }

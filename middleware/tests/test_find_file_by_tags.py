@@ -1,4 +1,4 @@
-"""Locating a track's file by its tags when it isn't named the Armonía way."""
+"""Locating a track's file by its tags when it isn't named the Armonia way."""
 
 from pathlib import Path
 

@@ -10,17 +10,17 @@ By default it only *simulates*. Nothing is guessed from commas alone:
             the leading name(s) of this one. The album already exists; the song rejoins it.
   probable  the leading name exists alone somewhere in this library, but not in this album.
             Listed for review; applied only with --incluir-probables.
-  (the rest is reported as "sin evidencia" and never touched: «Trío Uno, Dos & Tres».)
+  (the rest is reported as "sin evidencia" and never touched: «Trio Uno, Dos & Tres».)
 
 Usage:
-    python -m tools.repair_album_artists RAÍZ [--informe plan.json]              # simulation
-    python -m tools.repair_album_artists RAÍZ --aplicar --copia copia.json       # writes ALBUMARTIST
-    python -m tools.repair_album_artists RAÍZ --restaurar copia.json             # undoes it
+    python -m tools.repair_album_artists RAIZ [--informe plan.json]              # simulation
+    python -m tools.repair_album_artists RAIZ --aplicar --copia copia.json       # writes ALBUMARTIST
+    python -m tools.repair_album_artists RAIZ --restaurar copia.json             # undoes it
 
 Only the ALBUMARTIST tag is written; title, artist text, audio and file names stay as
 they are. Each file is rewritten as a copy that replaces the original atomically, and
 the previous value of every changed file is saved first in --copia. Run a Navidrome
-scan afterwards. RAÍZ is one user's library folder.
+scan afterwards. RAIZ is one user's library folder.
 """
 import argparse
 import json
@@ -179,32 +179,32 @@ def describe(proposed: dict, out=sys.stdout) -> None:
         groups[(change["evidence"], change["album"], change["to"])].append(change)
     for evidence in ("seguro", "probable"):
         chosen = sorted((key, rows) for key, rows in groups.items() if key[0] == evidence)
-        print(f"\n== {evidence.upper()}: {sum(len(rows) for _, rows in chosen)} canciones en {len(chosen)} álbumes ==", file=out)
+        print(f"\n== {evidence.upper()}: {sum(len(rows) for _, rows in chosen)} canciones en {len(chosen)} albumes ==", file=out)
         for (_, album, to), rows in chosen:
-            print(f"«{album}» → artista del álbum «{to}»", file=out)
+            print(f"«{album}» → artista del album «{to}»", file=out)
             for row in rows:
                 print(f"    antes «{row['albumartist']}»   {row['path']}", file=out)
     print(f"\n== SIN EVIDENCIA (no se tocan): {len(proposed['without_evidence'])} ==", file=out)
     for row in proposed["without_evidence"]:
         print(f"    «{row['albumartist']}» · «{row['album']}»   {row['path']}", file=out)
     a, b = proposed["albums"], proposed["album_artists"]
-    print(f"\nArchivos leídos: {proposed['files']}", file=out)
-    print(f"Álbumes: {a['before']} ahora → {a['after_sure']} aplicando «seguro» → {a['after_all']} con «probable»", file=out)
-    print(f"Artistas de álbum: {b['before']} ahora → {b['after_sure']} → {b['after_all']}", file=out)
+    print(f"\nArchivos leidos: {proposed['files']}", file=out)
+    print(f"Albumes: {a['before']} ahora → {a['after_sure']} aplicando «seguro» → {a['after_all']} con «probable»", file=out)
+    print(f"Artistas de album: {b['before']} ahora → {b['after_sure']} → {b['after_all']}", file=out)
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Reúne álbumes partidos por colaboradores (simula por defecto).")
+    parser = argparse.ArgumentParser(description="Reune albumes partidos por colaboradores (simula por defecto).")
     parser.add_argument("root", type=Path)
     parser.add_argument("--informe", type=Path, help="guarda el plan completo en JSON")
     parser.add_argument("--aplicar", action="store_true", help="escribe ALBUMARTIST (exige --copia)")
     parser.add_argument("--copia", type=Path, help="archivo nuevo donde guardar los valores anteriores")
     parser.add_argument("--incluir-probables", action="store_true")
-    parser.add_argument("--restaurar", type=Path, help="deshace una reparación con su archivo de copia")
+    parser.add_argument("--restaurar", type=Path, help="deshace una reparacion con su archivo de copia")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     if not root.is_dir():
-        parser.error("la raíz no es una carpeta")
+        parser.error("la raiz no es una carpeta")
     if args.restaurar:
         print(json.dumps(restore(root, args.restaurar), ensure_ascii=False, indent=1))
         return 0
@@ -213,7 +213,7 @@ def main(argv=None) -> int:
     if args.informe:
         args.informe.write_text(json.dumps(proposed, ensure_ascii=False, indent=1), encoding="utf-8")
     if not args.aplicar:
-        print("\nSimulación: no se ha escrito nada. Para aplicar: --aplicar --copia ARCHIVO_NUEVO")
+        print("\nSimulacion: no se ha escrito nada. Para aplicar: --aplicar --copia ARCHIVO_NUEVO")
         return 0
     if not args.copia:
         parser.error("--aplicar exige --copia")

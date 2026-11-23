@@ -1,4 +1,4 @@
-"""Drive the lab web (Armonía on 127.0.0.1:18480, fictitious user «ana») with Playwright for screenshots and checks.
+"""Drive the lab web (Armonia on 127.0.0.1:18480, fictitious user «ana») with Playwright for screenshots and checks.
 
 Usage: python web.py <script.py>   — the script gets `page(width)`, `shot(pg, name)` and `LAB` in its globals.
 Only the lab: never point this at the real installation.

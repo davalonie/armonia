@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.armonia.app.data.api.Playlist
+import com.armonia.app.data.api.Song
 import com.armonia.app.data.api.PlaylistDetail
 import com.armonia.app.data.repository.PreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -47,7 +48,7 @@ class PlaylistCacheStore(private val root: File, private val gson: Gson = Gson()
         if (account.isBlank()) return
         runCatching {
             write(listFile(account), playlists)
-            val keep = playlists.map { playlistFile(account, it.id).name }.toSet() + "list.json"
+            val keep = playlists.map { playlistFile(account, it.id).name }.toSet() + setOf("list.json", "songs.json")
             folder(account).listFiles()?.filter { it.name !in keep }?.forEach { it.delete() }
         }
     }
@@ -63,6 +64,14 @@ class PlaylistCacheStore(private val root: File, private val gson: Gson = Gson()
         runCatching { write(playlistFile(account, playlist.id), playlist) }
     }
 
+    fun saveSongs(account: String, songs: List<Song>) {
+        if (account.isNotBlank()) write(File(folder(account), "songs.json"), songs)
+    }
+
+    fun songs(account: String): List<Song> = runCatching {
+        gson.fromJson<List<Song>>(File(folder(account), "songs.json").readText(), object : TypeToken<List<Song>>() {}.type)
+    }.getOrNull().orEmpty()
+
     fun clear() { runCatching { root.deleteRecursively() } }
 }
 
@@ -77,5 +86,7 @@ class PlaylistCache @Inject constructor(
     suspend fun playlist(id: String): PlaylistDetail? = withContext(Dispatchers.IO) { store.readPlaylist(prefs.accountNamespace, id) }
     suspend fun saveList(account: String, playlists: List<Playlist>) = withContext(Dispatchers.IO) { store.writeList(account, playlists) }
     suspend fun savePlaylist(account: String, playlist: PlaylistDetail) = withContext(Dispatchers.IO) { store.writePlaylist(account, playlist) }
+    suspend fun saveSongs(account: String, songs: List<Song>) = withContext(Dispatchers.IO) { runCatching { store.saveSongs(account, songs) }; Unit }
+    suspend fun songs(account: String) = withContext(Dispatchers.IO) { store.songs(account) }
     suspend fun clear() = withContext(Dispatchers.IO) { store.clear() }
 }

@@ -35,7 +35,7 @@ fun YtAlbumScreen(
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
-                title = { Text(viewModel.album?.title ?: "Álbum", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text(viewModel.album?.title ?: "Album", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -109,7 +109,7 @@ fun YtAlbumScreen(
                                 } else {
                                     Icon(Icons.Default.Download, null, Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Descargar álbum")
+                                    Text("Descargar album")
                                 }
                             }
                         }
@@ -148,8 +148,8 @@ fun YtAlbumScreen(
     viewModel.duplicateWarning?.let { w ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissDuplicateWarning() },
-            title = { Text("Ya está en la biblioteca") },
-            text = { Text("«${w.title}» de ${w.artist} podría estar ya en tu biblioteca. ¿Descargarla de todos modos?") },
+            title = { Text("Ya esta en la biblioteca") },
+            text = { Text("«${w.title}» de ${w.artist} podria estar ya en tu biblioteca. ¿Descargarla de todos modos?") },
             confirmButton = {
                 TextButton(onClick = { viewModel.forceDownload() }) { Text("Descargar igualmente") }
             },

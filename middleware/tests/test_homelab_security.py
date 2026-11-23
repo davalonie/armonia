@@ -186,7 +186,7 @@ def test_download_tags_only_private_staging(tmp_path, monkeypatch):
     def fake(video, artist, title, source, cancel, staging):
         path = Path(staging) / "test.mp3"
         path.write_bytes(b"audio")
-        return str(path)
+        return str(path), {}
     def tag(path, *args):
         assert not Path(path).is_relative_to(music)
         Path(path).write_bytes(b"tagged")

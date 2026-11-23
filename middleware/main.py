@@ -117,6 +117,8 @@ def _cacheable_cover(request: Request, response) -> bool:
         return False
     if not image and response.status_code != 304:
         return False
+    if request.query_params.get("id", "").startswith("armonia-art-"):
+        return False  # Recheck access after a private playlist is deleted or unshared.
     versioned = _VERSIONED_COVER.match(request.query_params.get("id", ""))
     response.headers["Cache-Control"] = "private, max-age=31536000, immutable" if versioned else "private, max-age=604800"
     return True

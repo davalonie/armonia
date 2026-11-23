@@ -173,7 +173,7 @@ def parse_export(text: str, name: str) -> dict:
         for line in lines:
             artist, separator, title = line.strip().partition(" - ")
             if not separator or not artist.strip() or not title.strip():
-                raise SpotifyError(f'Línea {len(tracks) + 1}: se esperaba "Artista - Título" o un CSV con cabecera')
+                raise SpotifyError(f'Linea {len(tracks) + 1}: se esperaba "Artista - Titulo" o un CSV con cabecera')
             tracks.append({"title": title.strip()[:300], "artist": artist.strip()[:300], "album": "", "duration": None,
                            "source_position": len(tracks), "source_id": None, "isrc": None, "source_unavailable": False})
     if not tracks:

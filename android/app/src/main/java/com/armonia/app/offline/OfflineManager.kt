@@ -126,7 +126,7 @@ class OfflineManager @Inject constructor(
                     catalogWritable = true
                     value
                 } catch (_:Exception) {
-                    _persistenceProblem.value = "No se puede leer el catálogo offline. Se conserva el archivo y se bloquean cambios para evitar pérdida de datos."
+                    _persistenceProblem.value = "No se puede leer el catalogo offline. Se conserva el archivo y se bloquean cambios para evitar perdida de datos."
                     OfflineCatalog()
                 }
                 _progress.value = emptyMap()
@@ -266,7 +266,7 @@ class OfflineManager @Inject constructor(
             _persistenceProblem.value = null
             true
         } catch (_:Exception) {
-            _persistenceProblem.value = "No se pudo guardar el catálogo offline. Comprueba el almacenamiento; no se han eliminado descargas."
+            _persistenceProblem.value = "No se pudo guardar el catalogo offline. Comprueba el almacenamiento; no se han eliminado descargas."
             false
         }
     }

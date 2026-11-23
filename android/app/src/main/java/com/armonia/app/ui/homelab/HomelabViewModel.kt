@@ -20,6 +20,7 @@ class HomelabViewModel @Inject constructor(
     val player:MusicPlayer, private val offline:OfflineManager, val listenOutbox:ListenOutbox,
 ):ViewModel(){
     val offlineProblem = offline.persistenceProblem
+    fun coverUrl(id: String) = library.getCoverArtUrl(id, 256)
     private val owner = prefs.cachedUserId
     var recentPlaylists by mutableStateOf<List<RecentPlaylist>>(emptyList());private set
     var sources by mutableStateOf<List<MusicTrack>>(emptyList());private set
@@ -53,7 +54,7 @@ class HomelabViewModel @Inject constructor(
     fun link(username:String,password:String)=act{api.link(owner,AccountLink(username,password)).checked();val result=api.discover().checked();artists=result.personalArtists();discoveryState=result.state?:"insufficient_profile";discoverySeeds=result.seeds?:emptyList();flows=api.flows().checked().flows}
     fun weekly()=act{api.weekly(owner).checked();flows=api.flows().checked().flows}
     fun flow(id:String)=act{recommendations=api.flow(id).checked().tracks}
-    fun refreshFlow(id:String)=act{api.refreshFlow(id,owner).checked();error="Generación solicitada. Actualiza la lista en unos momentos."}
+    fun refreshFlow(id:String)=act{api.refreshFlow(id,owner).checked();error="Generacion solicitada. Actualiza la lista en unos momentos."}
     fun match(track:Recording){val epoch=player.routeGuard.explicitPlay();act{val r=api.match(track).checked();candidates=if(r.selected==null)r.candidates else emptyList();reviewOriginal=if(r.selected==null)track else null;r.selected?.let{player.playQueue(listOf(it.toSong()),requestEpoch=epoch)}}}
     fun saveSource(track:MusicTrack)=act{check(api.capabilities(track.source,track.sourceId).checked()["persist"]==true){"Esta fuente no permite guardado permanente"};api.saveSource(track.sourceId,owner).checked();error="Guardada en biblioteca; el escaneo puede tardar"}
     fun playRecent(p:RecentPlaylist){val epoch=player.routeGuard.explicitPlay();act{
@@ -73,9 +74,9 @@ class HomelabViewModel @Inject constructor(
     fun delete()=act{selected?.let{api.delete(it.id!!,it.revision,owner).checked()};selected=null;lists=api.playlists().checked().playlists}
     fun export()=act{selected?.let{val r=api.export(it.id!!,owner,mapOf("revision" to it.revision)).checked();error="Copia en Navidrome: ${r["exported"]} canciones; ${r["omitted"]} externas omitidas"}}
     fun pin()=act{selected?.let{p->
-        for(item in p.items) if(item.track.source!="navidrome") check(api.capabilities(item.track.source,item.track.sourceId).checked()["offline"]==true){"Una canción no permite descarga offline"}
+        for(item in p.items) if(item.track.source!="navidrome") check(api.capabilities(item.track.source,item.track.sourceId).checked()["offline"]==true){"Una cancion no permite descarga offline"}
         // Reuse Media3 DownloadManager and the existing offline catalogue.
         offline.pin(OfflineCollection(key="mixed:${p.id}",title=p.name,subtitle="Playlist mixta",coverArt=null,songs=p.items.map{it.track.toSong()},pinnedAt=System.currentTimeMillis()))
     }}
-    fun top(kind:String="artists")=act{val data=api.top(kind).checked();stats=data.getAsJsonArray("items")?.map{r->val item=r.asJsonObject.getAsJsonObject("item");(item["name"]?.asString?:item["title"]?.asString?:"Sin título") to (item["listen_count"]?.asInt?:0)}?:emptyList()}
+    fun top(kind:String="artists")=act{val data=api.top(kind).checked();stats=data.getAsJsonArray("items")?.map{r->val item=r.asJsonObject.getAsJsonObject("item");(item["name"]?.asString?:item["title"]?.asString?:"Sin titulo") to (item["listen_count"]?.asInt?:0)}?:emptyList()}
 }

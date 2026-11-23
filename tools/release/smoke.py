@@ -1,4 +1,4 @@
-"""Arranca la imagen local de Armonía sin red y verifica el arranque real."""
+"""Arranca la imagen local de Armonia sin red y verifica el arranque real."""
 import argparse
 import os
 from pathlib import Path
@@ -20,14 +20,14 @@ for attempt in range(60):
         pass
     time.sleep(1)
 else:
-    raise SystemExit('El servidor no está sano.')
+    raise SystemExit('El servidor no esta sano.')
 with urlopen('http://127.0.0.1:8000/') as response:
     html = response.read().lower()
     if b'/assets/' not in html:
         raise SystemExit('La web compilada no se sirve.')
 with sqlite3.connect('file:/app/data/armonia.db?mode=ro', uri=True) as db:
     if db.execute('pragma quick_check').fetchone()[0] != 'ok':
-        raise SystemExit('La base SQLite no es íntegra.')
+        raise SystemExit('La base SQLite no es integra.')
 subprocess.run(['ffmpeg', '-version'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['ffprobe', '-version'], check=True, stdout=subprocess.DEVNULL)
 """

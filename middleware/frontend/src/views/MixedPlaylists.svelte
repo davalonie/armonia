@@ -1,4 +1,5 @@
 <script>
+  import {coverArtUrl} from '../lib/api.js';
   import ShuffleToggle from '../components/ShuffleToggle.svelte';
   import {externalMenu} from '../lib/trackActions.js';
   import {library as libApi,streamUrl} from '../lib/api.js';
@@ -24,9 +25,9 @@
     const extra=[...(i>0?[{label:'Subir en la playlist',action:()=>move(i,-1)}]:[]),...(i<selected.items.length-1?[{label:'Bajar en la playlist',action:()=>move(i,1)}]:[]),{label:'Quitar de esta playlist',action:()=>act(()=>save({...selected,items:selected.items.filter((_,n)=>n!==i)}))}];
     if(t.source!=='navidrome')return externalMenu(e.currentTarget,t,extra);
     showContextMenu(e.currentTarget,[{label:'Añadir a favoritos',icon:'ph ph-heart',action:()=>libApi('star',{id:t.source_id}).catch(e=>showToast(e.message,'error'))},
-    {label:'Reproducir a continuación',icon:'ph ph-queue',action:()=>playNext(toQueueTrack(t))},
+    {label:'Reproducir a continuacion',icon:'ph ph-queue',action:()=>playNext(toQueueTrack(t))},
     {label:'Añadir a playlist',icon:'ph ph-playlist',action:()=>showPlaylistPicker([t])},
-    ...[0,1,2,3,4,5].map(rating=>({label:rating?`Valorar ${rating} estrellas`:'Quitar valoración',action:()=>libApi('setRating',{id:t.source_id,rating}).then(()=>showToast('Valoración guardada')).catch(e=>showToast(e.message,'error'))})),
+    ...[0,1,2,3,4,5].map(rating=>({label:rating?`Valorar ${rating} estrellas`:'Quitar valoracion',action:()=>libApi('setRating',{id:t.source_id,rating}).then(()=>showToast('Valoracion guardada')).catch(e=>showToast(e.message,'error'))})),
     {label:'Descargar archivo',action:()=>{const a=document.createElement('a');a.href=streamUrl(t.source_id);a.download=t.title;a.click();}},...extra]);
   }
   function addCurrent(){return addTracks([fromQueueTrack($currentTrack)]);}
@@ -40,16 +41,17 @@
   <div class="actions">{#each playlists as p}<button disabled={busy} on:click={()=>act(async()=>selected=await api.playlist(p.id))} aria-pressed={selected?.id===p.id}>{p.name} ({p.item_count??p.items?.length??0})</button>{/each}</div>
   {/if}
   {#if selected}
+    {#if selected.coverArt}<img src={coverArtUrl(selected.coverArt,256)} alt="Portada de la playlist" width="96" height="96">{/if}
     <div class="music-card">
       <div role="group" aria-label="Controles de playlist" on:touchstart={e=>touchStart=e.touches[0].clientY} on:touchend={e=>{if(e.changedTouches[0].clientY-touchStart>55)toolsOpen=true;}}>
-        {#if toolsOpen}<input aria-label="Buscar en la playlist" bind:value={filter} placeholder="Buscar en la playlist"><label>Ordenar<select bind:value={sort}><option value="original">Orden original</option><option value="title">Título</option><option value="artist">Artista</option></select></label>{/if}
+        {#if toolsOpen}<input aria-label="Buscar en la playlist" bind:value={filter} placeholder="Buscar en la playlist"><label>Ordenar<select bind:value={sort}><option value="original">Orden original</option><option value="title">Titulo</option><option value="artist">Artista</option></select></label>{/if}
         <h2>{selected.name}</h2><p>{selected.items.length} canciones</p><button aria-expanded={toolsOpen} on:click={()=>toolsOpen=!toolsOpen}>Buscar y ordenar</button>
       </div>
       <details><summary>Editar playlist y añadir canciones</summary>
       <label>Nombre<input disabled={busy} bind:value={selected.name} maxlength="150"></label>
       <div class="actions">
         <button disabled={busy} on:click={()=>act(()=>save(selected))}>Guardar nombre</button>
-        <button disabled={busy||!$currentTrack} on:click={()=>act(addCurrent)}>Añadir canción del reproductor</button>
+        <button disabled={busy||!$currentTrack} on:click={()=>act(addCurrent)}>Añadir cancion del reproductor</button>
         <button disabled={busy} on:click={()=>act(async()=>{const r=await api.export(selected);error=`Copia creada en Navidrome: ${r.exported} canciones; ${r.omitted} externas omitidas.`;})}>Exportar copia local</button>
         <button disabled={busy} on:click={()=>{if(confirm(`¿Eliminar “${selected.name}”? Los archivos musicales se conservan.`))void act(async()=>{await api.remove(selected);selected=null;await load();});}}>Eliminar playlist</button>
       </div>

@@ -48,6 +48,7 @@ async def unlink(sess=Depends(get_current_session)):
         pass
     with store.connection(write=True) as c:
         c.execute("DELETE FROM credentials WHERE owner=? AND service='aurral'", (user,))
+        c.execute("INSERT OR IGNORE INTO aurral_unlinked VALUES (?)", (user,))
     return {"ok": True}
 
 
@@ -90,7 +91,7 @@ async def weekly_config(user):
     result = await discovery_profile.recommendations(user)
     seeds = [s for s in result["seeds"] if s["status"] == "identified"]
     if not seeds:
-        raise HTTPException(409, "Todavía no hay artistas identificados para tu lista semanal. Revisa las semillas en Descubrir.")
+        raise HTTPException(409, "Todavia no hay artistas identificados para tu lista semanal. Revisa las semillas en Descubrir.")
     return {"mix": {"discover": 0, "mix": 0, "trending": 0, "focus": 100, "newReleases": 0},
             "relatedArtists": [s["mbid"] for s in seeds], "recentListening": False,
             "tags": [], "autoDownload": False, "size": generated_size(), "scheduleDays": [5], "scheduleTime": "00:00"}
@@ -124,11 +125,11 @@ async def flows(sess=Depends(get_current_session)):
 async def weekly(sess=Depends(get_current_session)):
     """One upstream scheduled flow per user; never enable upstream downloads."""
     user = owner(sess)
-    name = "Armonía Weekly " + hashlib.sha256(user.encode()).hexdigest()[:12]
+    name = "Armonia Weekly " + hashlib.sha256(user.encode()).hexdigest()[:12]
     async with _flow_creation:
         config = await weekly_config(user)
         db.require_active_session(sess)
-        existing = next((f for f in (await flows(sess))["flows"] if f.get("name") == name), None)
+        existing = next((f for f in (await flows(sess))["flows"] if (f.get("name") or "").replace("Armon\u00eda Weekly ", "Armonia Weekly ", 1) == name), None)
         db.require_active_session(sess)
         if existing:
             if existing.get("autoDownload") is not False:
@@ -172,8 +173,8 @@ async def refresh_flow(flow_id: str, sess=Depends(get_current_session)):
     if now - _last_refresh.get(user, -60) < 60:
         raise HTTPException(429, "wait one minute before regenerating recommendations")
     _last_refresh[user] = now
-    managed_name = "Armonía Weekly " + hashlib.sha256(user.encode()).hexdigest()[:12]
-    if chosen.get("name") == managed_name:
+    managed_name = "Armonia Weekly " + hashlib.sha256(user.encode()).hexdigest()[:12]
+    if (chosen.get("name") or "").replace("Armon\u00eda Weekly ", "Armonia Weekly ", 1) == managed_name:
         config = await weekly_config(user)
         db.require_active_session(sess)
         await configure_weekly(user, flow_id, config)

@@ -113,7 +113,7 @@ test('interrupted confirmed positions show a safe retry reason at the end', () =
     const interrupted={...item(state),decision:'confirmed',reviewOrder:20,reason:'service_unavailable'};
     const job={status:'error',items:[interrupted,item('review')]};
     assert.deepEqual(reviewImportItems(job).map(row=>row.index),[1,0]);
-    assert.equal(importItemFailure(interrupted),'Se interrumpió el procesamiento. Puedes reintentar.');
+    assert.equal(importItemFailure(interrupted),'Se interrumpio el procesamiento. Puedes reintentar.');
     assert.equal(canDecideImportItem(job,interrupted),true);
   }
 });

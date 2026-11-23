@@ -185,7 +185,7 @@ fun PlayerPane(
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = when {
-                            state.automatic -> "CONTINUACIÓN AUTOMÁTICA"
+                            state.automatic -> "CONTINUACION AUTOMATICA"
                             state.context != null -> "REPRODUCIENDO DESDE"
                             else -> "REPRODUCIENDO"
                         },
@@ -195,7 +195,7 @@ fun PlayerPane(
                         letterSpacing = 1.sp,
                         maxLines = 1,
                     )
-                    val detail = if (state.automatic) "Música similar" else state.context
+                    val detail = if (state.automatic) "Musica similar" else state.context
                     if (detail != null) Text(
                         text = detail,
                         color = Color.White,
@@ -208,7 +208,7 @@ fun PlayerPane(
                 }
                 Box(Modifier.offset(x = 12.dp)) {
                     IconButton(onClick = actions.menu) {
-                        Icon(Icons.Default.MoreVert, "Más opciones", tint = Color.White)
+                        Icon(Icons.Default.MoreVert, "Mas opciones", tint = Color.White)
                     }
                     menu()
                 }
@@ -295,7 +295,7 @@ fun PlayerPane(
                     label = "Repetir",
                     stateLabel = when (state.repeat) {
                         RepeatMode.OFF -> "Desactivado"
-                        RepeatMode.ONE -> "Esta canción"
+                        RepeatMode.ONE -> "Esta cancion"
                         RepeatMode.ALL -> "Toda la cola"
                     },
                     active = state.repeat != RepeatMode.OFF,
@@ -368,7 +368,7 @@ fun SeekBar(progress: () -> PlaybackProgress, onSeek: (Float) -> Unit, modifier:
                 .fillMaxWidth()
                 .height(44.dp)
                 .semantics {
-                    contentDescription = "Posición en la canción"
+                    contentDescription = "Posicion en la cancion"
                     stateDescription = "${formatPlaybackTime(shownMs)} de ${formatPlaybackTime(duration)}"
                 }
                 .testTag("player-seek"),

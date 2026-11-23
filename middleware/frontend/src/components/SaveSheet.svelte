@@ -39,7 +39,7 @@
       playlists = sheet.playlists;
       const made = playlists.filter(p => !before.has(p.id) && p.name === n);
       if (made.length === 1) selected = new Set([...selected, made[0].id]);
-      message = 'Playlist creada y marcada. Pulsa Guardar para añadir la canción.';
+      message = 'Playlist creada y marcada. Pulsa Guardar para añadir la cancion.';
       name = ''; creating = false;
     } catch (e) { message = e.message; }
     finally { busy = false; }
@@ -69,7 +69,7 @@
       <input type="search" bind:value={query} placeholder="Buscar playlist" aria-label="Buscar playlist"></label>
     <div class="row-tools">
       <button class="text" disabled={busy} on:click={() => creating = !creating}><i aria-hidden="true" class="ph ph-plus"></i> Nueva playlist</button>
-      <button class="text" on:click={() => byCount = !byCount}>{byCount ? 'Orden: más canciones' : 'Orden: nombre'}</button>
+      <button class="text" on:click={() => byCount = !byCount}>{byCount ? 'Orden: mas canciones' : 'Orden: nombre'}</button>
     </div>
     {#if creating}
       <form class="create" on:submit|preventDefault={create}>
@@ -83,16 +83,16 @@
     <ul class="lists">
       <li><button class="item" role="checkbox" aria-checked={selected.has(FAVORITES)} disabled={!ready || busy} on:click={() => toggle(FAVORITES)}>
         <span class="art"><Cover variant="liked" /></span>
-        <span class="text-col"><b>Tus favoritos</b>{#if included.has(FAVORITES)}<small class="in">Ya está en tus favoritos</small>{/if}</span>
+        <span class="text-col"><b>Tus favoritos</b>{#if included.has(FAVORITES)}<small class="in">Ya esta en tus favoritos</small>{/if}</span>
         <span class="box" class:on={selected.has(FAVORITES)} aria-hidden="true"><i class="ph-bold ph-check"></i></span></button></li>
       {#if !shown.length && !loading}
-        <li class="none">{playlists.length ? `Ninguna playlist coincide con «${query.trim()}».` : 'Todavía no tienes playlists. Crea una con «Nueva playlist».'}</li>
+        <li class="none">{playlists.length ? `Ninguna playlist coincide con «${query.trim()}».` : 'Todavia no tienes playlists. Crea una con «Nueva playlist».'}</li>
       {/if}
       {#each shown as p (p.id)}
         <li><button class="item" role="checkbox" aria-checked={selected.has(p.id)} disabled={!ready || busy} on:click={() => toggle(p.id)}>
           <span class="art"><Cover covers={p.coverArt ? [coverArtUrl(p.coverArt, 96)] : []} size={96} /></span>
           <span class="text-col"><b>{p.name}</b>
-            <small class:in={included.has(p.id)}>{included.has(p.id) ? 'Ya está en esta playlist' : p.songCount === 1 ? '1 canción' : `${p.songCount || 0} canciones`}</small></span>
+            <small class:in={included.has(p.id)}>{included.has(p.id) ? 'Ya esta en esta playlist' : p.songCount === 1 ? '1 cancion' : `${p.songCount || 0} canciones`}</small></span>
           <span class="box" class:on={selected.has(p.id)} aria-hidden="true"><i class="ph-bold ph-check"></i></span></button></li>
       {/each}
     </ul>

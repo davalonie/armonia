@@ -49,7 +49,7 @@ class ListenOutbox @Inject constructor(
             problem.value=null
         } catch (e:CancellationException) { throw e }
         catch (e:Exception) {
-            problem.value="No se ha podido guardar una escucha en este teléfono. Comprueba el almacenamiento; la cola existente se conserva."
+            problem.value="No se ha podido guardar una escucha en este telefono. Comprueba el almacenamiento; la cola existente se conserva."
             throw e
         }
         // Delivery belongs to the application, not a service which can be stopped.

@@ -95,7 +95,7 @@
   {:else if !all.length}
     <div class="flex flex-col items-center justify-center py-20 opacity-50">
       <i class="ph ph-download-simple text-6xl mb-4"></i>
-      <p class="text-lg">Todavía no hay descargas. Busca una canción y descárgala desde Buscar.</p>
+      <p class="text-lg">Todavia no hay descargas. Busca una cancion y descargala desde Buscar.</p>
     </div>
   {:else}
     <div class="flex flex-col gap-1">

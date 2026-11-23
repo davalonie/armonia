@@ -85,7 +85,7 @@
   {#if loading}
     <div class="flex flex-col items-center justify-center py-24 opacity-50">
       <i class="ph ph-circle-notch text-4xl mb-4 animate-spin-slow"></i>
-      <p>Cargando álbum…</p>
+      <p>Cargando album…</p>
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center py-24 text-red-400">

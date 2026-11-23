@@ -51,7 +51,7 @@ async function stillThere(target, track, local) {
 /** Playlists of this account and where the song already is. */
 export async function loadSheet(track) {
   const target = saveTarget(track);
-  if (!target) throw new Error('Esta canción no se puede guardar en una playlist');
+  if (!target) throw new Error('Esta cancion no se puede guardar en una playlist');
   const me = getSession()?.username;
   const listing = await library('getPlaylists');
   const playlists = (listing.playlists?.playlist || []).filter(p => p.owner === me);
@@ -87,7 +87,7 @@ async function downloadCopy(target, track, onNote) {
   }
   const found = (await library('search3', {query: track.title, songCount: 100, albumCount: 0, artistCount: 0})).searchResult3?.song || [];
   const id = exactCopy(found, track);
-  if (!id) throw new Error('No se pudo identificar una única grabación en la biblioteca');
+  if (!id) throw new Error('No se pudo identificar una unica grabacion en la biblioteca');
   writeCopies(withCopy(readCopies(), target.videoId, id));
   onNote('');
   return id;

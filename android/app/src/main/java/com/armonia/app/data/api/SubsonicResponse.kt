@@ -89,7 +89,8 @@ data class Artist(
 data class ArtistDetail(
     val id: String,
     val name: String,
-    val album: List<Album> = emptyList()
+    val album: List<Album> = emptyList(),
+    val song: List<Song>? = null,
 )
 
 // ── Albums ───────────────────────────────────────────────────────────────────

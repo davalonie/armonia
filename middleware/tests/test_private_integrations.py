@@ -391,3 +391,30 @@ def test_flow_keeps_recordings_aurral_ties_to_an_identified_seed_and_drops_the_r
     # Unknown exclusions: only the vetted artists remain.
     blocked['value'] = None
     assert [t['title'] for t in client.get('/api/discover/flows/own').json()['tracks']] == ['A', 'B']
+
+
+def test_automatic_aurral_link_respects_origin_binding_and_explicit_unlink(lab, transport, monkeypatch):
+    client, _ = lab
+    calls = []
+    def upstream(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("/login"):
+            return httpx.Response(200, json={"user": {"id": 1}, "token": "alice-token"})
+        return httpx.Response(200, json={})
+    transport(upstream)
+    def login(user):
+        asyncio.run(integrations.link_on_login(user, user, "fictional"))
+    monkeypatch.setenv("MUSIC_AURRAL_LOGIN_ORIGIN", "http://unrelated")
+    login("alice")
+    assert not calls
+    monkeypatch.setenv("MUSIC_AURRAL_LOGIN_ORIGIN", "http://aurral")
+    login("alice")
+    login("alice")
+    assert len(calls) == 2 and integrations.aurral_token("alice") == "alice-token"
+    login("bob")
+    with pytest.raises(HTTPException):
+        integrations.aurral_token("bob")
+    assert client.delete("/api/integrations/aurral").is_success
+    before = len(calls)
+    login("alice")
+    assert len(calls) == before

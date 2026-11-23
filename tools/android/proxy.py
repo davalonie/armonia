@@ -22,7 +22,7 @@ def host(c):
   if domain not in ALLOWED or port!='443':raise ValueError('destino no autorizado: '+domain+':'+port)
   infos=socket.getaddrinfo(domain,443,type=socket.SOCK_STREAM)
   ips=[i for i in infos if ipaddress.ip_address(i[4][0]).is_global]
-  if not ips:raise ValueError('sin IP pública')
+  if not ips:raise ValueError('sin IP publica')
   remote=socket.socket(ips[0][0],ips[0][1],ips[0][2]);remote.settimeout(20);remote.connect(ips[0][4]);remote.settimeout(None)
   c.sendall(b'HTTP/1.1 200 Connection Established\r\n\r\n');print('CONNECT '+domain,flush=True);relay(c,remote)
  except Exception as e:

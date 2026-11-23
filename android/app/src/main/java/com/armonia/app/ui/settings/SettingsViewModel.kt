@@ -50,7 +50,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    // ── Reproducción ──────────────────────────────────────────────────────────
+    // ── Reproduccion ──────────────────────────────────────────────────────────
     val continueSimilar = musicPlayer.continueSimilar
     var playbackSettingError by mutableStateOf<String?>(null)
         private set
@@ -70,10 +70,10 @@ class SettingsViewModel @Inject constructor(
     // ── Android Auto ──────────────────────────────────────────────────────────
     val autoConnections = connectionLog.entries
 
-    /** True when Android may stop Armonía in the background (battery optimisation on). */
+    /** True when Android may stop Armonia in the background (battery optimisation on). */
     var batteryOptimized by mutableStateOf(false)
         private set
-    /** True when the user has restricted Armonía's background activity entirely. */
+    /** True when the user has restricted Armonia's background activity entirely. */
     var backgroundRestricted by mutableStateOf(false)
         private set
 
@@ -185,7 +185,7 @@ class SettingsViewModel @Inject constructor(
             try {
                 val r = api.getStats()
                 if (r.isSuccessful) stats = r.body()
-                else statsError = "No se pudieron cargar las estadísticas"
+                else statsError = "No se pudieron cargar las estadisticas"
             } catch (e: Exception) {
                 statsError = e.message
             } finally {

@@ -43,11 +43,11 @@ class LoginViewModel @Inject constructor(
         val parsed = url.toHttpUrlOrNull()
         if (parsed == null || parsed.username.isNotEmpty() || parsed.password.isNotEmpty() ||
             parsed.encodedPath != "/" || parsed.query != null || parsed.fragment != null) {
-            error = "URL del servidor no válida"
+            error = "URL del servidor no valida"
             return
         }
         if(!com.armonia.app.BuildConfig.DEBUG && !parsed.isHttps) {
-            error="Usa HTTPS para proteger las credenciales, también en LAN/Tailscale"
+            error="Usa HTTPS para proteger las credenciales, tambien en LAN/Tailscale"
             return
         }
 
@@ -71,7 +71,7 @@ class LoginViewModel @Inject constructor(
                         password = ""
                         onSuccess()
                     } ?: run {
-                        error = "No se pudo iniciar sesión: el servidor no ha devuelto una sesión"
+                        error = "No se pudo iniciar sesion: el servidor no ha devuelto una sesion"
                     }
                 } else {
                     error = loginErrorMessage(response.code())

@@ -262,3 +262,47 @@ def test_release_already_in_library_is_left_out(tmp_path, monkeypatch):
     monkeypatch.setattr(releases.generated, "_local_songs", library)
     rows = asyncio.run(releases.prepare({"username": "ana"}, "ana", now))
     assert [r["title"] for r in rows] == ["Nueva"]
+
+
+def test_first_listen_expires_only_the_unseeded_calendar(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "DB_PATH", tmp_path / "lab.db")
+    store.init()
+    releases.init()
+    with store.connection(write=True) as c:
+        c.executemany("INSERT INTO release_calendar VALUES (?,?,100)", [
+            ("alice", "[]"), ("bob", '[]'), ("carol", '{"items":[],"seeded":true}')])
+        for user in ("alice", "carol"):
+            c.execute("INSERT INTO play_events(owner,id,payload,created) VALUES(?,'event','{}',100)", (user,))
+    assert releases.snapshot("alice")[1] == 0
+    assert releases.snapshot("bob")[1] == releases.snapshot("carol")[1] == 100
+
+
+def test_two_recordings_resolve_concurrently_and_keep_album_order(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "DB_PATH", tmp_path / "calendar.db")
+    monkeypatch.setattr(db, "require_active_session", lambda sess: None)
+    store.init()
+    releases.init()
+    recordings = [{"title": str(i), "id": str(i)} for i in range(4)]
+    entry = {"id": "album", "date": "2000-01-01", "tracks": recordings}
+    with store.connection(write=True) as c:
+        c.execute("INSERT INTO release_calendar VALUES(?,?,?)", ("ana", json.dumps([entry]), 1))
+
+    async def check():
+        calls = []
+        both = asyncio.Event()
+
+        async def resolve(recording, sess, active):
+            calls.append(recording["id"])
+            if recording["id"] == "0":
+                await asyncio.wait_for(both.wait(), 1)
+            if recording["id"] == "1":
+                both.set()
+            return recording, "local"
+
+        monkeypatch.setattr(releases.generated, "resolve_recording", resolve)
+        monkeypatch.setattr(releases, "_resolution_slots", asyncio.Semaphore(2))
+        assert releases.tracks({}, "ana", "album")["preparing"]
+        await releases._resolving["ana", "album"]
+        assert releases.tracks({}, "ana", "album") == {"preparing": False, "items": recordings}
+        assert calls == ["0", "1", "2", "3"]
+    asyncio.run(check())

@@ -130,7 +130,7 @@ class LibraryRepository @Inject constructor(
             it.title.equals(song.title, true) && it.artist.equals(song.artist, true) &&
                 (song.duration == 0 || kotlin.math.abs(it.duration - song.duration) <= 3)
         }
-        val id = checkNotNull(exact.singleOrNull()?.id) { "No se pudo identificar una única grabación en la biblioteca" }
+        val id = checkNotNull(exact.singleOrNull()?.id) { "No se pudo identificar una unica grabacion en la biblioteca" }
         check(account == prefs.cachedAuth)
         rememberCopy(song.id, id, account)
         // A new song in the library, as after any other download: Canciones and Buscar show it.
@@ -219,10 +219,10 @@ class LibraryRepository @Inject constructor(
         }
     }
 
-    suspend fun getArtists(): Result<SubsonicResponse> = handleResponse<SubsonicResponse> { api.getLibrary("getArtists") }
+    suspend fun getArtists(): Result<SubsonicResponse> = handleResponse<SubsonicResponse> { api.getLibrary("armoniaArtists") }
 
     suspend fun getArtist(id: String): Result<SubsonicResponse> = handleResponse<SubsonicResponse> {
-        api.getLibrary("getArtist", mapOf("id" to id))
+        api.getLibrary("armoniaArtist", mapOf("id" to id))
     }
 
     suspend fun getAlbum(id: String): Result<SubsonicResponse> = handleResponse<SubsonicResponse> {
@@ -240,9 +240,11 @@ class LibraryRepository @Inject constructor(
             if (!forceRefresh) cachedSongs()?.let { return Result.success(it.withoutRecentlyDeleted { s -> s.id }) }
             fetchAllSongs(pageSize)
                 .map { all -> all.withoutRecentlyDeleted { s -> s.id } }
-                .onSuccess { songsCache = SongsCache(owner,System.currentTimeMillis(),it) }
+                .onSuccess { songsCache = SongsCache(owner,System.currentTimeMillis(),it); playlistCache.saveSongs(owner, it) }
         }
     }
+
+    suspend fun savedSongMetadata(account: String) = playlistCache.songs(account)
 
     private fun cachedSongs(): List<Song>? =
         songsCache?.let { cache -> cache.songs.takeIf {

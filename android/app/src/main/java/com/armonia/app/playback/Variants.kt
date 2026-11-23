@@ -65,6 +65,7 @@ class VariantChooser(
     private val keptFromStart: (String) -> Long,
     private val lowWanted: () -> Boolean,
     private val now: () -> Long = { System.nanoTime() / 1_000_000 },
+    private val offlineCopy: (String) -> Variant? = { null },
 ) {
     private val chosen = object : LinkedHashMap<String, Variant>(64, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Variant>?) = size > 512
@@ -77,7 +78,7 @@ class VariantChooser(
         val low = lowWanted()
         val kept = usable.filter { low || it != Variant.AHORRO }
             .map { it to keptFromStart(it.key(base)) }.filter { it.second > 0 }.maxByOrNull { it.second }?.first
-        val pick = kept ?: when {
+        val pick = offlineCopy(base) ?: kept ?: when {
             low && Variant.AHORRO in usable -> Variant.AHORRO
             Variant.LIGERA in usable -> Variant.LIGERA
             else -> Variant.ORIGINAL

@@ -4,7 +4,7 @@ package com.armonia.app.playback
  * The queue works as in Spotify: songs queued by hand (swipe to the right, «Añadir a la cola»)
  * play right after the song playing, ahead of the rest of the list it was started from, and
  * among themselves in the order they were queued: the second one queued plays second. «Reproducir
- * a continuación» puts its song first among them.
+ * a continuacion» puts its song first among them.
  *
  * Queue indices throughout. [order] is the order they play in: the queue itself, or the shuffle
  * order when shuffle is on (so with shuffle on, songs queued by hand are not shuffled either).

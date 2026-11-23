@@ -31,7 +31,7 @@ fun ArtistsScreen(onArtistClick: (Artist) -> Unit, onBack: () -> Unit = {}, embe
                     Column(Modifier.padding(horizontal = 16.dp)) {
                         CollectionSearchField(viewModel.artistQuery, { viewModel.artistQuery = it }, "Buscar en tus artistas")
                         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("name" to "Nombre", "albums" to "Más álbumes").forEach { (key, label) ->
+                            listOf("name" to "Nombre", "albums" to "Mas albumes").forEach { (key, label) ->
                                 FilterChip(selected = viewModel.artistSort == key, onClick = { viewModel.artistSort = key }, label = { Text(label) })
                             }
                         }
@@ -39,8 +39,8 @@ fun ArtistsScreen(onArtistClick: (Artist) -> Unit, onBack: () -> Unit = {}, embe
                             when {
                                 viewModel.error != null -> viewModel.error!!
                                 viewModel.isLoading && viewModel.artists.isEmpty() -> "Cargando tus artistas…"
-                                viewModel.artists.isEmpty() -> "Todavía no hay artistas en tu biblioteca."
-                                shown.isEmpty() -> "Ningún artista coincide con «${viewModel.artistQuery.trim()}»."
+                                viewModel.artists.isEmpty() -> "Todavia no hay artistas en tu biblioteca."
+                                shown.isEmpty() -> "Ningun artista coincide con «${viewModel.artistQuery.trim()}»."
                                 else -> if (shown.size == 1) "1 artista" else "${shown.size} artistas"
                             },
                             style = MaterialTheme.typography.bodySmall,

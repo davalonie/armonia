@@ -15,7 +15,7 @@
   let artistFilter = '';
   let artistSort = 'name';
   let artistList;
-  $: artistLabels = filteredArtists.map(a => artistSort === 'albums' ? `${a.albumCount || 0} álb.` : scrollInitial(a.name));
+  $: artistLabels = filteredArtists.map(a => artistSort === 'albums' ? `${a.albumCount || 0} alb.` : scrollInitial(a.name));
   // Artists whose picture could not be loaded show their initial instead of a broken image.
   let noPicture = new Set();
   let albums = [];
@@ -44,15 +44,16 @@
   }
 
   async function loadArtists() {
-    const r = await libApi('getArtists');
+    const r = await libApi('armoniaArtists');
     artists = (r.artists?.index || []).flatMap(i => i.artist || []);
     artistFilter = '';
     noPicture = new Set();
   }
 
   async function loadArtist(id) {
-    const r = await libApi('getArtist', { id });
+    const r = await libApi('armoniaArtist', { id });
     albums = r.artist?.album || [];
+    songs = r.artist?.song || [];
   }
 
   async function loadAlbum(id) {
@@ -94,7 +95,7 @@
     {#if !artists.length}
       <div class="flex flex-col items-center justify-center py-20 opacity-50">
         <i class="ph ph-user-circle text-6xl mb-4"></i>
-        <p class="text-lg">Todavía no hay artistas en tu biblioteca.</p>
+        <p class="text-lg">Todavia no hay artistas en tu biblioteca.</p>
       </div>
     {:else}
       <div class="relative mb-4">
@@ -104,13 +105,13 @@
       </div>
       <div class="flex items-center gap-2 mb-3 text-sm flex-wrap">
         <span class="text-armonia-muted mr-auto" role="status">{count(filteredArtists.length, 'artista', 'artistas')}</span>
-        {#each [['name', 'Nombre'], ['albums', 'Más álbumes']] as [id, label]}
+        {#each [['name', 'Nombre'], ['albums', 'Mas albumes']] as [id, label]}
           <button type="button" aria-pressed={artistSort === id} on:click={() => artistSort = id}
             class="px-3 py-1.5 rounded-lg border border-white/10 {artistSort === id ? 'bg-white/10 text-armonia-text' : 'text-armonia-muted'}">{label}</button>
         {/each}
       </div>
       {#if !filteredArtists.length}
-        <p class="text-center py-10 text-armonia-muted text-sm">Ningún artista coincide con «{artistFilter}».</p>
+        <p class="text-center py-10 text-armonia-muted text-sm">Ningun artista coincide con «{artistFilter}».</p>
       {:else}
         <FastScroll labels={artistLabels} list={artistList} />
         <div class="flex flex-col gap-1" bind:this={artistList}>
@@ -130,7 +131,7 @@
               {/if}
               <div class="flex-1 min-w-0">
                 <p class="font-medium truncate">{artist.name}</p>
-                <p class="text-sm text-armonia-muted">{count(artist.albumCount || 0, 'álbum', 'álbumes')}</p>
+                <p class="text-sm text-armonia-muted">{count(artist.albumCount || 0, 'album', 'albumes')}</p>
               </div>
               <i class="ph ph-caret-right text-armonia-muted opacity-0 group-hover:opacity-100 transition-opacity"></i>
             </div>
@@ -139,8 +140,9 @@
       {/if}
     {/if}
   {:else if top.type === 'artist'}
+    {#if songs.length}<TrackList {songs} onRefresh={() => loadArtist(top.id)} />{/if}
     {#if !albums.length}
-      <p class="text-center py-12 text-armonia-muted">Este artista no tiene álbumes propios en tu biblioteca.</p>
+      <p class="text-center py-12 text-armonia-muted">Este artista no tiene albumes propios en tu biblioteca.</p>
     {:else}
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {#each albums as album}
@@ -156,14 +158,14 @@
               </div>
             </div>
             <p class="font-medium truncate text-sm">{album.name}</p>
-            <p class="text-xs text-armonia-muted">{count(album.songCount || 0, 'canción', 'canciones')}</p>
+            <p class="text-xs text-armonia-muted">{count(album.songCount || 0, 'cancion', 'canciones')}</p>
           </div>
         {/each}
       </div>
     {/if}
   {:else if top.type === 'album'}
     {#if !songs.length}
-      <p class="text-center py-12 text-armonia-muted">Este álbum no tiene canciones.</p>
+      <p class="text-center py-12 text-armonia-muted">Este album no tiene canciones.</p>
     {:else}
       <TrackList {songs} onRefresh={() => loadAlbum(top.id)} />
     {/if}

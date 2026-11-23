@@ -25,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,18 @@ fun PlaylistsScreen(
     onImport: (() -> Unit)? = null,
     viewModel: PlaylistsViewModel = hiltViewModel(),
 ) {
+    var coverTarget by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
+    val resolverContext = androidx.compose.ui.platform.LocalContext.current
+    val resolver = resolverContext.contentResolver
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        val target = coverTarget
+        coverTarget = null
+        if (uri != null && target != null) viewModel.uploadCover(target[0], target[1], target[2]) { resolver.openInputStream(uri) }
+    }
+    fun chooseCover(kind: String, id: String) {
+        coverTarget = arrayListOf(kind, id, viewModel.ownerId)
+        picker.launch("image/*")
+    }
     var createOpen by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<Playlist?>(null) }
     var deleteTarget by remember { mutableStateOf<Playlist?>(null) }
@@ -61,6 +74,9 @@ fun PlaylistsScreen(
         if (viewModel.importProgress != null) importStep = "progress"
     }
 
+    LaunchedEffect(viewModel.error) {
+        viewModel.error?.let { android.widget.Toast.makeText(resolverContext, it, android.widget.Toast.LENGTH_LONG).show() }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         contentWindowInsets = WindowInsets(0),
@@ -127,7 +143,7 @@ fun PlaylistsScreen(
                         modifier = Modifier.align(Alignment.Center),
                     )
                     onFavorites == null && viewModel.filtered.isEmpty() -> Text(
-                        text = if (viewModel.filter.isBlank()) "Todavía no hay playlists" else "Sin coincidencias",
+                        text = if (viewModel.filter.isBlank()) "Todavia no hay playlists" else "Sin coincidencias",
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.align(Alignment.Center),
                     )
@@ -147,7 +163,8 @@ fun PlaylistsScreen(
                         // The same playlists as the Playlists screen of 0.5: also those other accounts share with this one.
                         items(viewModel.filtered, key = { it.id }) { p ->
                             PlaylistRow(
-                                playlist = p,
+                                playlist = p, coverUrl = p.coverArt?.let(viewModel::coverUrl),
+                                onCover = if (p.owner == viewModel.username) ({ chooseCover("local", p.id) }) else null,
                                 onClick = { onPlaylistClick(p.id) },
                                 onRename = { renameTarget = p },
                                 onDelete = { deleteTarget = p },
@@ -160,7 +177,8 @@ fun PlaylistsScreen(
                                 verticalAlignment = Alignment.CenterVertically) {
                                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
                                     contentAlignment = Alignment.Center) {
-                                    Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null,
+                                    if (mixed.coverArt != null) coil.compose.AsyncImage(viewModel.coverUrl(mixed.coverArt), null, Modifier.fillMaxSize())
+                                    else Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                                 }
                                 Spacer(Modifier.width(12.dp))
@@ -170,6 +188,7 @@ fun PlaylistsScreen(
                                     Text("con canciones externas", style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                                 }
+                                IconButton(onClick = { chooseCover("mixed", mixed.id) }) { Icon(Icons.Default.Edit, "Cambiar portada") }
                             }
                         }
                     }
@@ -236,7 +255,7 @@ fun PlaylistsScreen(
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text("¿Eliminar la playlist?") },
-            text = { Text("«${target.name}» se eliminará para siempre. Sus canciones siguen en tu biblioteca.") },
+            text = { Text("«${target.name}» se eliminara para siempre. Sus canciones siguen en tu biblioteca.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.delete(target.id)
@@ -255,6 +274,8 @@ fun PlaylistsScreen(
 @Composable
 private fun PlaylistRow(
     playlist: Playlist,
+    coverUrl: String?,
+    onCover: (() -> Unit)?,
     onClick: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
@@ -274,7 +295,8 @@ private fun PlaylistRow(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
+            if (coverUrl != null) coil.compose.AsyncImage(coverUrl, null, Modifier.fillMaxSize())
+            else Icon(
                 Icons.AutoMirrored.Filled.PlaylistPlay,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -297,9 +319,10 @@ private fun PlaylistRow(
         }
         Box {
             IconButton(onClick = { menuOpen = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                Icon(Icons.Default.MoreVert, contentDescription = "Mas opciones")
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                if (onCover != null) DropdownMenuItem(text = { Text("Cambiar portada") }, onClick = { menuOpen = false; onCover() })
                 DropdownMenuItem(
                     text = { Text("Renombrar") },
                     leadingIcon = { Icon(Icons.Default.Edit, null) },
@@ -377,12 +400,12 @@ private fun ImportPill(
                 "done" -> {
                     Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Importación completada", style = MaterialTheme.typography.labelLarge)
+                    Text("Importacion completada", style = MaterialTheme.typography.labelLarge)
                 }
                 else -> {
                     Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("La importación ha fallado", style = MaterialTheme.typography.labelLarge)
+                    Text("La importacion ha fallado", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
@@ -427,7 +450,7 @@ private fun ImportDialog(
                     }
                 }
                 "url" -> Column {
-                    Text("Pega el enlace de una playlist pública de Spotify", style = MaterialTheme.typography.bodySmall, color = muted)
+                    Text("Pega el enlace de una playlist publica de Spotify", style = MaterialTheme.typography.bodySmall, color = muted)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = url,
@@ -467,7 +490,7 @@ private fun ImportDialog(
                                 }
                             }
                         }
-                        "error" -> Text(progress.error ?: "La importación ha fallado", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        "error" -> Text(progress.error ?: "La importacion ha fallado", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         else -> {
                             Text(
                                 if (progress == null) "Iniciando…" else "Importando ${progress.current} de ${progress.total}…",

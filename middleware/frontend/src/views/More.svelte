@@ -1,5 +1,5 @@
 <script>
-  // «Más», as in the app: your activity and your account. Downloads only show up here when one has failed.
+  // «Mas», as in the app: your activity and your account. Downloads only show up here when one has failed.
   import {onMount} from 'svelte';
   import {currentView,showView} from '../lib/stores/viewStore.js';
   import {getSession,listDownloads} from '../lib/api.js';
@@ -16,24 +16,24 @@
 </script>
 
 <section class="more">
-  <header><h1>Más</h1>{#if account}<p><i aria-hidden="true" class="ph ph-user-circle"></i> {account}</p>{/if}</header>
+  <header><h1>Mas</h1>{#if account}<p><i aria-hidden="true" class="ph ph-user-circle"></i> {account}</p>{/if}</header>
 
   <h2>Tu actividad</h2>
   <div class="group">
     <button class="item" on:click={()=>showView('listening')}>
       <i aria-hidden="true" class="ph ph-chart-bar lead"></i>
-      <span><b>Historial y estadísticas</b><small>Lo que has escuchado, tus artistas y canciones principales</small></span>
+      <span><b>Historial y estadisticas</b><small>Lo que has escuchado, tus artistas y canciones principales</small></span>
       <i aria-hidden="true" class="ph ph-caret-right go"></i>
     </button>
     <button class="item" on:click={()=>showView('manual-inbox')}>
       <i aria-hidden="true" class="ph ph-plus lead"></i>
-      <span><b>Pendientes de añadir</b><small>{pending?`${pending} ${pending===1?'canción espera':'canciones esperan'} a que la añadas a mano`:'Canciones de tus importaciones que no se encontraron'}</small></span>
+      <span><b>Pendientes de añadir</b><small>{pending?`${pending} ${pending===1?'cancion espera':'canciones esperan'} a que la añadas a mano`:'Canciones de tus importaciones que no se encontraron'}</small></span>
       <i aria-hidden="true" class="ph ph-caret-right go"></i>
     </button>
     {#if failures}
       <button class="item" on:click={()=>showView('jobs')}>
         <i aria-hidden="true" class="ph ph-download-simple lead warn"></i>
-        <span><b>{failures===1?'1 descarga ha fallado':`${failures} descargas han fallado`}</b><small>Ábrelas para volver a intentarlo</small></span>
+        <span><b>{failures===1?'1 descarga ha fallado':`${failures} descargas han fallado`}</b><small>Abrelas para volver a intentarlo</small></span>
         <i aria-hidden="true" class="ph ph-caret-right go"></i>
       </button>
     {/if}
@@ -43,7 +43,7 @@
   <div class="group">
     <button class="item" on:click={()=>showView('settings')}>
       <i aria-hidden="true" class="ph ph-gear lead"></i>
-      <span><b>Ajustes y cuenta</b><small>Reproducción, servidor, búsqueda, recomendaciones y sesión</small></span>
+      <span><b>Ajustes y cuenta</b><small>Reproduccion, servidor, busqueda, recomendaciones y sesion</small></span>
       <i aria-hidden="true" class="ph ph-caret-right go"></i>
     </button>
   </div>

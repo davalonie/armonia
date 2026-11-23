@@ -54,7 +54,7 @@ class CollectionViewModel @Inject constructor(private val repository: LibraryRep
             val listed = repository.getArtists().onFailure { failure = failure ?: it }.getOrNull()
                 ?.artists?.index?.flatMap { it.artist }.orEmpty()
             if (failure != null && all.isEmpty() && listed.isEmpty()) {
-                error = "No se pudo cargar tu colección. Comprueba la conexión."
+                error = "No se pudo cargar tu coleccion. Comprueba la conexion."
             } else {
                 error = null
                 albums = visible
@@ -97,4 +97,4 @@ internal fun filterArtists(artists: List<ArtistEntry>, query: String, sort: Stri
     }
 }
 
-internal fun albumCount(n: Int) = if (n == 1) "1 álbum" else "$n álbumes"
+internal fun albumCount(n: Int) = if (n == 1) "1 album" else "$n albumes"

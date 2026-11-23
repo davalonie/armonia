@@ -10,6 +10,6 @@ test('personal results require identified seed evidence',()=>{
  assert.equal(personalArtists(data).length,1);assert.match(profileMessage(data),/No se añaden tendencias/);
 });
 test('empty profiles and outages differ, ambiguity is explicit',()=>{
- assert.match(profileMessage({state:'insufficient_profile'}),/Todavía no hay/);assert.match(profileMessage({state:'unavailable'}),/reintentar/);
+ assert.match(profileMessage({state:'insufficient_profile'}),/Todavia no hay/);assert.match(profileMessage({state:'unavailable'}),/reintentar/);
  assert.match(seedReason({reason:'multiple_artists'}),/varios artistas/);
 });

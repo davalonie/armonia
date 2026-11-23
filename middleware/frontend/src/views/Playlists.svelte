@@ -4,7 +4,7 @@
   import {stopPreview} from '../lib/stores/playerStore.js';
   import {api} from '../lib/homelab.js';
   import MixedPlaylists from './MixedPlaylists.svelte';
-  import { library as libApi, coverArtUrl } from '../lib/api.js';
+  import { call, getSession, library as libApi, coverArtUrl } from '../lib/api.js';
   import Cover from '../components/Cover.svelte';
   import {createEventDispatcher} from 'svelte';
   const dispatch=createEventDispatcher();
@@ -21,6 +21,7 @@
   let playlists = [];
   let playlistFilter = '';
   let songs = [];
+  let detailCover = null;
   let loading = true;
   let error = '';
 
@@ -74,6 +75,7 @@
 
   async function loadPlaylist(id) {
     const r = await libApi('getPlaylist', { id });
+    detailCover = r.playlist?.coverArt;
     songs = r.playlist?.entry || [];
   }
 
@@ -82,10 +84,25 @@
   function push(item) { stack = [...stack, item]; }
   function goTo(idx) { stack = stack.slice(0, idx + 1); }
 
+  let picker, artworkTarget;
+  function chooseCover(p){artworkTarget=p;picker.value='';picker.click();}
+  async function uploadCover(){
+    const file=picker.files?.[0], p=artworkTarget;
+    if(!file||!p)return;
+    if(file.size>8*1024*1024){showToast('La imagen debe ocupar como maximo 8 MiB.','error');return;}
+    try{
+      await call(`/api/playlist-covers/${p.kind}/${encodeURIComponent(p.id)}`,{method:'PUT',body:file,headers:{'Content-Type':file.type||'application/octet-stream'}});
+      await loadPlaylists();
+    }catch(e){showToast(e.detail||e.message,'error');}
+  }
+
   function openDots(e, p) {
     e.stopPropagation();
-    if(p.kind==='mixed'){push({type:'mixed',id:p.id,label:p.name});return;}
+    if(p.kind==='mixed'){
+      showContextMenu(e.currentTarget,[{label:'Cambiar portada',icon:'ph ph-image',action:()=>chooseCover(p)}]);return;
+    }
     showContextMenu(e.currentTarget, [
+      ...(p.owner===getSession()?.username?[{label:"Cambiar portada",icon:"ph ph-image",action:()=>chooseCover(p)}]:[]),
       {
         label: 'Añadir canciones', icon: 'ph ph-plus-circle',
         action: () => openSongPicker(p.id, p.name),
@@ -158,6 +175,7 @@
 
 </script>
 
+<input hidden type="file" accept="image/jpeg,image/png,image/webp" bind:this={picker} on:change={uploadCover}>
 <div class="w-full max-w-5xl mx-auto p-4 md:p-8">
 
   <!-- Breadcrumb -->
@@ -190,7 +208,7 @@
     </div>
     <label class="sort"><i aria-hidden="true" class="ph ph-arrows-down-up"></i><span class="sr-only">Ordenar playlists</span>
       <select bind:value={playlistSort} aria-label="Ordenar playlists">
-        <option value="recent">Recientes</option><option value="name">Nombre</option><option value="size">Número de canciones</option>
+        <option value="recent">Recientes</option><option value="name">Nombre</option><option value="size">Numero de canciones</option>
       </select></label>
     <ul class="lists">
       {#if !playlistFilter}
@@ -201,10 +219,10 @@
       {/if}
       {#each sortedPlaylists as p (p.kind+p.id)}
         <li><button class="list" aria-label={`Abrir ${p.name}`} on:click={() => push({ type: p.kind==='mixed'?'mixed':'playlist', id: p.id, label: p.name })}>
-            {#if p.kind==='mixed'}<span class="art mixed"><i aria-hidden="true" class="ph ph-playlist"></i></span>
+            {#if p.kind==='mixed'&&!p.coverArt}<span class="art mixed"><i aria-hidden="true" class="ph ph-playlist"></i></span>
             {:else}<span class="art"><Cover covers={p.coverArt?[coverArtUrl(p.coverArt,96)]:(p.covers||[])} size={96} /></span>{/if}
-            <span class="text"><b>{p.name}</b><small>{p.kind==='mixed'?'con canciones externas':'Playlist'} · {p.songCount || 0} {p.songCount === 1 ? 'canción' : 'canciones'}</small></span></button>
-          {#if p.kind!=='mixed'}<button class="more" aria-label={`Opciones de ${p.name}`} on:click={e => openDots(e, p)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>{/if}</li>
+            <span class="text"><b>{p.name}</b><small>{p.kind==='mixed'?'con canciones externas':'Playlist'} · {p.songCount || 0} {p.songCount === 1 ? 'cancion' : 'canciones'}</small></span></button>
+          <button class="more" aria-label={`Opciones de ${p.name}`} on:click={e => openDots(e, p)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button></li>
       {/each}
       {#if !playlistFilter}
         <li><button class="list" on:click={openCreateMixed}>
@@ -213,11 +231,12 @@
       {/if}
     </ul>
     {#if !sortedPlaylists.length}
-      <p class="none">{playlistFilter?`Ninguna playlist coincide con «${playlistFilter}».`:'Todavía no tienes playlists. Crea una o importa una lista.'}</p>
+      <p class="none">{playlistFilter?`Ninguna playlist coincide con «${playlistFilter}».`:'Todavia no tienes playlists. Crea una o importa una lista.'}</p>
     {/if}
   {:else if top.type === 'mixed'}
     {#key top.id}<MixedPlaylists initialId={top.id||null} />{/key}
   {:else if top.type === 'playlist'}
+    {#if detailCover?.startsWith('armonia-art-')}<img src={coverArtUrl(detailCover,256)} alt={`Portada de ${top.label}`} width="96" height="96">{/if}
     <div class="flex justify-end mb-2">
       <button on:click={() => openSongPicker(top.id, top.label)}
         class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-medium rounded-xl transition-colors">
@@ -225,7 +244,7 @@
       </button>
     </div>
     {#if !songs.length}
-      <p class="text-center py-12 text-armonia-muted">Esta playlist no tiene canciones todavía.</p>
+      <p class="text-center py-12 text-armonia-muted">Esta playlist no tiene canciones todavia.</p>
     {:else}
       <details class="mb-4"><summary>Reordenar canciones</summary>{#each songs as song,i}<div class="flex items-center gap-3 p-2"><span class="flex-1 truncate">{i+1}. {song.title}</span><button aria-label={`Subir ${song.title}`} disabled={i===0} on:click={()=>moveSong(i,-1)}>↑</button><button aria-label={`Bajar ${song.title}`} disabled={i===songs.length-1} on:click={()=>moveSong(i,1)}>↓</button></div>{/each}</details>
       <TrackList {songs} playlistName={top.label} playlistId={top.id} onRefresh={() => loadPlaylist(top.id)} />
@@ -270,7 +289,7 @@
 <!-- Import playlist: a full screen on a phone, as in the app; a window on wider screens -->
 <dialog bind:this={importDialogEl} on:close={() => { importOpen = false; stopPreview(); }} class="import-dialog" aria-labelledby="import-title">
   <header class="import-bar">
-    <button class="import-back" aria-label="Volver; la importación sigue en segundo plano" title="Volver" on:click={hideImport}><i aria-hidden="true" class="ph ph-arrow-left"></i></button>
+    <button class="import-back" aria-label="Volver; la importacion sigue en segundo plano" title="Volver" on:click={hideImport}><i aria-hidden="true" class="ph ph-arrow-left"></i></button>
     <h2 id="import-title">Importar playlist</h2>
   </header>
   <div class="import-body">

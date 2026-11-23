@@ -65,11 +65,11 @@
   {#if loading}<p role="status">Cargando playlists…</p>{:else}
     <p class="text-sm my-3">{tracks.length} canciones · {selected.size} playlists seleccionadas. Las canciones ya incluidas se conservan.</p>
     <input aria-label="Filtrar playlists" bind:value={filter} placeholder="Buscar playlist" class="w-full bg-black/20 p-3 rounded-lg">
-    <label>Ordenar <select bind:value={sort}><option value="name">Nombre</option><option value="count">Número de canciones</option></select></label>
+    <label>Ordenar <select bind:value={sort}><option value="name">Nombre</option><option value="count">Numero de canciones</option></select></label>
     <div class="max-h-72 overflow-auto my-3">
       {#each visible as p (key(p))}<label class="picker-row">
         {#if p.coverArt}<img src={coverArtUrl(p.coverArt,96)} alt="" loading="lazy">{:else}<span class="cover" aria-hidden="true">♫</span>{/if}
-        <span class="name">{p.name}<small>{p.songCount??p.item_count??p.items?.length??0} canciones · {membership[key(p)]==='included'?'Ya incluida':membership[key(p)]==='unknown'?'Se comprobará al guardar':p.kind==='mixed'?'Admite fuentes externas':'Biblioteca'}</small></span>
+        <span class="name">{p.name}<small>{p.songCount??p.item_count??p.items?.length??0} canciones · {membership[key(p)]==='included'?'Ya incluida':membership[key(p)]==='unknown'?'Se comprobara al guardar':p.kind==='mixed'?'Admite fuentes externas':'Biblioteca'}</small></span>
         <input type="checkbox" checked={selected.has(key(p))||membership[key(p)]==='included'} disabled={busy||membership[key(p)]==='included'||(external&&p.kind==='local')} on:change={()=>toggle(p)} aria-label={`Seleccionar ${p.name}`}>
       </label>{/each}
       {#if !visible.length}<p>No hay playlists con ese nombre.</p>{/if}

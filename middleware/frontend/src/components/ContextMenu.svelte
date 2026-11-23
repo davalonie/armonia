@@ -20,7 +20,7 @@
 </script>
 
 {#if $contextMenuState.visible}
-  <button class="scrim" aria-label="Cerrar menú" tabindex="-1" on:click={closeContextMenu}></button>
+  <button class="scrim" aria-label="Cerrar menu" tabindex="-1" on:click={closeContextMenu}></button>
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
     bind:this={menu} role="menu" aria-label={$contextMenuState.header?`Acciones de ${$contextMenuState.header.title}`:'Acciones'} tabindex="-1"
@@ -41,12 +41,12 @@
       {#if item === null}
         <div class="border-t border-white/5 my-1"></div>
       {:else if item.type==='rating'}
-        <div class="rating" role="group" aria-label="Valoración">
-          <i aria-hidden="true" class="ph ph-star text-base shrink-0"></i><span class="label">Valoración</span>
+        <div class="rating" role="group" aria-label="Valoracion">
+          <i aria-hidden="true" class="ph ph-star text-base shrink-0"></i><span class="label">Valoracion</span>
           <span class="stars">
             {#each [1,2,3,4,5] as n}
               <button class="star" class:on={n<=item.value} aria-pressed={n===item.value}
-                aria-label={n===item.value?`Quitar valoración de ${n} estrellas`:`Valorar con ${n} ${n===1?'estrella':'estrellas'}`}
+                aria-label={n===item.value?`Quitar valoracion de ${n} estrellas`:`Valorar con ${n} ${n===1?'estrella':'estrellas'}`}
                 on:click={()=>rate(item,n)}><i aria-hidden="true" class="{n<=item.value?'ph-fill':'ph'} ph-star"></i></button>
             {/each}
           </span>

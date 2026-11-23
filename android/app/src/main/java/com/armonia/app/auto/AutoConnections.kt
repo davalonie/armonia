@@ -1,6 +1,6 @@
 package com.armonia.app.auto
 
-/** One time another app connected to Armonía's media service. */
+/** One time another app connected to Armonia's media service. */
 data class ConnectionEntry(val timeMillis: Long, val packageName: String, val event: String)
 
 /** Human name for the apps that typically connect to a media service. */

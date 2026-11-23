@@ -85,7 +85,7 @@ fun ListeningScreen(open: (String) -> Unit, vm: ListeningViewModel = hiltViewMod
             val result = runCatching { vm.search.search(com.armonia.app.data.api.SearchRequest(name)).body() }.getOrNull()
             val match = result?.artists.orEmpty().singleOrNull { it.name.equals(name, ignoreCase = true) }
             if (match != null) open("ytartist/${android.net.Uri.encode(match.channelId)}")
-            else artistError = "No se ha encontrado la página de $name"
+            else artistError = "No se ha encontrado la pagina de $name"
         }
     }
     val problem by vm.outbox.persistenceProblem.collectAsState()
@@ -98,7 +98,7 @@ fun ListeningScreen(open: (String) -> Unit, vm: ListeningViewModel = hiltViewMod
     val snapshot = data
     LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { Text("Historial y estadísticas", style = MaterialTheme.typography.headlineMedium) }
+        item { Text("Historial y estadisticas", style = MaterialTheme.typography.headlineMedium) }
         artistError?.let { item { Text(it) } }
         problem?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         item {
@@ -109,9 +109,9 @@ fun ListeningScreen(open: (String) -> Unit, vm: ListeningViewModel = hiltViewMod
             }
         }
         when {
-            failed -> item { TextButton(onClick = { retry++ }) { Text("Reintentar carga de estadísticas") } }
+            failed -> item { TextButton(onClick = { retry++ }) { Text("Reintentar carga de estadisticas") } }
             snapshot == null -> item { LinearProgressIndicator() }
-            snapshot.count == 0 -> item { Text("Todavía no hay escuchas en este periodo") }
+            snapshot.count == 0 -> item { Text("Todavia no hay escuchas en este periodo") }
             else -> {
                 item {
                     Column(Modifier.fillMaxWidth().background(Color(0xff4b298c), RoundedCornerShape(16.dp)).padding(18.dp)) {
@@ -140,7 +140,7 @@ fun ListeningScreen(open: (String) -> Unit, vm: ListeningViewModel = hiltViewMod
                     }
                 } }
                 item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("Artistas", "Canciones", "Álbumes").forEach {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("Artistas", "Canciones", "Albumes").forEach {
                         FilterChip(kind == it, { kind = it }, { Text(it) })
                     } }
                 }

@@ -27,7 +27,7 @@ from yt_dlp import YoutubeDL
 
 from config import MUSIC_DIR, YTDLP_COOKIES_FILE
 from homelab import operations, publications
-from services import import_metrics, safe_files, tagger_service
+from services import import_metrics, recording_album, safe_files, tagger_service
 
 
 def describe_error(exc: Exception) -> str:
@@ -449,8 +449,8 @@ def get_stream_info(video_id: str) -> tuple[str, dict]:
 
 def _download_staged(video_id: str, artist: str, title: str, source: str = "youtube",
              cancel_check: Callable[[], bool] | None = None,
-             music_dir: str | None = None) -> str:
-    """Download bestaudio in its native container. Returns the absolute file path.
+             music_dir: str | None = None) -> tuple[str, dict]:
+    """Download bestaudio and retain the recording metadata returned for that exact video.
 
     `music_dir` overrides the default MUSIC_DIR — used to route a user's
     download into their own Navidrome library path.
@@ -529,9 +529,8 @@ def _download_staged(video_id: str, artist: str, title: str, source: str = "yout
             raise RuntimeError("yt-dlp returned no info")
 
         requested = info.get("requested_downloads") or []
-        if requested and requested[0].get("filepath"):
-            return requested[0]["filepath"]
-        return ydl.prepare_filename(info)
+        path = requested[0].get("filepath") if requested else None
+        return path or ydl.prepare_filename(info), info if info.get("id") == video_id else {}
 
 
 def download(video_id: str, artist: str, title: str, source: str = "youtube",
@@ -547,7 +546,8 @@ def download(video_id: str, artist: str, title: str, source: str = "youtube",
         pass
     # yt-dlp, ffmpeg and mutagen operate only in this private temporary directory.
     with tempfile.TemporaryDirectory(prefix="music-import-") as staging:
-        path = Path(_download_staged(video_id, artist, title, source, cancel_check, staging))
+        filename, metadata = _download_staged(video_id, artist, title, source, cancel_check, staging)
+        path = Path(filename)
         safe_files.relative_file(Path(staging), str(path))
         if path.is_symlink() or not path.is_file() or path.suffix.lower() not in tagger_service.AUDIO_EXTENSIONS:
             raise ValueError("invalid downloaded file")
@@ -556,7 +556,24 @@ def download(video_id: str, artist: str, title: str, source: str = "youtube",
         if size > 96 * 1024**2 or shutil.disk_usage(root).free < reserve + size:
             raise ValueError("library storage limit reached")
         with import_metrics.measure("processing"):
-            tagger_service.tag(str(path), artist, title, album.strip() or "Singles", artists, album_artist, details)
+            release = album.strip()
+            if not release or release == tagger_service.DEFAULT_ALBUM:
+                release = metadata.get("album") or tagger_service.DEFAULT_ALBUM
+            if (source == "youtube_music" and os.environ.get("MUSIC_METADATA_PROXY_ENABLED") == "true"
+                    and (not album.strip() or album.strip() in {tagger_service.DEFAULT_ALBUM, metadata.get("album")})
+                    and recording_album.single_title(release, title)):
+                import httpx
+                try:
+                    edition = recording_album.lookup(title, artist, metadata.get("duration"))
+                except (httpx.HTTPError, ValueError):
+                    edition = None
+                if edition:
+                    release = edition["album"]
+                    album_artist = edition["album_artist"]
+                    details = {**(details or {}), **{k: edition[k] for k in ("track", "disc", "date") if edition[k]}}
+            credits = artists or tagger_service.clean_artists(metadata.get("artists"))
+            tagger_service.tag(str(path), artist, title, release, credits,
+                               album_artist or metadata.get("album_artist"), details)
         if cancel_check and cancel_check():
             raise DownloadCancelled("cancelled by user")
         if before_publish:

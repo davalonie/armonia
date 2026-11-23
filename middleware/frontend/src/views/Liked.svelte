@@ -11,7 +11,7 @@
   ];
   const SORT_TOGGLES = [
     { keys: ['title-asc', 'title-desc'],       labels: ['A → Z', 'Z → A'] },
-    { keys: ['duration-asc', 'duration-desc'], labels: ['Más cortas', 'Más largas'] },
+    { keys: ['duration-asc', 'duration-desc'], labels: ['Mas cortas', 'Mas largas'] },
   ];
 
   let songs = [];

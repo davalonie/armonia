@@ -2,7 +2,7 @@
 // and order, one per item, in the order shown.
 const MONTHS = 'ene feb mar abr may jun jul ago sep oct nov dic'.split(' ');
 
-/** Initial without accent (Á → A); «Ñ» keeps its own letter; numbers and symbols → «#». */
+/** Initial without accent (A → A); «Ñ» keeps its own letter; numbers and symbols → «#». */
 export function scrollInitial(value) {
   const initial = String(value || '').trimStart().charAt(0).toLocaleUpperCase('es');
   if (initial === 'Ñ') return initial;

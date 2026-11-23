@@ -32,12 +32,12 @@ class MainActivity : ComponentActivity() {
     lateinit var warmer: com.armonia.app.playback.ConnectionWarmer
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Armonía is always dark: ask for light icons on both system bars instead of following the
+        // Armonia is always dark: ask for light icons on both system bars instead of following the
         // phone's theme, which left the clock and battery dark-on-dark on a phone in light mode.
         val bars = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
         super.onCreate(savedInstanceState)
-        // While Armonía is on screen, keep the connection to the server ready for the next tap.
+        // While Armonia is on screen, keep the connection to the server ready for the next tap.
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { warmer.keepWarm() } }
         setContent {
             ArmoniaTheme {

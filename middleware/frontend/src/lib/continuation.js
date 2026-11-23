@@ -1,4 +1,4 @@
-// «Continuar con música similar»: one small batch asked ahead of the end of the queue.
+// «Continuar con musica similar»: one small batch asked ahead of the end of the queue.
 // Pure of the player so the races are testable: every change of context bumps the epoch
 // and a batch asked under an older epoch is never handed out.
 export function createContinuation(fetchBatch){

@@ -496,7 +496,7 @@ async def decide(import_id: str, body: Decision, bg: BackgroundTasks, sess: dict
                     # Not a rereadable link (an archive or sign-in import): explain, never a 500.
                     raise HTTPException(400, str(e)) from e
             elif job.source_info.get("metadata_source") == "file":
-                raise HTTPException(409, "este trabajo se importó desde un archivo; vuelve a aportarlo para completarlo")
+                raise HTTPException(409, "este trabajo se importo desde un archivo; vuelve a aportarlo para completarlo")
             else:
                 try:
                     playlist = await spotify_client.fetch_playlist(job.source_url)
@@ -520,7 +520,7 @@ async def decide(import_id: str, body: Decision, bg: BackgroundTasks, sess: dict
                     same = (previous['source_id'] == new['source_id'] if previous.get('source_id') and new.get('source_id')
                             else _same_song(previous, new))
                     if not same:
-                        raise HTTPException(409, "el archivo no corresponde a esta importación; playlist conservada")
+                        raise HTTPException(409, "el archivo no corresponde a esta importacion; playlist conservada")
                     continue
                 if any(previous.get(k) != new.get(k) for k in ('title', 'artist', 'duration')) or (
                     previous.get('source_id') and previous.get('source_id') != new.get('source_id')
@@ -714,7 +714,8 @@ async def _run_import(import_id, tracks, username, salt, token, library_path, li
         "library_id": library_id,
         "import_cancel_check": lambda: job.cancelled,
     }
-    sem = asyncio.Semaphore(IMPORT_CONCURRENCY)
+    search_slots = asyncio.Semaphore(IMPORT_CONCURRENCY)
+    download_slots = asyncio.Semaphore(IMPORT_CONCURRENCY)
 
     def active():
         db.require_active_session(sess)
@@ -724,18 +725,18 @@ async def _run_import(import_id, tracks, username, salt, token, library_path, li
     async def handle(item):
         if item["state"] in {"ready", "review", "not_found", "search_failed", "download_failed", "skipped", "source_unavailable"}:
             return
-        async with sem:
-            track = item["selected"] if item.get("decision") == "confirmed" and item.get("selected") else item["track"]
-            artist, title = track["artist"], track["title"]
+        track = item["selected"] if item.get("decision") == "confirmed" and item.get("selected") else item["track"]
+        artist, title = track["artist"], track["title"]
 
-            def metric(name, seconds):
-                with _lock:
-                    item["stage"] = name
-                    item["timings"][name] = round(item["timings"].get(name, 0) + seconds, 6)
-                    job.timings[name] = round(job.timings.get(name, 0) + seconds, 6)
+        def metric(name, seconds):
+            with _lock:
+                item["stage"] = name
+                item["timings"][name] = round(item["timings"].get(name, 0) + seconds, 6)
+                job.timings[name] = round(job.timings.get(name, 0) + seconds, 6)
 
-            metric_token = import_metrics.sink.set(metric)
-            try:
+        metric_token = import_metrics.sink.set(metric)
+        try:
+            async with search_slots:
                 active()
                 with stage(job, item, "library_lookup"):
                     existing = await navidrome_client.find_song_id(artist, title, username, salt, token, track)
@@ -768,38 +769,40 @@ async def _run_import(import_id, tracks, username, salt, token, library_path, li
                             "search_failed" if ranked['provider_errors'] else "not_found")
                         item['reason'] = 'ambiguous' if ranked['candidates'] else ('provider_unavailable' if ranked['provider_errors'] else 'not_found')
                         return
-                active()
-                selected = item["selected"]
-                sources.allowed("youtube", selected["source_id"], "persist")
-                item["state"] = "downloading"
-                save(job)  # durable selected recording before any audio publication
+            active()
+            selected = item["selected"]
+            sources.allowed("youtube", selected["source_id"], "persist")
+            item["state"] = "downloading"
+            save(job)  # durable selected recording before any audio publication
 
+            async with download_slots:
+                active()
                 with stage(job, item, "audio_total"):
                     await _download_with_retry(
-                        selected["source_id"], artist, title, library_path, sess, track.get("album") or "Singles",
+                        selected["source_id"], artist, title, library_path, sess, track.get("album") or selected.get("album") or "Singles",
                         artists=track.get("artists"), album_artist=track.get("album_artist"),
                         details=track.get("details"),
                     )
-                item.update(state="indexing", outcome="downloaded")
-            except ytdlp_service.DownloadCancelled:
+            item.update(state="indexing", outcome="downloaded")
+        except ytdlp_service.DownloadCancelled:
+            job.cancelled = True
+        except HTTPException as exc:
+            if exc.status_code in (401, 403):
                 job.cancelled = True
-            except HTTPException as exc:
-                if exc.status_code in (401, 403):
-                    job.cancelled = True
-                if exc.status_code == 409 and "recording already saved" in str(exc.detail):
-                    item.update(state="indexing", outcome="downloaded")
-                    return
-                item["state"] = "download_failed"
-                item["reason"] = "permission" if exc.status_code in (401, 403) else "service_unavailable"
-            except Exception:
-                item["state"] = "search_failed" if item["state"] == "searching" else "download_failed"
-                item["reason"] = "provider_unavailable"
-                log.warning("import %s: stage unavailable", import_id)
-            finally:
-                if item["state"] in {"download_failed", "search_failed", "not_found", "review"} and item.get("decision") == "confirmed":
-                    item["review_order"] = job.revision + 1
-                import_metrics.sink.reset(metric_token)
-                save(job, progress=True)
+            if exc.status_code == 409 and "recording already saved" in str(exc.detail):
+                item.update(state="indexing", outcome="downloaded")
+                return
+            item["state"] = "download_failed"
+            item["reason"] = "permission" if exc.status_code in (401, 403) else "service_unavailable"
+        except Exception:
+            item["state"] = "search_failed" if item["state"] == "searching" else "download_failed"
+            item["reason"] = "provider_unavailable"
+            log.warning("import %s: stage unavailable", import_id)
+        finally:
+            if item["state"] in {"download_failed", "search_failed", "not_found", "review"} and item.get("decision") == "confirmed":
+                item["review_order"] = job.revision + 1
+            import_metrics.sink.reset(metric_token)
+            save(job, progress=True)
 
     started = time.perf_counter()
     try:
@@ -820,7 +823,7 @@ async def _run_import(import_id, tracks, username, salt, token, library_path, li
                     with stage(job, None, "indexing"):
                         await navidrome_client.trigger_scan_and_wait(username, salt, token)
                         async def finish_index(item):
-                            async with sem:
+                            async with search_slots:
                                 active()
                                 recording = (item["selected"] if item.get("decision") == "confirmed"
                                              and item.get("selected") else item["track"])

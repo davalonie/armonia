@@ -128,7 +128,7 @@ fun YtArtistScreen(
 
                         // Albums
                         if (artist.albums.isNotEmpty()) {
-                            item { SectionHeader("Álbumes") }
+                            item { SectionHeader("Albumes") }
                             item { ReleaseShelf(artist.albums, onAlbumClick) }
                         }
 
@@ -159,8 +159,8 @@ fun YtArtistScreen(
     viewModel.duplicateWarning?.let { w ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissDuplicateWarning() },
-            title = { Text("Ya está en la biblioteca") },
-            text = { Text("«${w.title}» de ${w.artist} podría estar ya en tu biblioteca. ¿Descargarla de todos modos?") },
+            title = { Text("Ya esta en la biblioteca") },
+            text = { Text("«${w.title}» de ${w.artist} podria estar ya en tu biblioteca. ¿Descargarla de todos modos?") },
             confirmButton = {
                 TextButton(onClick = { viewModel.forceDownload() }) { Text("Descargar igualmente") }
             },
@@ -292,7 +292,7 @@ internal fun DownloadButton(state: YtDownloadState?, onDownload: () -> Unit) {
             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp),
         )
         YtDownloadState.DUPLICATE -> Icon(
-            Icons.Default.LibraryMusic, "Ya está en la biblioteca",
+            Icons.Default.LibraryMusic, "Ya esta en la biblioteca",
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
             modifier = Modifier.size(24.dp),
         )

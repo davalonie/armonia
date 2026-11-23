@@ -134,7 +134,7 @@ def find_file_by_tags(
 ) -> Path | None:
     """Find the audio file in `folders` (and up to `max_depth` levels below) whose
     tags match `title` (and `artist`, when the file has one). Used when a track's
-    file doesn't follow Armonía's "Artist - Title" naming, e.g. music added by hand."""
+    file doesn't follow Armonia's "Artist - Title" naming, e.g. music added by hand."""
     want_title, want_artist = norm(title), norm(artist)
     if not want_title:
         return None

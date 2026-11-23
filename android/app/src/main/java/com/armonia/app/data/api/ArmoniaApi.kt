@@ -28,6 +28,7 @@ data class UserResponse(
 
 data class SearchRequest(
     val query: String,
+    val scope: String = "all",
     val limit: Int = 10,
     val source: String = "youtube_music",
 )

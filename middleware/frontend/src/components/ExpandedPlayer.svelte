@@ -49,7 +49,7 @@
       }]),
     ]});
   }
-  const repeatLabels = {off: 'Repetición desactivada', all: 'Repetir la cola', one: 'Repetir esta canción'};
+  const repeatLabels = {off: 'Repeticion desactivada', all: 'Repetir la cola', one: 'Repetir esta cancion'};
 </script>
 
 <div
@@ -80,11 +80,11 @@
         <i class="ph ph-caret-down text-2xl"></i>
       </button>
       <p class="flex flex-col items-center min-w-0 px-2 text-center" aria-live="polite">
-        <span class="text-[11px] tracking-widest text-white/70 uppercase">{track?._auto ? 'Continuación automática' : track?._from ? 'Reproduciendo desde' : 'Reproduciendo'}</span>
-        {#if track?._auto || track?._from}<span class="text-sm font-semibold truncate max-w-[60vw]">{track._auto ? 'Música similar' : track._from}</span>{/if}
+        <span class="text-[11px] tracking-widest text-white/70 uppercase">{track?._auto ? 'Continuacion automatica' : track?._from ? 'Reproduciendo desde' : 'Reproduciendo'}</span>
+        {#if track?._auto || track?._from}<span class="text-sm font-semibold truncate max-w-[60vw]">{track._auto ? 'Musica similar' : track._from}</span>{/if}
       </p>
       <button
-        aria-label="Opciones de la canción"
+        aria-label="Opciones de la cancion"
         bind:this={dotsBtn}
         on:click={openDots}
         class="w-10 h-10 flex items-center justify-center text-armonia-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
@@ -107,7 +107,7 @@
         <div class="mt-1">
           <Marquee text={track?.artist ?? '—'} cls="text-white/70 text-lg" />
         </div>
-        {#if $playbackState === 'error'}<p class="text-sm text-red-300 mt-1" role="alert">No se puede reproducir esta canción. Puedes pasar a la siguiente.</p>{/if}
+        {#if $playbackState === 'error'}<p class="text-sm text-red-300 mt-1" role="alert">No se puede reproducir esta cancion. Puedes pasar a la siguiente.</p>{/if}
       </div>
       <SaveButton {track} size="lg" />
     </div>
@@ -135,13 +135,13 @@
     <!-- Controls -->
     <div class="flex items-center justify-between shrink-0 mt-5 mb-4">
       <button
-        aria-label="Reproducción aleatoria" aria-pressed={$shuffleOn}
+        aria-label="Reproduccion aleatoria" aria-pressed={$shuffleOn}
         on:click={toggleShuffle}
         class="w-11 h-11 flex items-center justify-center transition-colors rounded-full hover:bg-white/10 {$shuffleOn ? 'text-armonia-accent' : 'text-armonia-muted hover:text-white'}"
       >
         <i class="ph ph-shuffle text-2xl"></i>
       </button>
-      <button aria-label="Canción anterior" on:click={prev} class="w-11 h-11 flex items-center justify-center text-armonia-muted hover:text-white transition-colors">
+      <button aria-label="Cancion anterior" on:click={prev} class="w-11 h-11 flex items-center justify-center text-armonia-muted hover:text-white transition-colors">
         <i class="ph-fill ph-skip-back text-3xl"></i>
       </button>
       <button
@@ -152,7 +152,7 @@
         {#if $playbackState === 'loading'}<i class="ph ph-circle-notch text-3xl animate-spin" aria-label="Cargando"></i>
         {:else}<i class="ph-fill {$playing ? 'ph-pause' : 'ph-play'} text-3xl"></i>{/if}
       </button>
-      <button aria-label="Canción siguiente" on:click={next} class="w-11 h-11 flex items-center justify-center text-armonia-muted hover:text-white transition-colors">
+      <button aria-label="Cancion siguiente" on:click={next} class="w-11 h-11 flex items-center justify-center text-armonia-muted hover:text-white transition-colors">
         <i class="ph-fill ph-skip-forward text-3xl"></i>
       </button>
       <button

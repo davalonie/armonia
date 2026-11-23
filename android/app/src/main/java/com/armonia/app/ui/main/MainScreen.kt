@@ -74,7 +74,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Favorites : Screen("favorites", "Favoritos", Icons.Default.Favorite)
     object Artists : Screen("artists", "Artistas", Icons.Default.Person)
     object Settings : Screen("settings", "Ajustes", Icons.Default.Settings)
-    object Offline : Screen("offline", "Música sin conexión", Icons.Default.CloudOff)
+    object Offline : Screen("offline", "Musica sin conexion", Icons.Default.CloudOff)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,7 +85,7 @@ fun MainScreen(
     val navController = rememberNavController()
     var libraryTab by rememberSaveable { mutableStateOf("Playlists") }
     fun openOfflineLibrary() {
-        libraryTab = "En el teléfono"
+        libraryTab = "En el telefono"
         navController.navigate(Screen.Library.route) { launchSingleTop = true }
     }
     var searchSeed by remember { mutableStateOf("") }
@@ -136,7 +136,7 @@ fun MainScreen(
         viewModel.musicPlayer.queued.collectLatest { queued ->
             val result = snackbarHostState.showSnackbar(
                 message = when {
-                    queued.next -> "«${queued.song.title}» sonará a continuación"
+                    queued.next -> "«${queued.song.title}» sonara a continuacion"
                     queued.atEnd -> "«${queued.song.title}» añadida al final de la cola"
                     else -> "«${queued.song.title}» añadida a la cola"
                 },
@@ -151,7 +151,7 @@ fun MainScreen(
         viewModel.downloadTracker.events.collect { event ->
             when (event) {
                 is com.armonia.app.data.repository.DownloadEvent.Added ->
-                    snackbarHostState.showSnackbar("«${event.title}» ya está en tu biblioteca")
+                    snackbarHostState.showSnackbar("«${event.title}» ya esta en tu biblioteca")
                 is com.armonia.app.data.repository.DownloadEvent.Failed ->
                     snackbarHostState.showSnackbar("No se pudo descargar «${event.title}»: ${event.reason}", duration = SnackbarDuration.Long)
             }
@@ -198,7 +198,7 @@ fun MainScreen(
                         }
                         NavigationBarItem(
                             icon = { Icon(Icons.Default.MoreHoriz, contentDescription = null) },
-                            label = { Text("Más", fontSize = 10.sp) },
+                            label = { Text("Mas", fontSize = 10.sp) },
                             selected = currentDestination?.hierarchy?.any {
                                 it.route == Screen.Downloads.route ||
                                 it.route in listOf("manual-inbox", "listening") ||
@@ -401,12 +401,12 @@ private fun MoreSheet(
     ) {
         Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
             Text(
-                text = "Más",
+                text = "Mas",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
             MoreSection("Tu actividad")
-            MoreRow(label = "Historial y estadísticas", icon = Icons.Default.BarChart, onClick = { onNavigate("listening") })
+            MoreRow(label = "Historial y estadisticas", icon = Icons.Default.BarChart, onClick = { onNavigate("listening") })
             MoreRow(label = "Pendientes de añadir", icon = Icons.Default.Add, onClick = { onNavigate("manual-inbox") })
             if (failures > 0) MoreRow(
                 label = if (failures == 1) "1 descarga ha fallado" else "$failures descargas han fallado",
@@ -443,18 +443,18 @@ private fun LibraryHome(tab: String, select: (String) -> Unit, onNavigate: (Stri
             AssistChip(onClick = { onNavigate("imports") }, label = { Text("Importar playlist") })
         }
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Playlists", "Álbumes", "Artistas", "Canciones", "En el teléfono").forEach {
+            listOf("Playlists", "Albumes", "Artistas", "Canciones", "En el telefono").forEach {
                 FilterChip(selected = tab == it, onClick = { select(it) }, label = { Text(it) })
             }
         }
         when (tab) {
             "Playlists" -> PlaylistsScreen(onPlaylistClick = { onNavigate("playlist/$it") },
                 onFavorites = { onNavigate("favorites") }, onMixed = { onNavigate("mixed/$it") }, viewModel = playlists)
-            "Álbumes" -> com.armonia.app.ui.library.AlbumsScreen({ onNavigate("album/$it") }, {}, embedded = true)
+            "Albumes" -> com.armonia.app.ui.library.AlbumsScreen({ onNavigate("album/$it") }, {}, embedded = true)
             "Artistas" -> ArtistsScreen({ onNavigate("artist/${it.id}") }, embedded = true)
-            "Canciones" -> LibraryScreen(embedded = true, onSongClick = {}, onOpenOffline = { select("En el teléfono") },
+            "Canciones" -> LibraryScreen(embedded = true, onSongClick = {}, onOpenOffline = { select("En el telefono") },
                 onArtistClick = { onNavigate("ytartist/$it") })
-            "En el teléfono" -> OfflineScreen(embedded = true)
+            "En el telefono" -> OfflineScreen(embedded = true)
         }
     }
     if (create) com.armonia.app.ui.playlists.NameDialog(title = "Nueva playlist", confirmLabel = "Crear",

@@ -1,4 +1,4 @@
-// Formats of «Historial y estadísticas», the same as the app's ListeningScreen.
+// Formats of «Historial y estadisticas», the same as the app's ListeningScreen.
 
 /** «45 min» or «3 h 12 min». */
 export function listenTime(seconds) {

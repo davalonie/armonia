@@ -15,6 +15,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ArtistDetailViewModel @Inject constructor(
     private val repository: LibraryRepository,
+    private val player: com.armonia.app.playback.MusicPlayer,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -41,6 +42,8 @@ class ArtistDetailViewModel @Inject constructor(
             isLoading = false
         }
     }
+
+    fun play(index: Int) = player.playQueue(artist?.song.orEmpty(), index)
 
     fun getCoverUrl(id: String, size: Int = 300): String =
         repository.getCoverArtUrl(id, size)

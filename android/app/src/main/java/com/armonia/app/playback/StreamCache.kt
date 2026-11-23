@@ -6,6 +6,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cache.Cache
+import androidx.media3.datasource.cache.CacheSpan
+import androidx.media3.datasource.cache.CacheEvictor
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
@@ -13,6 +16,9 @@ import com.armonia.app.data.repository.PreferencesRepository
 import com.armonia.app.offline.OfflineManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -32,13 +38,26 @@ class StreamCache @Inject constructor(
     private val prefs: PreferencesRepository,
     private val offline: OfflineManager,
 ) {
+    private val changes = MutableStateFlow(0L)
+    val inventoryChanges = changes.asStateFlow()
     private val dir = File(context.cacheDir, "media")
 
     // The size limit is read once when the cache is first opened, so a new limit
     // picked in Settings applies the next time the app starts.
     private val cache: SimpleCache by lazy {
         val maxBytes = runBlocking { prefs.cacheMaxMb.first() } * 1024L * 1024L
-        SimpleCache(dir, LeastRecentlyUsedCacheEvictor(maxBytes), offline.databaseProvider)
+        val lru = LeastRecentlyUsedCacheEvictor(maxBytes)
+        val listener = object : CacheEvictor by lru {
+            override fun onSpanAdded(cache: Cache, span: CacheSpan) {
+                lru.onSpanAdded(cache, span)
+                changes.update { it + 1 }
+            }
+            override fun onSpanRemoved(cache: Cache, span: CacheSpan) {
+                lru.onSpanRemoved(cache, span)
+                changes.update { it + 1 }
+            }
+        }
+        SimpleCache(dir, listener, offline.databaseProvider)
     }
 
     private val http by lazy { com.armonia.app.security.AuthenticatedMedia.factory(prefs) }
@@ -46,6 +65,9 @@ class StreamCache @Inject constructor(
     private val chooser = VariantChooser(
         keptFromStart = { key -> cache.getCachedLength(key, 0, C.LENGTH_UNSET.toLong()).coerceAtLeast(0) },
         lowWanted = { DataSaving.wanted() },
+        offlineCopy = { base ->
+            if (PathRate.currentNetwork() == null) Variant.entries.firstOrNull { complete(it.key(base)) } else null
+        },
     )
 
     /** Songs from the server, each under the key of the variant chosen for it (see Variants.kt). */
@@ -126,9 +148,22 @@ class StreamCache @Inject constructor(
         val base = StreamCacheKeys.keyFor(uri, prefs.accountNamespace)
         return Variant.entries.any { variant ->
             val key = variant.key(base)
-            val length = androidx.media3.datasource.cache.ContentMetadata.getContentLength(cache.getContentMetadata(key))
-            length > 0 && cache.getCachedBytes(key, 0, length) == length
+            complete(key)
         }
+    }
+
+    private fun complete(key: String): Boolean {
+        val length = androidx.media3.datasource.cache.ContentMetadata.getContentLength(cache.getContentMetadata(key))
+        return length > 0 && cache.isCached(key, 0, length)
+    }
+
+    suspend fun completeLibraryIds(account: String): Set<String> = withContext(Dispatchers.IO) {
+        val prefix = account + ":" + prefs.cachedAuth.serverUrl.trimEnd('/') + "/api/stream/"
+        cache.keys.mapNotNull { key ->
+            if (!key.startsWith(prefix) || Variant.ofKey(key) == null) return@mapNotNull null
+            if (!complete(key)) return@mapNotNull null
+            android.net.Uri.decode(key.removePrefix(prefix).substringBeforeLast('#'))
+        }.toSet()
     }
 
     suspend fun usedBytes(): Long = withContext(Dispatchers.IO) { cache.cacheSpace }

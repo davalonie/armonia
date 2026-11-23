@@ -55,9 +55,9 @@ fun CollectionControls(
             enabled = songs > 0 || isPinnedOffline,
             modifier = Modifier.offset(x = (-12).dp).semantics {
                 contentDescription = when {
-                    downloading -> "Descargando en el teléfono. Toca para cancelar y quitar la descarga"
-                    isPinnedOffline -> "Descargada en este teléfono. Toca para quitar la descarga"
-                    else -> "Descargar en este teléfono para escucharla sin conexión"
+                    downloading -> "Descargando en el telefono. Toca para cancelar y quitar la descarga"
+                    isPinnedOffline -> "Descargada en este telefono. Toca para quitar la descarga"
+                    else -> "Descargar en este telefono para escucharla sin conexion"
                 }
             },
         ) {

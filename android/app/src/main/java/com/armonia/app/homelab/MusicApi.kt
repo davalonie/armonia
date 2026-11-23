@@ -33,15 +33,15 @@ fun Song.asMusicTrack(): MusicTrack = musicTrack ?: MusicTrack(
 )
 private fun validMbid(value:String)=value.matches(Regex("[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}"))
 data class MixedItem(val id: String, val track: MusicTrack)
-data class MixedPlaylist(val id: String?=null, val name: String, val revision: Int=0, val items: List<MixedItem> = emptyList())
+data class MixedPlaylist(val id: String?=null, val name: String, val revision: Int=0, val items: List<MixedItem> = emptyList(), val coverArt: String? = null)
 data class PlaylistBody(val name:String,val revision:Int,val items:List<MixedItem>)
-data class MixedSummary(val id:String, val name:String, val revision:Int, @SerializedName("item_count") val itemCount:Int)
+data class MixedSummary(val id:String, val name:String, val revision:Int, @SerializedName("item_count") val itemCount:Int, val coverArt:String? = null)
 data class MixedLists(val playlists:List<MixedSummary>)
 data class SourceList(val tracks:List<MusicTrack>)
 data class DiscoverySeed(val name:String,val mbid:String?,val status:String?,val reason:String?) {
     fun explanation():String = when(reason) {
         "recording_metadata" -> "Identificado por los metadatos de tus grabaciones"
-        "name_and_recording" -> "Nombre y canción contrastados en MusicBrainz"
+        "name_and_recording" -> "Nombre y cancion contrastados en MusicBrainz"
         "multiple_artists" -> "Hay varios artistas con ese nombre"
         "conflicting_ids" -> "Identificadores contradictorios"
         "metadata_unavailable" -> "Proveedor de metadatos no disponible"
@@ -78,7 +78,7 @@ data class HomeArtists(val artists:List<HomeArtist>)
 data class HomeRefresh(val status:HomeStatus)
 data class PlaybackSettings(@SerializedName("continue_similar") val continueSimilar:Boolean=true)
 data class SavingRequest(val ids:List<String>)
-data class ContinueRequest(val artists:List<String>,val exclude:List<String>)
+data class ContinueRequest(val artists:List<String>,val exclude:List<String>, val videoId:String? = null)
 data class ContinueBatch(val enabled:Boolean=true,val items:List<GeneratedItem> = emptyList())
 data class SavedCopy(val id:String,val name:String,val count:Int)
 data class RecentPlaylists(val playlists:List<RecentPlaylist>)
@@ -122,6 +122,7 @@ interface MusicApi {
     @POST("/api/recent-playlists") suspend fun rememberPlaylist(@Header("X-Music-Owner") owner:String,@Body body:PlaylistContext):Response<JsonObject>
     @GET("/api/home/settings") suspend fun playbackSettings():Response<PlaybackSettings>
     @PUT("/api/home/settings") suspend fun savePlaybackSettings(@Header("X-Music-Owner") owner:String,@Body body:PlaybackSettings):Response<PlaybackSettings>
+    @PUT("/api/playlist-covers/{kind}/{id}") suspend fun uploadCover(@Path("kind") kind:String, @Path("id") id:String, @Header("X-Music-Owner") owner:String, @Body image:okhttp3.RequestBody): Response<Map<String,String>>
     @POST("/api/home/continue") suspend fun continueSimilar(@Header("X-Music-Owner") owner:String,@Body body:ContinueRequest):Response<ContinueBatch>
     @GET("/api/imports") suspend fun imports():Response<ImportHistory>
     @GET("/api/import/{id}") suspend fun importJob(@Path("id") id:String):Response<ImportJob>
@@ -157,11 +158,11 @@ interface MusicApi {
 }
 fun <T> Response<T>.checked(): T {
     if(!isSuccessful) throw IllegalStateException(when(code()) {
-        401->"Sesión caducada";403->"Acción no autorizada";404->"Recurso no disponible";
+        401->"Sesion caducada";403->"Accion no autorizada";404->"Recurso no disponible";
         409->"Ha cambiado la cuenta o la playlist. Recarga antes de guardar.";
         424->"Vincula tu cuenta de recomendaciones";else->"Servicio no disponible (HTTP ${code()})"
     })
-    return body() ?: throw IllegalStateException("Respuesta vacía")
+    return body() ?: throw IllegalStateException("Respuesta vacia")
 }
 
 data class ListenRank(val name: String, val seconds: Double, val count: Int, val track: MusicTrack)

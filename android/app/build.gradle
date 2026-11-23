@@ -5,14 +5,14 @@ plugins {
     id 'com.google.dagger.hilt.android'
 }
 
-def musicName = providers.gradleProperty('musicAppName').orElse('Armonía').get()
+def musicName = providers.gradleProperty('musicAppName').orElse('Armonia').get()
 if (!(musicName ==~ /[\p{L}\p{N} ._-]{1,50}/)) throw new GradleException('Invalid musicAppName')
 
 // ── Signing ──────────────────────────────────────────────────────────────────
 // One stable key for every build (CI release builds and local Studio builds), so
 // any APK can be installed over any other. Android refuses to update an app whose
 // signature changed, which is what happens with per-machine debug keys.
-// Las credenciales de firma se proporcionan al proceso de compilación.
+// Las credenciales de firma se proporcionan al proceso de compilacion.
 def signingStoreFile = System.getenv("MUSIC_KEYSTORE_FILE")
 def signingStorePassword = System.getenv("MUSIC_KEYSTORE_PASSWORD")
 def signingKeyAlias = System.getenv("MUSIC_KEY_ALIAS")

@@ -2,7 +2,7 @@
 
 Catches the class of bug unit tests can't (e.g. a Media3 session change that
 silently drops player commands). Needs a booted emulator/device on adb and a
-reachable Armonía server with at least one song.
+reachable Armonia server with at least one song.
 
     python3 smoke.py app/build/outputs/apk/debug/app-debug.apk http://10.0.2.2:8001 user pass
 """

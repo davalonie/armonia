@@ -52,7 +52,7 @@ fun LazyListScope.mixedPlaylists(vm: HomelabViewModel, onDelete: () -> Unit) {
     item(key = "mixed-create") { CreateMixedPlaylist(enabled = !vm.busy, onCreate = vm::create) }
     if (vm.lists.isEmpty()) item(key = "mixed-empty") {
         Text(
-            "Todavía no tienes ninguna. Crea una y añade la canción que esté sonando.",
+            "Todavia no tienes ninguna. Crea una y añade la cancion que este sonando.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )
@@ -134,15 +134,16 @@ private fun OpenMixedPlaylist(vm: HomelabViewModel, onDelete: () -> Unit) {
     Column {
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
+            playlist.coverArt?.let { coil.compose.AsyncImage(vm.coverUrl(it), "Portada", Modifier.size(64.dp)) }
             Column(Modifier.weight(1f)) {
                 Text(playlist.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(songCount(playlist.items.size), style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
             Menu("Opciones de la playlist") { close ->
-                DropdownMenuItem(text = { Text("Añadir la canción que suena") }, enabled = !vm.busy, onClick = { close(); vm.addCurrent() })
+                DropdownMenuItem(text = { Text("Añadir la cancion que suena") }, enabled = !vm.busy, onClick = { close(); vm.addCurrent() })
                 DropdownMenuItem(text = { Text("Renombrar") }, enabled = !vm.busy, onClick = { close(); renaming = true })
-                DropdownMenuItem(text = { Text("Descargar en este teléfono") }, enabled = !vm.busy, onClick = { close(); vm.pin() })
+                DropdownMenuItem(text = { Text("Descargar en este telefono") }, enabled = !vm.busy, onClick = { close(); vm.pin() })
                 DropdownMenuItem(text = { Text("Exportar copia a Navidrome") }, enabled = !vm.busy, onClick = { close(); vm.export() })
                 DropdownMenuItem(text = { Text("Eliminar playlist") }, enabled = !vm.busy, onClick = { close(); onDelete() })
             }

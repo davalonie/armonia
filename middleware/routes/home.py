@@ -1,4 +1,5 @@
 """Inicio: generated personal playlists and similar artists, private per user."""
+from anyio import to_thread
 from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -73,17 +74,28 @@ class Continue(BaseModel):
     model_config = ConfigDict(extra="forbid")
     artists: list[str] = Field(default_factory=list, max_length=10)
     exclude: list[str] = Field(default_factory=list, max_length=600)
+    videoId: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{11}$")
 
 
 @router.post("/continue")
-def continue_similar(body: Continue, sess=Depends(get_current_session)):
+async def continue_similar(body: Continue, sess=Depends(get_current_session)):
     """Related songs to follow a finished queue. Read-only: no list, queue or statistic is written."""
     db.require_active_session(sess)
     user = owner(sess)
     if not continuation.enabled(user):
         return {"enabled": False, "items": []}
     names = [a[:300] for a in body.artists]
-    return {"enabled": True, "items": continuation.batch(user, names, {e[:140] for e in body.exclude})}
+    excluded = {e[:140] for e in body.exclude}
+    items = continuation.batch(user, names, excluded)
+    if not items:
+        if body.videoId:
+            items = await to_thread.run_sync(continuation.radio, body.videoId, excluded)
+        elif names and any(key.startswith("navidrome:") for key in excluded):
+            items = await continuation.library_followup(sess, names[0], excluded)
+        db.require_active_session(sess)
+        if not continuation.enabled(user):
+            return {"enabled": False, "items": []}
+    return {"enabled": True, "items": items}
 
 
 @router.get("/releases")

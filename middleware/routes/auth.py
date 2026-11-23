@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from auth import COOKIE_NAME, check_web_request, get_current_session
 from config import COOKIE_SECURE
 from db import create_session, delete_session
+from homelab import integrations
 from homelab.models import owner as identity_owner
 from services import stream_buffer
 from services.navidrome_client import (
@@ -107,6 +108,7 @@ async def login(body: LoginRequest, request: Request, response: Response):
     admin = await get_is_admin(body.username, salt, token)
 
     sid = create_session(body.username, salt, token, library_path, is_admin=admin, library_id=library_id, user_id=context["id"])
+    await integrations.link_on_login(str(context["id"]), body.username, body.password)
     response.headers["Cache-Control"] = "no-store"
     if web:
         response.set_cookie(COOKIE_NAME, sid, httponly=True, secure=COOKIE_SECURE,

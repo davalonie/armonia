@@ -1,6 +1,6 @@
 // The owner's own Spotify sign-in, entirely in this browser (authorization code + PKCE):
 // no client secret exists, the password is typed on Spotify's page, and the short-lived
-// access token stays in memory and is never sent to the Armonía server.
+// access token stays in memory and is never sent to the Armonia server.
 const AUTHORIZE = 'https://accounts.spotify.com/authorize';
 const TOKEN = 'https://accounts.spotify.com/api/token';
 const API = 'https://api.spotify.com/v1';
@@ -20,7 +20,7 @@ export function hasPendingLogin(storage = globalThis.sessionStorage) {
 
 /** Remembers the verifier for this tab and returns Spotify's sign-in address to navigate to. */
 export async function beginLogin(clientId, {location = globalThis.location, storage = globalThis.sessionStorage, crypto = globalThis.crypto} = {}) {
-  if (!/^[0-9a-f]{32}$/.test(clientId || '')) throw new Error('El identificador de la aplicación de Spotify no es válido.');
+  if (!/^[0-9a-f]{32}$/.test(clientId || '')) throw new Error('El identificador de la aplicacion de Spotify no es valido.');
   const verifier = base64url(crypto.getRandomValues(new Uint8Array(64)));
   const state = base64url(crypto.getRandomValues(new Uint8Array(16)));
   const challenge = base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
@@ -43,8 +43,8 @@ export async function completeLogin({search = globalThis.location.search, locati
   try { pending = JSON.parse(storage.getItem(PENDING)); } catch { /* Treated as no sign-in in progress. */ }
   storage.removeItem(PENDING);
   if (!pending) return null;
-  if (params.get('state') !== pending.state) throw new Error('La respuesta de Spotify no corresponde a este inicio de sesión. Vuelve a intentarlo.');
-  if (params.has('error')) throw new Error(params.get('error') === 'access_denied' ? 'No has dado permiso en Spotify.' : 'Spotify no completó el inicio de sesión.');
+  if (params.get('state') !== pending.state) throw new Error('La respuesta de Spotify no corresponde a este inicio de sesion. Vuelve a intentarlo.');
+  if (params.has('error')) throw new Error(params.get('error') === 'access_denied' ? 'No has dado permiso en Spotify.' : 'Spotify no completo el inicio de sesion.');
   const response = await fetch(TOKEN, {
     method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     body: new URLSearchParams({
@@ -52,19 +52,19 @@ export async function completeLogin({search = globalThis.location.search, locati
       client_id: pending.clientId, code_verifier: pending.verifier,
     }),
   });
-  if (!response.ok) throw new Error('Spotify rechazó el inicio de sesión. Comprueba el identificador y la dirección de retorno de tu aplicación.');
+  if (!response.ok) throw new Error('Spotify rechazo el inicio de sesion. Comprueba el identificador y la direccion de retorno de tu aplicacion.');
   const token = (await response.json()).access_token;
-  if (!token) throw new Error('Spotify no entregó acceso.');
+  if (!token) throw new Error('Spotify no entrego acceso.');
   return token;
 }
 
 function failure(status) {
   const messages = {
     401: 'El acceso de Spotify ha caducado. Vuelve a conectar.',
-    403: 'Spotify no permite el acceso a esta aplicación: su dueño necesita Premium activo y tu cuenta debe estar autorizada en ella.',
-    429: 'Spotify está limitando las peticiones. Espera unos minutos y vuelve a intentarlo.',
+    403: 'Spotify no permite el acceso a esta aplicacion: su dueño necesita Premium activo y tu cuenta debe estar autorizada en ella.',
+    429: 'Spotify esta limitando las peticiones. Espera unos minutos y vuelve a intentarlo.',
   };
-  const error = new Error(messages[status] || 'Spotify no está disponible ahora. Vuelve a intentarlo.');
+  const error = new Error(messages[status] || 'Spotify no esta disponible ahora. Vuelve a intentarlo.');
   error.status = status;
   return error;
 }
@@ -133,7 +133,7 @@ export async function readLibrary(token, {fetch = globalThis.fetch, wait = ms =>
   await pages(`${API}/me/tracks?limit=50`, token, io, entry => liked.push(toTrack(entry.track)));
   if (liked.length) playlists.push(...chunks('Canciones que te gustan', liked));
 
-  onProgress('Álbumes guardados');
+  onProgress('Albumes guardados');
   const albums = [];
   await pages(`${API}/me/albums?limit=50`, token, io, entry => albums.push(entry.album));
   const albumTracks = [];
@@ -141,7 +141,7 @@ export async function readLibrary(token, {fetch = globalThis.fetch, wait = ms =>
     (album.tracks?.items || []).forEach(t => albumTracks.push(toTrack({...t, type: 'track'}, album)));
     if (album.tracks?.next) await pages(album.tracks.next, token, io, t => albumTracks.push(toTrack({...t, type: 'track'}, album)));
   }
-  if (albumTracks.length) playlists.push(...chunks('Álbumes guardados', albumTracks));
+  if (albumTracks.length) playlists.push(...chunks('Albumes guardados', albumTracks));
 
   const listed = [];
   await pages(`${API}/me/playlists?limit=50`, token, io, p => { if (p) listed.push(p); });

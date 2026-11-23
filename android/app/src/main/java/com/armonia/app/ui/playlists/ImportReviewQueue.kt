@@ -37,20 +37,20 @@ fun acceptsImportSnapshot(epoch: Long, currentEpoch: Long, wantedId: String?, re
 
 /** Why a candidate was not accepted automatically, in the words the web already uses. */
 fun importCandidateReason(reason: String): String = when (reason) {
-    "different recording version" -> "Versión distinta (directo, remix, cover…)"
-    "duration differs" -> "La duración difiere"
-    "duration unverified" -> "Duración sin verificar"
-    "title or artist is not exact enough" -> "Título o créditos de artistas diferentes"
-    "version detail differs" -> "Los detalles de la versión difieren"
+    "different recording version" -> "Version distinta (directo, remix, cover…)"
+    "duration differs" -> "La duracion difiere"
+    "duration unverified" -> "Duracion sin verificar"
+    "title or artist is not exact enough" -> "Titulo o creditos de artistas diferentes"
+    "version detail differs" -> "Los detalles de la version difieren"
     "conflicting isrc" -> "ISRC diferente"
-    "conflicting recording_mbid" -> "Identificador de grabación diferente"
+    "conflicting recording_mbid" -> "Identificador de grabacion diferente"
     "metadata missing" -> "Faltan metadatos"
     else -> reason
 }
 
 fun importFailureReason(reason: String?): String = when (reason) {
-    "index_pending" -> "El audio está guardado, pero la biblioteca aún no lo encuentra. Reintentar no vuelve a descargarlo."
+    "index_pending" -> "El audio esta guardado, pero la biblioteca aun no lo encuentra. Reintentar no vuelve a descargarlo."
     "permission" -> "No hay permiso para completar esta descarga."
-    "provider_unavailable", "service_unavailable" -> "La fuente no ha podido completar la operación. Puedes reintentar o elegir otra opción."
-    else -> "No se ha completado la operación. Puedes reintentar."
+    "provider_unavailable", "service_unavailable" -> "La fuente no ha podido completar la operacion. Puedes reintentar o elegir otra opcion."
+    else -> "No se ha completado la operacion. Puedes reintentar."
 }

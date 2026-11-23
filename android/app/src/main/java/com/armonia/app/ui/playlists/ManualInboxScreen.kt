@@ -42,7 +42,7 @@ class ManualInboxViewModel @Inject constructor(
             prefs.authState.collect { current ->
                 if (!manualUploadAccountMatches(account, current)) {
                     uploadBody?.close(); operation?.cancel(); entries = emptyList()
-                    error = "La cuenta o la sesión ha cambiado. Vuelve a abrir esta pantalla."
+                    error = "La cuenta o la sesion ha cambiado. Vuelve a abrir esta pantalla."
                 }
             }
         }
@@ -51,7 +51,7 @@ class ManualInboxViewModel @Inject constructor(
 
     private fun currentAccount() = manualUploadAccountMatches(account, prefs.cachedAuth)
     private fun requireAccount() {
-        if (!currentAccount()) throw ManualInboxFailure("La cuenta o la sesión ha cambiado. Vuelve a abrir esta pantalla.")
+        if (!currentAccount()) throw ManualInboxFailure("La cuenta o la sesion ha cambiado. Vuelve a abrir esta pantalla.")
     }
     private suspend fun load() {
         requireAccount()
@@ -64,12 +64,12 @@ class ManualInboxViewModel @Inject constructor(
         busy = true; error = null; notice = null
         operation = viewModelScope.launch {
             try { requireAccount(); work() }
-            catch (e: TimeoutCancellationException) { error = "La subida ha tardado demasiado. Actualiza la bandeja para comprobar si el archivo llegó a guardarse." }
+            catch (e: TimeoutCancellationException) { error = "La subida ha tardado demasiado. Actualiza la bandeja para comprobar si el archivo llego a guardarse." }
             catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (currentAccount()) error = (e as? ManualInboxFailure)?.userMessage
-                    ?: "No se pudo completar la operación. Actualiza la bandeja antes de reintentar."
-                else { entries = emptyList(); error = "La sesión ha cambiado. Vuelve a abrir esta pantalla." }
+                    ?: "No se pudo completar la operacion. Actualiza la bandeja antes de reintentar."
+                else { entries = emptyList(); error = "La sesion ha cambiado. Vuelve a abrir esta pantalla." }
             } finally { uploadBody?.close(); uploadBody = null; busy = false }
         }
     }
@@ -82,7 +82,7 @@ class ManualInboxViewModel @Inject constructor(
     fun remove(item: ManualInboxItem) = act {
         api.removeManualInbox(item.id, ManualInboxRevision(item.revision), account).checkedInbox()
         load()
-        notice = "Referencia retirada de la bandeja. La música y las playlists se conservan."
+        notice = "Referencia retirada de la bandeja. La musica y las playlists se conservan."
     }
     fun upload(item: ManualInboxItem, uri: Uri) = act {
         if (uri.scheme != "content") throw ManualInboxFailure("Selecciona el archivo con el selector de documentos.")
@@ -104,12 +104,12 @@ class ManualInboxViewModel @Inject constructor(
         // Receiving can take 180 s, decoding 120 s and library indexing 8 s.
         withTimeout(330_000) { api.uploadManualInbox(item.id, item.revision, body, account).checkedInbox() }
         load()
-        notice = "Archivo guardado en tu biblioteca. Desde allí puedes añadirlo a la playlist que quieras."
+        notice = "Archivo guardado en tu biblioteca. Desde alli puedes añadirlo a la playlist que quieras."
     }
     fun cancel() {
         uploadBody?.close()
         operation?.cancel()
-        notice = "Operación interrumpida. Actualiza la bandeja para comprobar si el archivo llegó a guardarse."
+        notice = "Operacion interrumpida. Actualiza la bandeja para comprobar si el archivo llego a guardarse."
     }
     override fun onCleared() {
         uploadBody?.close()
@@ -134,14 +134,14 @@ fun ManualInboxScreen(onBack: () -> Unit, onLibrary: () -> Unit, vm: ManualInbox
         item {
             TextButton(onClick = onBack) { Text("← Biblioteca") }
             Text("Pendientes de añadir", style = MaterialTheme.typography.headlineMedium)
-            Text("Aquí se guardan las canciones que has omitido al importar. Aporta un MP3 propio cuando lo tengas; no se descarga nada desde Spotify.")
-            Text("El archivo se guardará en tu biblioteca. Después puedes añadirlo a cualquier playlist desde Biblioteca.")
-            Text("Se guardará una copia MP3 a 192 kb/s; el archivo original de tu dispositivo se conserva.")
+            Text("Aqui se guardan las canciones que has omitido al importar. Aporta un MP3 propio cuando lo tengas; no se descarga nada desde Spotify.")
+            Text("El archivo se guardara en tu biblioteca. Despues puedes añadirlo a cualquier playlist desde Biblioteca.")
+            Text("Se guardara una copia MP3 a 192 kb/s; el archivo original de tu dispositivo se conserva.")
             Text("MP3 de hasta 64 MiB.", style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = vm::refresh, enabled = !vm.busy) { Text("Actualizar") }
             if (vm.busy) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
-                TextButton(onClick = vm::cancel) { Text("Cancelar operación") }
+                TextButton(onClick = vm::cancel) { Text("Cancelar operacion") }
             }
             vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             vm.notice?.let { Text(it) }
@@ -160,10 +160,10 @@ fun ManualInboxScreen(onBack: () -> Unit, onLibrary: () -> Unit, vm: ManualInbox
                         }) { Text("Aportar MP3") }
                         "saved" -> {
                             if (entry.songId == null) {
-                                Text("El archivo está guardado; la biblioteca aún no lo encuentra.")
+                                Text("El archivo esta guardado; la biblioteca aun no lo encuentra.")
                                 TextButton(enabled = !vm.busy, onClick = { vm.refreshItem(entry) }) { Text("Comprobar biblioteca") }
                             } else {
-                                Text("Ya está en tu biblioteca.")
+                                Text("Ya esta en tu biblioteca.")
                                 TextButton(onClick = onLibrary) { Text("Ver biblioteca") }
                             }
                         }
@@ -176,7 +176,7 @@ fun ManualInboxScreen(onBack: () -> Unit, onLibrary: () -> Unit, vm: ManualInbox
     }
     removing?.let { entry ->
         AlertDialog(onDismissRequest = { removing = null }, title = { Text("Retirar referencia") },
-            text = { Text("Se retirará «${entry.track.title}» de esta bandeja. No se borrará ningún archivo musical ni se modificará ninguna playlist.") },
+            text = { Text("Se retirara «${entry.track.title}» de esta bandeja. No se borrara ningun archivo musical ni se modificara ninguna playlist.") },
             confirmButton = { TextButton(onClick = { removing = null; vm.remove(entry) }) { Text("Retirar") } },
             dismissButton = { TextButton(onClick = { removing = null }) { Text("Cancelar") } })
     }

@@ -49,7 +49,7 @@
   style:transform={$queuePanelOpen ? 'translateX(0)' : 'translateX(100%)'}
   inert={!$queuePanelOpen}
   role="region"
-  aria-label="Cola de reproducción"
+  aria-label="Cola de reproduccion"
 >
   <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
     <h2 class="text-base font-semibold">Cola</h2>
@@ -65,7 +65,7 @@
   <div class="flex-1 overflow-y-auto pb-6">
     {#if current}
       <div class="px-4 pt-5 pb-3">
-        <p class="text-[10px] font-semibold text-armonia-muted uppercase tracking-widest mb-3">{current._auto?'Sonando · continuación automática':'Sonando'}</p>
+        <p class="text-[10px] font-semibold text-armonia-muted uppercase tracking-widest mb-3">{current._auto?'Sonando · continuacion automatica':'Sonando'}</p>
         <div class="flex items-center gap-3 p-2 rounded-xl bg-white/5">
           <img src={trackArtUrl(current, 64)} alt="" class="w-10 h-10 rounded-md object-cover shrink-0 bg-armonia-bg">
           <div class="flex-1 min-w-0">
@@ -79,7 +79,7 @@
     {#if upcoming.length}
       <div class="px-4 pb-4">
         <div class="flex items-center justify-between mb-3">
-          <p class="text-[10px] font-semibold text-armonia-muted uppercase tracking-widest">A continuación</p>
+          <p class="text-[10px] font-semibold text-armonia-muted uppercase tracking-widest">A continuacion</p>
           <button on:click={clearUpcoming} class="text-xs text-armonia-muted hover:text-red-400 transition-colors">Vaciar</button>
         </div>
         <div class="flex flex-col gap-0.5">
@@ -100,7 +100,7 @@
               <img src={trackArtUrl(track, 64)} alt="" class="w-10 h-10 rounded-md object-cover shrink-0 bg-armonia-bg pointer-events-none">
               <div class="flex-1 min-w-0 pointer-events-none">
                 <p class="text-sm font-medium truncate">{track.title ?? '—'}</p>
-                <p class="text-xs text-armonia-muted truncate">{#if track._auto}<i aria-hidden="true" class="ph ph-infinity text-armonia-accent"></i> Música similar · {/if}{track.artist ?? '—'}</p>
+                <p class="text-xs text-armonia-muted truncate">{#if track._auto}<i aria-hidden="true" class="ph ph-infinity text-armonia-accent"></i> Musica similar · {/if}{track.artist ?? '—'}</p>
               </div>
               <button
                 aria-label={`Quitar ${track.title} de la cola`}
@@ -116,7 +116,7 @@
     {:else if !current}
       <div class="flex flex-col items-center justify-center h-full gap-3 opacity-40 p-8 text-center">
         <i class="ph ph-list text-5xl"></i>
-        <p class="text-sm">La cola está vacía</p>
+        <p class="text-sm">La cola esta vacia</p>
       </div>
     {/if}
   </div>

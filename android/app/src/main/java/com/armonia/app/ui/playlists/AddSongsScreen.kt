@@ -95,9 +95,9 @@ fun AddSongsScreen(onBack: () -> Unit, viewModel: PlaylistDetailViewModel) {
             TextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Buscar canción o artista", maxLines = 1) },
+                placeholder = { Text("Buscar cancion o artista", maxLines = 1) },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
-                trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Borrar la búsqueda") } },
+                trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Borrar la busqueda") } },
                 singleLine = true,
                 shape = RoundedCornerShape(28.dp),
                 colors = TextFieldDefaults.colors(
@@ -121,8 +121,8 @@ fun AddSongsScreen(onBack: () -> Unit, viewModel: PlaylistDetailViewModel) {
                     OutlinedButton(onClick = { viewModel.loadLibrarySongs() }, modifier = Modifier.padding(top = 8.dp)) { Text("Reintentar") }
                 }
                 shown.isEmpty() -> Text(
-                    if (songs.isEmpty()) "Tu biblioteca todavía no tiene canciones."
-                    else "No hay canciones en tu biblioteca para «${query.trim()}». Las de fuera se añaden desde Buscar, descargándolas antes.",
+                    if (songs.isEmpty()) "Tu biblioteca todavia no tiene canciones."
+                    else "No hay canciones en tu biblioteca para «${query.trim()}». Las de fuera se añaden desde Buscar, descargandolas antes.",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.padding(24.dp),
                 )
@@ -201,7 +201,7 @@ fun AddSongRow(
             val credits = listOfNotNull(song.artist, song.album?.takeIf { it.isNotBlank() }).joinToString(" · ")
             Text(
                 text = when (state) {
-                    AddState.ALREADY -> "Ya está en la playlist · $credits"
+                    AddState.ALREADY -> "Ya esta en la playlist · $credits"
                     AddState.ADDED -> "Añadida · $credits"
                     AddState.FAILED -> "No se pudo añadir · $credits"
                     else -> credits
@@ -225,7 +225,7 @@ fun AddSongRow(
                 Icon(Icons.Default.CheckCircle, "Añadida. Toca para quitar ${song.title} de la playlist", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
             }
             AddState.ALREADY -> Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.CheckCircle, "${song.title} ya está en la playlist", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f), modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.CheckCircle, "${song.title} ya esta en la playlist", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f), modifier = Modifier.size(28.dp))
             }
             AddState.FAILED -> IconButton(onClick = onAdd, modifier = Modifier.testTag("add-${song.id}")) {
                 Icon(Icons.Default.Refresh, "Reintentar añadir ${song.title}", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(28.dp))

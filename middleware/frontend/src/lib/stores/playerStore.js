@@ -126,7 +126,7 @@ export function initAudio(audioEl) {
       const epoch=generation,at=_audio.currentTime,track=get(currentTrack);
       recovery.at=at;
       playbackState.set('loading');
-      if(!recovery.attempts)toast('Se perdió la conexión con el servidor. Reintentando…');
+      if(!recovery.attempts)toast('Se perdio la conexion con el servidor. Reintentando…');
       recovery.timer=setTimeout(()=>{
         if(epoch!==generation||!track||get(currentTrack)!==track)return;
         if(at>0)_audio.addEventListener('loadedmetadata',()=>{if(epoch===generation)_audio.currentTime=at;},{once:true});
@@ -136,7 +136,7 @@ export function initAudio(audioEl) {
       return;
     }
     playbackTiming.update(t=>t?{...t,error:true}:t);playing.set(false);playbackState.set('error');
-    toast(lost?'Se perdió la conexión con el servidor. Pulsa reproducir para reintentar.':'Canción no disponible. Puedes saltar a la siguiente.','error');
+    toast(lost?'Se perdio la conexion con el servidor. Pulsa reproducir para reintentar.':'Cancion no disponible. Puedes saltar a la siguiente.','error');
   });
   _audio.addEventListener('pause', () => {
     clearTimeout(recovery.timer); // Pausing (or unplugging headphones) wins over a pending reconnection.
@@ -191,7 +191,7 @@ function onEnded(){
   }
 }
 
-// «Continuar con música similar». Only a natural end of the queue asks for it: pause, stop,
+// «Continuar con musica similar». Only a natural end of the queue asks for it: pause, stop,
 // logout and a lost connection never reach this code. The original playlist is not touched:
 // suggestions are appended to the playback snapshot and flagged `_auto`.
 export const continueSimilar = writable(true);
@@ -203,7 +203,8 @@ const canContinue=()=>get(continueSimilar)&&get(repeatMode)==='off'&&!get(previe
 function continuationRequest(){
   const q=get(queue),at=get(currentIndex);
   const artists=[...new Set([q[at],...q.slice(Math.max(0,at-2),at).reverse()].filter(Boolean).map(t=>t.artist).filter(Boolean))].slice(0,3);
-  return {artists,exclude:[...new Set([...q.map(trackKey),...heard,...dismissed])].slice(-600)};
+  const videoId=q[at]&&externalId(q[at]);
+  return {artists,...(videoId?{videoId}:{}),exclude:[...new Set([...q.map(trackKey),...heard,...dismissed])].slice(-600)};
 }
 function prepareContinuation(){
   if(!canContinue()||upcomingTrack())return;
@@ -227,7 +228,7 @@ async function continueSimilarly(){
     const fresh=withoutKnown(items,[...get(queue).map(trackKey),...dismissed]);
     if(!fresh.length)return;
     const start=get(queue).length;
-    queue.update(q=>[...q,...fresh.map(i=>({...toQueueTrack(i.track,i.cover),_auto:true,_from:'Música similar'}))]);
+    queue.update(q=>[...q,...fresh.map(i=>({...toQueueTrack(i.track,i.cover),_auto:true,_from:'Musica similar'}))]);
     if(get(shuffleOn))_shuffledQueue.push(...fresh.map((_,n)=>start+n));
     next();
   }finally{continuing=false;}

@@ -47,14 +47,14 @@ fun YtDownloadDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Título") },
+                    label = { Text("Titulo") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = album,
                     onValueChange = { album = it },
-                    label = { Text("Álbum (opcional)") },
+                    label = { Text("Album (opcional)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )

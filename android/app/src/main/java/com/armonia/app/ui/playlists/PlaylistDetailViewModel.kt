@@ -127,7 +127,7 @@ class PlaylistDetailViewModel @Inject constructor(
         viewModelScope.launch {
             repository.removeSongFromPlaylist(playlistId, index)
                 .onSuccess { load() }
-                .onFailure { notice = "No se pudo quitar la canción: ${it.message}" }
+                .onFailure { notice = "No se pudo quitar la cancion: ${it.message}" }
         }
     }
 
@@ -150,7 +150,7 @@ class PlaylistDetailViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getSongs()
                 .onSuccess { list -> allLibrarySongs = list.sortedWith(compareBy({ it.artist.lowercase() }, { it.title.lowercase() })) }
-                .onFailure { pickerError = "No se pudo cargar tu biblioteca. Comprueba la conexión." }
+                .onFailure { pickerError = "No se pudo cargar tu biblioteca. Comprueba la conexion." }
             pickerLoading = false
         }
     }

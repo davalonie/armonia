@@ -54,7 +54,7 @@ def lab(tmp_path, monkeypatch):
     def stage(video, artist, title, source, cancel, directory):
         result = Path(directory) / 'fixture.mp3'
         result.write_bytes(b'fictional audio')
-        return str(result)
+        return str(result), {}
     monkeypatch.setattr(yt, '_download_staged', stage)
     return root, db.get_session(sid)
 

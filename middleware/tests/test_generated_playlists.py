@@ -97,7 +97,7 @@ def test_weekly_becomes_an_ordered_persistent_private_playlist(lab):
     weekly = g.detail("alice", "weekly")
     # Library first, then the exact external version; the live take and the unmatched song are left out.
     assert ids(weekly) == ["nd1", video(2)]
-    assert weekly["name"] == "Armonía semanal" and weekly["state"] == "ready" and weekly["updated"]
+    assert weekly["name"] == "Armonia semanal" and weekly["state"] == "ready" and weekly["updated"]
     assert weekly["items"][1]["cover"] == "https://img/dos"
     # Similar artists without a single available song do not produce an empty mix.
     assert [p["key"] for p in g.summaries("alice")] == ["weekly"]
@@ -134,7 +134,7 @@ def test_saved_copy_is_independent_of_later_refreshes(lab):
     activate("alice")
     run("alice", alice)
     copy = g.save_copy("alice", "weekly")
-    assert copy["name"].startswith("Armonía semanal · ")
+    assert copy["name"].startswith("Armonia semanal · ")
     lab.flow = [{"title": "Uno", "artist": "Ana", "album": "", "duration": 200.0}]
     run("alice", alice, force=True)
     assert ids(g.detail("alice", "weekly")) == ["nd1"]
@@ -186,7 +186,7 @@ def test_generated_playlist_enters_recents_only_for_its_owner(lab):
     run("alice", alice)
     asyncio.run(remember_playlist(RecentPlaylist(kind="generated", id="weekly"), alice))
     recent = recent_playlists(alice, "web")["playlists"]
-    assert recent[0]["name"] == "Armonía semanal" and recent[0]["covers"][0]["source_id"] == "nd1"
+    assert recent[0]["name"] == "Armonia semanal" and recent[0]["covers"][0]["source_id"] == "nd1"
     assert recent_playlists(bob, "web") == {"playlists": []}
     assert recent_playlists(alice, None) == {"playlists": []}  # Older Android client: unknown kind withheld.
     assert recent_playlists(alice, None, "generated")["playlists"][0]["id"] == "weekly"
@@ -243,3 +243,18 @@ def test_list_size_is_configurable_and_bounded(monkeypatch):
     for value, expected in (("12", 12), ("500", 50), ("1", 10), ("x", 30)):
         monkeypatch.setenv("MUSIC_GENERATED_PLAYLIST_SIZE", value)
         assert g.size() == expected
+
+
+def test_first_delivered_listen_expires_only_the_empty_profile(lab):
+    bob = session("bob")
+    run("bob", bob)
+    assert not g.due("bob")
+    with store.connection(write=True) as c:
+        c.execute("INSERT INTO play_events(owner,id,payload,created) VALUES('bob','one','{}',1)")
+        c.execute("INSERT INTO outbox(owner,event_id,destination) VALUES('bob','one','koito')")
+    assert not g.due("bob")
+    with store.connection(write=True) as c:
+        c.execute("UPDATE outbox SET state='sent' WHERE owner='bob'")
+    assert g.due("bob")
+    run("bob", bob)
+    assert not g.due("bob")

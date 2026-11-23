@@ -4,7 +4,7 @@ import java.text.Normalizer
 
 private val MARKS = Regex("\\p{Mn}+")
 
-/** Lower case without accents, so «lua» finds «Lúa» and «cadiz» finds «Cádiz». Ñ stays ñ. */
+/** Lower case without accents, so «lua» finds «Lua» and «cadiz» finds «Cadiz». Ñ stays ñ. */
 fun String.foldedForSearch(): String =
     MARKS.replace(Normalizer.normalize(replace("ñ", "\u0001").replace("Ñ", "\u0001"), Normalizer.Form.NFD), "")
         .replace("\u0001", "ñ").lowercase()

@@ -23,8 +23,8 @@ class OfflineSkipTest {
     }
 
     @Test fun theNoticeSaysHowManyWerePassedOver() {
-        assertEquals("Sin conexión: se salta una canción que no está en el teléfono.", OfflineSkip.notice(1))
-        assertEquals("Sin conexión: se saltan 3 canciones que no están en el teléfono.", OfflineSkip.notice(3))
+        assertEquals("Sin conexion: se salta una cancion que no esta en el telefono.", OfflineSkip.notice(1))
+        assertEquals("Sin conexion: se saltan 3 canciones que no estan en el telefono.", OfflineSkip.notice(3))
     }
 
     @Test fun withoutAnyNetworkOnlyOneShortWaitBeforeGivingUp() {

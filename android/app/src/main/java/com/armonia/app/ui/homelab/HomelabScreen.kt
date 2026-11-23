@@ -37,8 +37,8 @@ fun HomelabScreen(section:Int=0, onSearch:(String)->Unit={}, vm:HomelabViewModel
         LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             item {OutlinedButton(onClick={vm.load()},enabled=!vm.busy){Text("Actualizar")}}
             if(tab==3){
-                item{Text("Armonía semanal",style=MaterialTheme.typography.headlineSmall);Text("Escuchar no añade canciones a la biblioteca.");Button(onClick={vm.weekly()},enabled=!vm.busy){Text("Activar lista semanal")}}
-                items(vm.flows){f->Row{OutlinedButton(onClick={vm.flow(f.id)},enabled=!vm.busy){Text(if(f.name.startsWith("Armonía Weekly"))"Mi Armonía semanal" else f.name)};TextButton(onClick={vm.refreshFlow(f.id)},enabled=!vm.busy){Text("Regenerar")}}}
+                item{Text("Armonia semanal",style=MaterialTheme.typography.headlineSmall);Text("Escuchar no añade canciones a la biblioteca.");Button(onClick={vm.weekly()},enabled=!vm.busy){Text("Activar lista semanal")}}
+                items(vm.flows){f->Row{OutlinedButton(onClick={vm.flow(f.id)},enabled=!vm.busy){Text(if((f.name.startsWith("Armonia Weekly") || f.name.startsWith("Armon\u00eda Weekly")))"Mi Armonia semanal" else f.name)};TextButton(onClick={vm.refreshFlow(f.id)},enabled=!vm.busy){Text("Regenerar")}}}
                 items(vm.recommendations){t->ListItem(headlineContent={Text(t.title)},supportingContent={Text(t.artist)},trailingContent={TextButton(onClick={vm.match(t)}){Text("Escuchar")}})}
                 item{Text("Similares a tus artistas identificados",style=MaterialTheme.typography.titleLarge);if(vm.artists.isEmpty()) Text(if(vm.discoveryState=="unavailable") "Metadatos no disponibles; vuelve a actualizar." else if(vm.discoveryState=="no_similar_results") "Artistas identificados; el proveedor no ha devuelto similitudes. Vuelve a actualizar." else "Perfil insuficiente o artistas pendientes de identificar.")}
                 items(vm.discoverySeeds){s->ListItem(headlineContent={Text(s.name)},supportingContent={Text(s.explanation())})}
@@ -49,9 +49,9 @@ fun HomelabScreen(section:Int=0, onSearch:(String)->Unit={}, vm:HomelabViewModel
             if(tab==1){
                 mixedPlaylists(vm, onDelete={delete=true})
             }else if(tab==3){
-                item{Text("Buscar grabación",style=MaterialTheme.typography.titleLarge)
+                item{Text("Buscar grabacion",style=MaterialTheme.typography.titleLarge)
                     OutlinedTextField(value=artist,onValueChange={artist=it},label={Text("Artista")},modifier=Modifier.fillMaxWidth())
-                    OutlinedTextField(value=title,onValueChange={title=it},label={Text("Canción")},modifier=Modifier.fillMaxWidth())
+                    OutlinedTextField(value=title,onValueChange={title=it},label={Text("Cancion")},modifier=Modifier.fillMaxWidth())
                     Button(onClick={vm.match(Recording(title,artist))},enabled=title.isNotBlank()&&artist.isNotBlank()&&!vm.busy){Text("Buscar coincidencias")}}
                 item{Text("Fuentes disponibles",style=MaterialTheme.typography.titleLarge)}
                 items(vm.sources){t->ListItem(headlineContent={Text(t.title)},supportingContent={Text(t.artist)},trailingContent={Column{TextButton(onClick={vm.play(t)}){Text("Escuchar")};if(t.source=="authorized_http")TextButton(onClick={vm.saveSource(t)},enabled=!vm.busy){Text("Guardar")}}})}
@@ -60,13 +60,13 @@ fun HomelabScreen(section:Int=0, onSearch:(String)->Unit={}, vm:HomelabViewModel
                     OutlinedTextField(value=password,onValueChange={password=it},label={Text("Contraseña Aurral")},visualTransformation=PasswordVisualTransformation(),modifier=Modifier.fillMaxWidth())
                     Button(onClick={vm.link(username,password);password=""},enabled=!vm.busy&&username.isNotBlank()&&password.isNotBlank()){Text("Vincular")}}
             }else if(tab==2){
-                item{Text("Estadísticas privadas",style=MaterialTheme.typography.headlineSmall);Row{TextButton(onClick={vm.top("artists")}){Text("Artistas")};TextButton(onClick={vm.top("tracks")}){Text("Canciones")};TextButton(onClick={vm.top("albums")}){Text("Álbumes")}}}
+                item{Text("Estadisticas privadas",style=MaterialTheme.typography.headlineSmall);Row{TextButton(onClick={vm.top("artists")}){Text("Artistas")};TextButton(onClick={vm.top("tracks")}){Text("Canciones")};TextButton(onClick={vm.top("albums")}){Text("Albumes")}}}
                 items(vm.stats){row->ListItem(headlineContent={Text(row.first)},trailingContent={Text("${row.second} escuchas")})}
             }
             if (tab == 3) {
                 vm.reviewOriginal?.let { original -> item { Text("Opciones para ${original.artist} — ${original.title}",style=MaterialTheme.typography.titleMedium) } }
                 items(vm.candidates){c->ListItem(headlineContent={Text(c.track.title)},supportingContent={Text("${c.track.artist} · ${c.track.duration?:"?"} s")},leadingContent={TextButton(onClick={vm.player.audition(c.track.toSong())}){Text("▶ 10 s")}},trailingContent={TextButton(onClick={vm.play(c.track)}){Text("Reproducir")}})}
-                if(vm.candidates.isNotEmpty())item{TextButton(onClick={vm.player.stopAudition()}){Text("Volver a mi reproducción en pausa")}}
+                if(vm.candidates.isNotEmpty())item{TextButton(onClick={vm.player.stopAudition()}){Text("Volver a mi reproduccion en pausa")}}
             }
             item{Spacer(Modifier.height(30.dp))}
         }

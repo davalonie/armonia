@@ -67,23 +67,23 @@
   <!-- Track info -->
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div class="flex-1 min-w-0 cursor-pointer touch-pan-y" on:click={openExpanded} on:pointerdown={swipeStart} on:pointerup={swipeEnd} on:pointercancel={() => swipe = null}>
-    <Marquee text={track?.title ?? 'Sin reproducción'} cls="text-sm font-semibold text-white" />
-    <Marquee text={track?.artist ?? 'Elige una canción'} cls="text-xs text-armonia-muted" />
+    <Marquee text={track?.title ?? 'Sin reproduccion'} cls="text-sm font-semibold text-white" />
+    <Marquee text={track?.artist ?? 'Elige una cancion'} cls="text-xs text-armonia-muted" />
   </div>
 
   <!-- Controls -->
   <div class="flex items-center gap-3 shrink-0">
     <SaveButton {track} />
-    <button aria-label="Canción anterior" on:click={prev} class="hidden md:block text-armonia-muted hover:text-white transition-colors">
+    <button aria-label="Cancion anterior" on:click={prev} class="hidden md:block text-armonia-muted hover:text-white transition-colors">
       <i class="ph-fill ph-skip-back text-xl"></i>
     </button>
     <button aria-label={$playing ? 'Pausar' : 'Reproducir audio'} on:click={togglePlayPause} class="play-btn rounded-full flex items-center justify-center">
       <i class="ph-fill {$playing ? 'ph-pause' : 'ph-play'} text-lg"></i>
     </button>
-    <button aria-label="Canción siguiente" on:click={next} class="hidden md:block text-armonia-muted hover:text-white transition-colors">
+    <button aria-label="Cancion siguiente" on:click={next} class="hidden md:block text-armonia-muted hover:text-white transition-colors">
       <i class="ph-fill ph-skip-forward text-xl"></i>
     </button>
-    <button aria-label="Reproducción aleatoria" aria-pressed={$shuffleOn} on:click={toggleShuffle}
+    <button aria-label="Reproduccion aleatoria" aria-pressed={$shuffleOn} on:click={toggleShuffle}
       class="hidden md:flex transition-colors {$shuffleOn ? 'text-armonia-accent' : 'text-armonia-muted hover:text-white'}">
       <i class="ph ph-shuffle text-xl"></i>
     </button>

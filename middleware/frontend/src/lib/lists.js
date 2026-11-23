@@ -5,7 +5,7 @@ import {api,toQueueTrack,artUrl} from './homelab.js';
 
 export const localRow=s=>({queue:s,art:s.coverArt?coverArtUrl(s.coverArt,96):''});
 export const refRow=i=>({queue:toQueueTrack(i.track,i.cover),art:artUrl({...i.track,cover:i.cover},96)});
-export const count=n=>`${n} ${n===1?'canción':'canciones'}`;
+export const count=n=>`${n} ${n===1?'cancion':'canciones'}`;
 
 export const loaders={
   liked:async()=>{
@@ -24,7 +24,7 @@ export const loaders={
 export const context=e=>['local','mixed','generated'].includes(e.type)?{kind:e.type,id:e.id}:null;
 
 export const likedEntry={type:'liked',id:'liked',title:'Tus favoritos',variant:'liked',eyebrow:'Lista'};
-export const albumEntry=a=>({type:'album',id:a.id,title:a.name,covers:a.coverArt?[coverArtUrl(a.coverArt,300)]:[],variant:'plain',eyebrow:'Álbum',description:a.artist});
+export const albumEntry=a=>({type:'album',id:a.id,title:a.name,covers:a.coverArt?[coverArtUrl(a.coverArt,300)]:[],variant:'plain',eyebrow:'Album',description:a.artist});
 // A library playlist: native (Navidrome) or mixed (may hold external songs). One concept for the user.
 export const playlistEntry=p=>({type:p.kind,id:p.id,title:p.name,variant:'plain',eyebrow:'Lista',
   covers:p.coverArt?[coverArtUrl(p.coverArt,300)]:(p.covers||[]),songs:p.songCount??p.item_count??null});

@@ -35,6 +35,8 @@ def test_external_preferences_persist_and_are_private(tmp_path,monkeypatch):
 def test_recent_playlist_records_only_explicit_playback_reports_and_owner(tmp_path,monkeypatch):
     monkeypatch.setattr(db,'DB_PATH',tmp_path/'db.sqlite')
     db.init_db()
+    from homelab import store
+    store.init()
     a=db.get_session(db.create_session('alice','s','t',user_id='alice'))
     b=db.get_session(db.create_session('bob','s','t',user_id='bob'))
     async def owned(id,sess): return {'name':'Fixture','id':id}

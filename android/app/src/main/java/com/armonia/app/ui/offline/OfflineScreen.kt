@@ -70,7 +70,7 @@ fun OfflineScreen(embedded: Boolean = false, viewModel: OfflineViewModel = hiltV
             if (!embedded || selected != null) TopAppBar(
                 title = {
                     Text(
-                        selected?.title ?: "Música sin conexión",
+                        selected?.title ?: "Musica sin conexion",
                         color = Color.White,
                         style = MaterialTheme.typography.headlineMedium,
                         maxLines = 1,
@@ -87,7 +87,7 @@ fun OfflineScreen(embedded: Boolean = false, viewModel: OfflineViewModel = hiltV
                 actions = {
                     if (selected != null) {
                         IconButton(onClick = { viewModel.remove(selected.key) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Quitar de sin conexión")
+                            Icon(Icons.Default.Delete, contentDescription = "Quitar de sin conexion")
                         }
                     }
                 },
@@ -119,10 +119,10 @@ private fun CollectionList(viewModel: OfflineViewModel) {
             Icon(Icons.Default.CloudOff, contentDescription = null, modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
             Spacer(Modifier.height(12.dp))
-            Text("Todavía no has guardado nada sin conexión", style = MaterialTheme.typography.titleMedium)
+            Text("Todavia no has guardado nada sin conexion", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
-                "Abre un álbum o una playlist y toca el icono de descarga. Sonará aquí sin conexión.",
+                "Abre un album o una playlist y toca el icono de descarga. Sonara aqui sin conexion.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
@@ -176,7 +176,7 @@ private fun CollectionRow(
             val status = when {
                 progress?.running == true -> if (c.isSong) "Descargando…" else "Descargando ${progress.done}/${progress.total}"
                 (progress?.failed ?: 0) > 0 -> if (c.isSong) "La descarga ha fallado" else "${com.armonia.app.ui.playlists.songCount(c.songs.size)} · ${progress!!.failed} con error"
-                c.isSong -> "Canción"
+                c.isSong -> "Cancion"
                 else -> com.armonia.app.ui.playlists.songCount(c.songs.size)
             }
             Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
@@ -267,9 +267,9 @@ private fun OfflineSongRow(
             Text(song.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (cached) {
-            Icon(Icons.Default.DownloadDone, contentDescription = "Disponible sin conexión", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.DownloadDone, contentDescription = "Disponible sin conexion", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
         } else {
-            Icon(Icons.Default.CloudOff, contentDescription = "Aún sin descargar", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.CloudOff, contentDescription = "Aun sin descargar", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f), modifier = Modifier.size(18.dp))
         }
     }
 }

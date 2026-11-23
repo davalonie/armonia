@@ -4,23 +4,23 @@ export const MAX_ZIP_BYTES = 8 * 1024 * 1024;
 
 export function validateArchive(file) {
   if (!file || !/\.zip$/i.test(file.name || '')) throw new Error('Elige el archivo ZIP que descarga «Exportar todo» en Exportify.');
-  if (!Number.isFinite(file.size) || file.size <= 0) throw new Error('El archivo está vacío.');
-  if (file.size > MAX_ZIP_BYTES) throw new Error('El archivo supera el límite de 8 MiB.');
+  if (!Number.isFinite(file.size) || file.size <= 0) throw new Error('El archivo esta vacio.');
+  if (file.size > MAX_ZIP_BYTES) throw new Error('El archivo supera el limite de 8 MiB.');
 }
 
 export function batchError(error) {
   const messages = {
-    401: 'Tu sesión ha caducado. Inicia sesión de nuevo.',
-    404: 'Esta importación ya no existe. Vuelve a empezar.',
-    409: 'Esta importación ya se había iniciado. Actualiza para ver su estado.',
+    401: 'Tu sesion ha caducado. Inicia sesion de nuevo.',
+    404: 'Esta importacion ya no existe. Vuelve a empezar.',
+    409: 'Esta importacion ya se habia iniciado. Actualiza para ver su estado.',
     413: 'El archivo es demasiado grande o contiene demasiadas playlists.',
     422: 'No se han encontrado playlists que se puedan importar en ese archivo.',
   };
-  return messages[error?.status] || error?.message || 'No se pudo completar la operación. Vuelve a intentarlo.';
+  return messages[error?.status] || error?.message || 'No se pudo completar la operacion. Vuelve a intentarlo.';
 }
 
 const NOTES = {
-  unreadable: 'Vacía o ilegible', too_large: 'Demasiado grande', empty: 'Sin canciones',
+  unreadable: 'Vacia o ilegible', too_large: 'Demasiado grande', empty: 'Sin canciones',
   resource_limit: 'Solo las primeras 5000 canciones',
 };
 export const noteLabel = note => NOTES[note] || '';
@@ -37,14 +37,14 @@ export function playlistProgress(playlist) {
   if (job.status === 'done') return job.review
     ? {label: `Importada · ${job.review} por revisar`, tone: 'review'}
     : {label: 'Importada', tone: 'done'};
-  return {label: job.review ? `Detenida · ${job.review} por revisar` : 'Detenida: continúala desde Importaciones', tone: 'review'};
+  return {label: job.review ? `Detenida · ${job.review} por revisar` : 'Detenida: continuala desde Importaciones', tone: 'review'};
 }
 
 const REASONS = {
   user: 'En pausa. La playlist en curso termina; las siguientes esperan.',
-  busy: 'Hay otra importación tuya en marcha. Continúa cuando termine.',
-  session: 'La sesión caducó durante la importación. Continúa para seguir con las que faltan.',
-  interrupted: 'El servidor se reinició. Continúa para seguir con las que faltan.',
+  busy: 'Hay otra importacion tuya en marcha. Continua cuando termine.',
+  session: 'La sesion caduco durante la importacion. Continua para seguir con las que faltan.',
+  interrupted: 'El servidor se reinicio. Continua para seguir con las que faltan.',
 };
 export const pauseReason = reason => REASONS[reason] || 'En pausa.';
 

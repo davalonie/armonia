@@ -32,7 +32,7 @@ fun AlbumDetailScreen(
     onBack: () -> Unit,
     viewModel: AlbumDetailViewModel = hiltViewModel(),
 ) {
-    // "Descargar en el teléfono" state for each song row.
+    // "Descargar en el telefono" state for each song row.
     val offlineSongs: com.armonia.app.ui.offline.OfflineSongsViewModel = hiltViewModel()
     val offlineStates by offlineSongs.states.collectAsState()
     val album = viewModel.album
@@ -45,7 +45,7 @@ fun AlbumDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = album?.name ?: "Álbum",
+                        text = album?.name ?: "Album",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.headlineMedium,
                         maxLines = 1,
@@ -78,7 +78,7 @@ fun AlbumDetailScreen(
                     modifier = Modifier.align(Alignment.Center),
                 )
                 album == null -> Text(
-                    text = "Álbum no encontrado",
+                    text = "Album no encontrado",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
@@ -135,7 +135,7 @@ fun AlbumDetailScreen(
             onDismissRequest = { deleteTarget = null },
             title = { Text("¿Eliminar de la biblioteca?") },
             text = {
-                Text("«${target.title}» se borrará del servidor para siempre. No se puede deshacer.")
+                Text("«${target.title}» se borrara del servidor para siempre. No se puede deshacer.")
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -203,7 +203,7 @@ private fun AlbumHeader(
         com.armonia.app.ui.components.CollectionControls(
             songs = album.song.size, isPinnedOffline = isPinnedOffline, offlineProgress = offlineProgress,
             onToggleOffline = onToggleOffline, showingPause = false, onPlay = onPlayAll, player = player,
-            playLabel = "Reproducir el álbum", modifier = Modifier.padding(top = 8.dp),
+            playLabel = "Reproducir el album", modifier = Modifier.padding(top = 8.dp),
         )
     }
 }

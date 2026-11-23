@@ -12,6 +12,11 @@ import java.io.IOException
 class VariantsTest {
     private val base = "acc:https://server/api/stream/t1"
 
+    @Test fun disconnectedPlaybackUsesTheCompleteCopyEvenWhenSavingIsOff() {
+        val chooser = VariantChooser(keptFromStart = { 1000 }, lowWanted = { false }, offlineCopy = { Variant.AHORRO })
+        assertEquals(Variant.AHORRO, chooser.choose(base, 0))
+    }
+
     @Test fun keysKeepEachVariantApart() {
         assertEquals("$base#ahorro", Variant.AHORRO.key(base))
         assertEquals(Variant.AHORRO, Variant.ofKey("$base#ahorro"))

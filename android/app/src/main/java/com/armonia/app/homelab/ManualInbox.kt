@@ -24,15 +24,15 @@ const val MANUAL_MP3_MAX_BYTES = 64L * 1024 * 1024
 class ManualInboxFailure(val userMessage: String) : IOException(userMessage)
 
 fun manualInboxHttpMessage(code: Int): String = when (code) {
-    401 -> "La sesión ha caducado. Vuelve a iniciar sesión."
+    401 -> "La sesion ha caducado. Vuelve a iniciar sesion."
     403 -> "No tienes permiso para guardar en esta biblioteca."
-    404 -> "Este pendiente ya no está disponible. Actualiza la bandeja."
-    409 -> "Este pendiente ha cambiado o se está procesando. Actualiza antes de continuar."
-    413 -> "El archivo supera el límite de 64 MiB."
-    415, 422 -> "El archivo debe ser un MP3 válido."
+    404 -> "Este pendiente ya no esta disponible. Actualiza la bandeja."
+    409 -> "Este pendiente ha cambiado o se esta procesando. Actualiza antes de continuar."
+    413 -> "El archivo supera el limite de 64 MiB."
+    415, 422 -> "El archivo debe ser un MP3 valido."
     429 -> "Hay otra subida en curso. Espera un momento y reintenta."
     507 -> "La biblioteca no tiene espacio suficiente."
-    else -> "No se pudo completar la operación. Actualiza la bandeja antes de reintentar."
+    else -> "No se pudo completar la operacion. Actualiza la bandeja antes de reintentar."
 }
 
 fun <T> Response<T>.checkedInbox(): T {
@@ -40,7 +40,7 @@ fun <T> Response<T>.checkedInbox(): T {
         errorBody()?.close()
         throw ManualInboxFailure(manualInboxHttpMessage(code()))
     }
-    return body() ?: throw ManualInboxFailure("El servidor devolvió una respuesta vacía. Actualiza la bandeja.")
+    return body() ?: throw ManualInboxFailure("El servidor devolvio una respuesta vacia. Actualiza la bandeja.")
 }
 
 fun manualUploadAccountMatches(expected: AuthSnapshot, current: AuthSnapshot): Boolean =
@@ -72,7 +72,7 @@ class BoundedMp3Body(
 
     init {
         if (declaredSize != null && (declaredSize <= 0 || declaredSize > maximum))
-            throw ManualInboxFailure(if (declaredSize == 0L) "El archivo está vacío." else "El archivo supera el límite de 64 MiB.")
+            throw ManualInboxFailure(if (declaredSize == 0L) "El archivo esta vacio." else "El archivo supera el limite de 64 MiB.")
     }
 
     override fun contentType() = "audio/mpeg".toMediaType()
@@ -82,7 +82,7 @@ class BoundedMp3Body(
 
     private fun checkAccess() {
         if (closed.get() || Thread.currentThread().isInterrupted) throw IOException("Upload cancelled")
-        if (!stillAuthorized()) throw ManualInboxFailure("La cuenta o la sesión ha cambiado. No se enviará el archivo.")
+        if (!stillAuthorized()) throw ManualInboxFailure("La cuenta o la sesion ha cambiado. No se enviara el archivo.")
     }
 
     override fun writeTo(sink: BufferedSink) {
@@ -99,11 +99,11 @@ class BoundedMp3Body(
                     if (size < 0) break
                     if (size == 0) continue
                     count += size
-                    if (count > maximum) throw ManualInboxFailure("El archivo supera el límite de 64 MiB.")
+                    if (count > maximum) throw ManualInboxFailure("El archivo supera el limite de 64 MiB.")
                     checkAccess()
                     sink.write(buffer, 0, size)
                 }
-                if (count == 0L) throw ManualInboxFailure("El archivo está vacío.")
+                if (count == 0L) throw ManualInboxFailure("El archivo esta vacio.")
             } finally {
                 stream.set(null)
             }

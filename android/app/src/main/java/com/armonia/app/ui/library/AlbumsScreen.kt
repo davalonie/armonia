@@ -40,7 +40,7 @@ fun CollectionSearchField(value: String, onChange: (String) -> Unit, hint: Strin
         onValueChange = onChange,
         placeholder = { Text(hint) },
         leadingIcon = { Icon(Icons.Default.Search, null) },
-        trailingIcon = { if (value.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Icons.Default.Close, "Borrar la búsqueda") } },
+        trailingIcon = { if (value.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Icons.Default.Close, "Borrar la busqueda") } },
         singleLine = true,
         shape = RoundedCornerShape(28.dp),
         colors = TextFieldDefaults.colors(
@@ -67,7 +67,7 @@ fun CollectionTopBar(title: String, onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumsScreen(onAlbumClick: (String) -> Unit, onBack: () -> Unit, embedded: Boolean = false, viewModel: CollectionViewModel = hiltViewModel()) {
-    Scaffold(contentWindowInsets = WindowInsets(0), topBar = { if (!embedded) CollectionTopBar("Álbumes", onBack) }) { padding ->
+    Scaffold(contentWindowInsets = WindowInsets(0), topBar = { if (!embedded) CollectionTopBar("Albumes", onBack) }) { padding ->
         PullToRefreshBox(isRefreshing = viewModel.isLoading, onRefresh = { viewModel.load() }, modifier = Modifier.padding(padding).fillMaxSize()) {
             val shown = viewModel.shownAlbums
             val state = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
@@ -85,18 +85,18 @@ fun AlbumsScreen(onAlbumClick: (String) -> Unit, onBack: () -> Unit, embedded: B
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column {
-                        CollectionSearchField(viewModel.albumQuery, { viewModel.albumQuery = it }, "Buscar en tus álbumes")
+                        CollectionSearchField(viewModel.albumQuery, { viewModel.albumQuery = it }, "Buscar en tus albumes")
                         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("name" to "Nombre", "artist" to "Artista", "year" to "Más recientes").forEach { (key, label) ->
+                            listOf("name" to "Nombre", "artist" to "Artista", "year" to "Mas recientes").forEach { (key, label) ->
                                 FilterChip(selected = viewModel.albumSort == key, onClick = { viewModel.albumSort = key }, label = { Text(label) })
                             }
                         }
                         Text(
                             when {
                                 viewModel.error != null -> viewModel.error!!
-                                viewModel.isLoading && viewModel.albums.isEmpty() -> "Cargando tus álbumes…"
-                                viewModel.albums.isEmpty() -> "Todavía no hay álbumes en tu biblioteca."
-                                shown.isEmpty() -> "Ningún álbum coincide con «${viewModel.albumQuery.trim()}»."
+                                viewModel.isLoading && viewModel.albums.isEmpty() -> "Cargando tus albumes…"
+                                viewModel.albums.isEmpty() -> "Todavia no hay albumes en tu biblioteca."
+                                shown.isEmpty() -> "Ningun album coincide con «${viewModel.albumQuery.trim()}»."
                                 else -> albumCount(shown.size)
                             },
                             style = MaterialTheme.typography.bodySmall,

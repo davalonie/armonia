@@ -63,7 +63,7 @@
       authed = true;
     } catch (error) {
       if ([401,409].includes(error.status)) setSession(null);
-      else checkError='No se pudo verificar la sesión. Comprueba la conexión y vuelve a intentarlo.';
+      else checkError='No se pudo verificar la sesion. Comprueba la conexion y vuelve a intentarlo.';
     }
     checking = false;
   }
@@ -97,7 +97,7 @@
     <img src="/armonia.svg" alt="" class="w-12 h-12 rounded-xl animate-pulse" draggable="false">
   </div>
 {:else if checkError}
-  <section class="music-page"><p role="alert">{checkError}</p><button on:click={checkSession}>Reintentar conexión</button></section>
+  <section class="music-page"><p role="alert">{checkError}</p><button on:click={checkSession}>Reintentar conexion</button></section>
 {:else if !authed}
   <Login on:success={onLoginSuccess} />
 {:else}

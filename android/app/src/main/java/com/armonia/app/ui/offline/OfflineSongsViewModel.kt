@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-/** Per-song "Descargar en el teléfono" state and action, shared by every song list. */
+/** Per-song "Descargar en el telefono" state and action, shared by every song list. */
 @HiltViewModel
 class OfflineSongsViewModel @Inject constructor(
     private val offline: OfflineManager,

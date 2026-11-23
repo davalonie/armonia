@@ -1,5 +1,5 @@
 <script>
-  // «Historial y estadísticas», as in the app (ListeningScreen): period, the summary card with its chart, your
+  // «Historial y estadisticas», as in the app (ListeningScreen): period, the summary card with its chart, your
   // number-one artist, the Top 5 and the rest of the ranking by artists, songs or albums, and what you heard lately.
   import {library, call, coverArtUrl} from '../lib/api.js';
   import {api, artUrl, toQueueTrack} from '../lib/homelab.js';
@@ -10,7 +10,7 @@
   import {onMount} from 'svelte';
 
   const PERIODS = [['week', 'Semana'], ['month', 'Mes'], ['year', 'Año'], ['always', 'Siempre']];
-  const KINDS = [['artists', 'Artistas'], ['songs', 'Canciones'], ['albums', 'Álbumes']];
+  const KINDS = [['artists', 'Artistas'], ['songs', 'Canciones'], ['albums', 'Albumes']];
   let period = 'month', kind = 'artists', data = null, failed = false, version = 0;
   let directory = new Map(), delivery = {}, retrying = false, retryError = '';
 
@@ -31,7 +31,7 @@
   function choose(id) { if (id !== period) { period = id; void load(); } }
   onMount(() => currentView.subscribe(view => { if (view === 'listening') { void load(); void loadSide(); } }));
 
-  const play = track => playQueue([{...toQueueTrack(track, artUrl(track, 300)), _from: 'Historial y estadísticas'}]);
+  const play = track => playQueue([{...toQueueTrack(track, artUrl(track, 300)), _from: 'Historial y estadisticas'}]);
   $: ranking = data ? data[kind] || [] : [];
   $: lead = data?.artists?.[0];
   $: leadArtist = lead ? directory.get(lead.name.toLowerCase()) : null;
@@ -47,10 +47,10 @@
 </script>
 
 <section class="stats">
-  <h1>Historial y estadísticas</h1>
+  <h1>Historial y estadisticas</h1>
   {#if pending || delivery.blocked}
     <p class="note" role="status">{pending ? `${pending} ${pending === 1 ? 'escucha pendiente' : 'escuchas pendientes'} de sincronizar.` : ''}
-      {delivery.blocked ? `${delivery.blocked} necesitan revisión.` : ''}
+      {delivery.blocked ? `${delivery.blocked} necesitan revision.` : ''}
       {#if delivery.blocked}<button class="link" disabled={retrying} on:click={retry}>Reintentar</button>{/if}</p>
     {#if retryError}<p class="error" role="alert">{retryError}</p>{/if}
   {/if}
@@ -60,9 +60,9 @@
     <button class="chip" class:on={period === id} aria-pressed={period === id} on:click={() => choose(id)}>{label}</button>
   {/each}</nav>
 
-  {#if failed}<button class="link" on:click={load}>Reintentar carga de estadísticas</button>
+  {#if failed}<button class="link" on:click={load}>Reintentar carga de estadisticas</button>
   {:else if !data}<div class="progress" role="progressbar" aria-label="Cargando"><span></span></div>
-  {:else if !data.count}<p class="muted">Todavía no hay escuchas en este periodo</p>
+  {:else if !data.count}<p class="muted">Todavia no hay escuchas en este periodo</p>
   {:else}
     <div class="card">
       <p class="big">{listenTime(data.seconds)}</p>

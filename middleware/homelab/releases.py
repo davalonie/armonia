@@ -27,9 +27,9 @@ _resolving = {}
 _resolution_slots = asyncio.Semaphore(2)
 _DAY = 86400
 _RETRY = 3600
-_TYPES = {"Album": "Álbum", "EP": "EP", "Single": "Single"}
-_DZ_TYPES = {"album": "Álbum", "ep": "EP", "single": "Single"}
-_RECORDS = ("Álbum", "EP")
+_TYPES = {"Album": "Album", "EP": "EP", "Single": "Single"}
+_DZ_TYPES = {"album": "Album", "ep": "EP", "single": "Single"}
+_RECORDS = ("Album", "\u00c1lbum", "EP")
 # Fixed namespace: a Deezer release gets the same UUID every day and in every client. The app only sends its
 # session with release covers whose id has the 36 characters of a UUID (ArmoniaApplication, 0.6.1).
 _DEEZER_IDS = UUID("7d6b0f0e-5a51-4c1b-9b1e-3f0c2a9d4e61")
@@ -49,7 +49,17 @@ def init():
 def snapshot(user):
     with store.connection() as c:
         row = c.execute("SELECT value,updated FROM release_calendar WHERE owner=?", (user,)).fetchone()
-    return (json.loads(row[0]), row[1]) if row else ([], 0)
+    if not row:
+        return [], 0
+    saved = json.loads(row[0])
+    # Older installations stored only the items. An empty legacy calendar gets one retry after a listen.
+    rows = saved if isinstance(saved, list) else saved["items"]
+    seeded = bool(rows) if isinstance(saved, list) else saved["seeded"]
+    if not seeded:
+        with store.connection() as c:
+            if c.execute("SELECT 1 FROM play_events WHERE owner=? LIMIT 1", (user,)).fetchone():
+                return rows, 0
+    return rows, row[1]
 
 
 def credited(item, artist):
@@ -58,7 +68,7 @@ def credited(item, artist):
 
 
 def norm(text):
-    """Title for comparing: no case, accents or punctuation («Todo está bien!» = «TODO ESTA BIEN»)."""
+    """Title for comparing: no case, accents or punctuation («Todo esta bien!» = «TODO ESTA BIEN»)."""
     text = unicodedata.normalize("NFKD", text or "").casefold()
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
     return " ".join(re.sub(r"[\W_]+", " ", text).split())
@@ -295,6 +305,8 @@ def choose(candidates, today):
 
 async def prepare(sess, user, now):
     today = datetime.fromtimestamp(now, UTC).date()
+    with store.connection() as c:
+        had_listen = c.execute("SELECT 1 FROM play_events WHERE owner=? LIMIT 1", (user,)).fetchone() is not None
     listened = listening_stats.artist_seeds(user, now)
     similar = [a["name"] for a in generated.artists(user)]
     seen = set()
@@ -318,7 +330,7 @@ async def prepare(sess, user, now):
     # With a provider down, the calendar is prepared again in an hour instead of tomorrow.
     stamp = now - (_DAY - _RETRY) if failed else now
     with store.connection(write=True) as c:
-        c.execute("INSERT OR REPLACE INTO release_calendar VALUES(?,?,?)", (user, json.dumps(selected), stamp))
+        c.execute("INSERT OR REPLACE INTO release_calendar VALUES(?,?,?)", (user, json.dumps({"items": selected, "seeded": had_listen or bool(similar)}), stamp))
     return selected
 
 
@@ -367,6 +379,8 @@ async def cover(user, key):
 
 async def detail_recordings(release, active):
     # Browse by public artist MBID only. One matching edition supplies its actual disc/track order.
+    if release.get("source") == "deezer" and release.get("tracks"):
+        return release["tracks"]
     artist_id = release.get("artist_mbid")
     if artist_id:
         for offset in range(0, 100, 25):
@@ -394,7 +408,7 @@ async def detail_recordings(release, active):
 def tracks(sess, user, key):
     release = lookup(user, key)
     if release["date"] > datetime.now(UTC).date().isoformat():
-        raise HTTPException(409, "Todavía no se ha publicado")
+        raise HTTPException(409, "Todavia no se ha publicado")
     now = int(time.time())
     with store.connection() as c:
         row = c.execute("SELECT items FROM release_resolved WHERE owner=? AND id=? AND updated>?",
@@ -403,7 +417,7 @@ def tracks(sess, user, key):
         return {"items": json.loads(row[0]), "preparing": False}
     if (user, key) not in _resolving:
         if sum(1 for u, _ in _resolving if u == user) >= 2:
-            raise HTTPException(429, "Hay dos listas en preparación")
+            raise HTTPException(429, "Hay dos listas en preparacion")
         def active():
             db.require_active_session(sess)
         async def run():
@@ -411,16 +425,24 @@ def tracks(sess, user, key):
                 async with _resolution_slots:
                     items = []
                     incomplete = False
-                    for recording in await detail_recordings(release, active):
+                    recordings = await detail_recordings(release, active)
+                    for index in range(0, len(recordings), 2):
                         active()
-                        try:
-                            item, outcome = await generated.resolve_recording(recording, sess, active)
-                        except (HTTPException, httpx.HTTPError):
-                            incomplete = True
-                            break
-                        incomplete |= outcome == "provider_error"
-                        if item:
-                            items.append(item)
+                        pair = recordings[index:index + 2]
+                        results = await asyncio.gather(
+                            *(generated.resolve_recording(r, sess, active) for r in pair),
+                            return_exceptions=True,
+                        )
+                        for result in results:
+                            if isinstance(result, (HTTPException, httpx.HTTPError)):
+                                incomplete = True
+                                continue
+                            if isinstance(result, BaseException):
+                                raise result
+                            item, outcome = result
+                            incomplete |= outcome == "provider_error"
+                            if item:
+                                items.append(item)
                     active()
                     with store.connection(write=True) as c:
                         c.execute("DELETE FROM release_resolved WHERE updated<=?", (now-_DAY,))

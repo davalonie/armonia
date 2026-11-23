@@ -20,7 +20,7 @@
   import AlbumPage from '../components/AlbumPage.svelte';
 
   const HISTORY_KEY=`armonia:search-history:${accountKey()}`;
-  const FILTERS=[['todo','Todo'],['canciones','Canciones'],['artistas','Artistas'],['albumes','Álbumes'],['playlists','Playlists']];
+  const FILTERS=[['todo','Todo'],['canciones','Canciones'],['artistas','Artistas'],['albumes','Albumes'],['playlists','Playlists']];
   let query='',filter='todo',inputEl,timer=null,controller=null,run=0;
   let searched='',loading=false,error='',externalError=false;
   let local={songs:[],albums:[],artists:[]},external={songs:[],artists:[]},playlists=[];
@@ -33,7 +33,7 @@
   function remember(q){history=[q,...readHistory().filter(x=>x!==q)].slice(0,12);localStorage.setItem(HISTORY_KEY,JSON.stringify(history));}
   function forget(q){history=readHistory().filter(x=>x!==q);localStorage.setItem(HISTORY_KEY,JSON.stringify(history));}
 
-  const externalSong=r=>toQueueTrack({source:'youtube',source_id:r.videoId,title:r.title||'Sin título',artist:r.channel||'Desconocido',album:r.album||'',duration:r.duration||null},r.thumbnail||null);
+  const externalSong=r=>toQueueTrack({source:'youtube',source_id:r.videoId,title:r.title||'Sin titulo',artist:r.channel||'Desconocido',album:r.album||'',duration:r.duration||null},r.thumbnail||null);
   const fold=s=>s.normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase();
 
   async function loadOwnPlaylists(signal){
@@ -61,23 +61,32 @@
     const q=query.trim();
     if(q.length<2)return;
     if(save)remember(q);
-    if(q===searched&&!error&&!loading)return;
+    if(q===searched&&!error&&!externalError&&!loading)return;
     cancel();
     const mine=run;controller=new AbortController();const signal=controller.signal;
     loading=true;error='';externalError=false;stack=[];
-    const [lib,ext,lists]=await Promise.allSettled([
-      library('search3',{query:q,songCount:12,albumCount:8,artistCount:6},{signal}),
-      searchApi(q,15,searchSource(),signal),
-      loadOwnPlaylists(signal)]);
+    searched=q;local={songs:[],albums:[],artists:[]};external={songs:[],artists:[]};playlists=[];
+    const source=searchSource();
+    const [lib,ext,artists]=await Promise.allSettled([
+      library('search3',{query:q,songCount:12,albumCount:8,artistCount:6},{signal}).then(r=>{
+        if(mine!==run)return;
+        const found=r.searchResult3||{};
+        local={songs:found.song||[],albums:found.album||[],artists:found.artist||[]};
+      }),
+      searchApi(q,15,source,signal,"songs").then(r=>{
+        if(mine!==run)return;
+        external={...external,songs:r.songs||[]};
+        if(external.songs[0])prepareTrack(externalSong(external.songs[0]));
+      }),
+      source==="youtube_music" && searchApi(q,15,source,signal,"artists").then(r=>{
+        if(mine===run)external={...external,artists:r.artists||[]};
+      }),
+      loadOwnPlaylists(signal).then(rows=>{
+        if(mine===run)playlists=rows.filter(p=>fold(p.name).includes(fold(q))).slice(0,8);
+      })]);
     if(mine!==run)return;
-    loading=false;searched=q;
-    const found=lib.status==='fulfilled'?lib.value.searchResult3||{}:{};
-    local={songs:found.song||[],albums:found.album||[],artists:found.artist||[]};
-    external=ext.status==='fulfilled'?{songs:ext.value?.songs||[],artists:ext.value?.artists||[]}:{songs:[],artists:[]};
-    externalError=ext.status==='rejected'&&ext.reason?.status!==403;
-    // The first result is the likely press: have the server get it ready (not a listen).
-    if(external.songs[0])prepareTrack(externalSong(external.songs[0]));
-    playlists=lists.status==='fulfilled'?lists.value.filter(p=>fold(p.name).includes(fold(q))).slice(0,8):[];
+    loading=false;
+    externalError=[ext,artists].some(r=>r.status==='rejected'&&r.reason?.status!==403);
     if(lib.status==='rejected'&&ext.status==='rejected')error=lib.reason?.message||'No se pudo buscar. Vuelve a intentarlo.';
   }
   onDestroy(()=>{clearTimeout(timer);cancel();});
@@ -97,9 +106,9 @@
     (filter==='albumes'&&!local.albums.length)||(filter==='playlists'&&!playlists.length));
 
   // --- actions ---
-  function playLocal(i){playQueue(local.songs.map(s=>({...s,_from:`Búsqueda: ${searched}`})),i);}
-  function playExternal(i){playQueue(external.songs.map(r=>({...externalSong(r),_from:`Búsqueda: ${searched}`})),i);}
-  function enqueue(song){const token=playNext(song);showToast('Se reproducirá a continuación','info',()=>undoPlayNext(token));}
+  function playLocal(i){playQueue([{...local.songs[i],_from:`Busqueda: ${searched}`}]);}
+  function playExternal(i){playQueue([{...externalSong(external.songs[i]),_from:`Busqueda: ${searched}`}]);}
+  function enqueue(song){const token=playNext(song);showToast('Se reproducira a continuacion','info',()=>undoPlayNext(token));}
   function externalActions(r){return [{label:'Descargar a la biblioteca',icon:'ph ph-download-simple',action:()=>dl={open:true,videoId:r.videoId,artist:r.channel||'',title:r.title||'',album:r.album||''}}];}
 
   // Dragging a song row to the right queues it right after the current song, without interrupting it.
@@ -145,20 +154,20 @@
   {#if top.kind==='list'}
     <PlaylistDetail title={top.entry.title} eyebrow={top.entry.eyebrow} description={top.entry.description||''} meta={top.meta||''}
       covers={top.entry.covers||[]} variant="plain" rows={top.rows} context={context(top.entry)} loading={top.loading} notice={top.notice}
-      on:back={back}><div slot="empty"><p>Esta lista no tiene canciones todavía.</p></div></PlaylistDetail>
+      on:back={back}><div slot="empty"><p>Esta lista no tiene canciones todavia.</p></div></PlaylistDetail>
   {:else if top.kind==='artist'}
     <div class="search subpage">
       <button class="back" aria-label="Volver" on:click={back}><i aria-hidden="true" class="ph ph-arrow-left"></i></button>
       <p class="eyebrow">Artista de tu biblioteca</p>
       <h1>{top.artist.name}</h1>
-      {#if top.loading}<p class="hint" role="status">Cargando álbumes…</p>
+      {#if top.loading}<p class="hint" role="status">Cargando albumes…</p>
       {:else if top.notice}<p class="hint" role="alert">{top.notice}</p>
-      {:else if !top.albums.length}<p class="hint">No hay álbumes de este artista en tu biblioteca.</p>
+      {:else if !top.albums.length}<p class="hint">No hay albumes de este artista en tu biblioteca.</p>
       {:else}
         <ul class="rows">{#each top.albums as a (a.id)}
           <li><button class="row" aria-label={`Abrir ${a.name}`} on:click={()=>openList(albumEntry(a))}>
             <span class="art"><Cover covers={a.coverArt?[coverArtUrl(a.coverArt,96)]:[]} size={96} /></span>
-            <span class="text"><b>{a.name}</b><small>Álbum{a.year?` · ${a.year}`:''}{a.songCount?` · ${count(a.songCount)}`:''}</small></span>
+            <span class="text"><b>{a.name}</b><small>Album{a.year?` · ${a.year}`:''}{a.songCount?` · ${count(a.songCount)}`:''}</small></span>
             <i aria-hidden="true" class="ph ph-caret-right chevron"></i></button></li>
         {/each}</ul>
       {/if}
@@ -174,8 +183,8 @@
   <form class="field" role="search" on:submit|preventDefault={()=>{inputEl?.blur();void go();}}>
     <i aria-hidden="true" class="ph-bold ph-magnifying-glass"></i>
     <input bind:this={inputEl} bind:value={query} type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false"
-      aria-label="Buscar canciones, artistas, álbumes y playlists" placeholder="¿Qué quieres escuchar?" on:input={schedule}>
-    {#if query}<button type="button" class="clear" aria-label="Borrar búsqueda" on:click={()=>{query='';schedule();inputEl?.focus();}}><i aria-hidden="true" class="ph ph-x"></i></button>{/if}
+      aria-label="Buscar canciones, artistas, albumes y playlists" placeholder="¿Que quieres escuchar?" on:input={schedule}>
+    {#if query}<button type="button" class="clear" aria-label="Borrar busqueda" on:click={()=>{query='';schedule();inputEl?.focus();}}><i aria-hidden="true" class="ph ph-x"></i></button>{/if}
   </form>
 
   {#if searched||loading}
@@ -184,7 +193,7 @@
     </div>
   {/if}
 
-  {#if loading&&!searched}
+  {#if loading&&!(local.songs.length+local.artists.length+local.albums.length+external.songs.length+external.artists.length+playlists.length)}
     <div class="state" role="status"><i aria-hidden="true" class="ph ph-circle-notch spin"></i><p>Buscando…</p></div>
   {:else if error}
     <div class="state" role="alert"><i aria-hidden="true" class="ph ph-warning-circle"></i><p>{error}</p><button class="pill" on:click={()=>{searched='';void go();}}>Reintentar</button></div>
@@ -192,10 +201,10 @@
     {#if history.length||recent.length}
     {#if history.length}
       <section>
-        <header class="section-head"><h2>Búsquedas recientes</h2><button class="link" on:click={()=>{history=[];localStorage.removeItem(HISTORY_KEY);}}>Borrar todo</button></header>
+        <header class="section-head"><h2>Busquedas recientes</h2><button class="link" on:click={()=>{history=[];localStorage.removeItem(HISTORY_KEY);}}>Borrar todo</button></header>
         <ul class="rows">{#each history as h (h)}
           <li class="history"><button class="row" on:click={()=>{query=h;void go();}}><span class="art round"><i aria-hidden="true" class="ph ph-clock-counter-clockwise"></i></span><span class="text"><b>{h}</b></span></button>
-            <button class="icon" aria-label={`Quitar ${h} de las búsquedas recientes`} on:click={()=>forget(h)}><i aria-hidden="true" class="ph ph-x"></i></button></li>
+            <button class="icon" aria-label={`Quitar ${h} de las busquedas recientes`} on:click={()=>forget(h)}><i aria-hidden="true" class="ph ph-x"></i></button></li>
         {/each}</ul>
       </section>
     {/if}
@@ -212,10 +221,10 @@
       </section>
     {/if}
     {:else}
-      <div class="state"><i aria-hidden="true" class="ph ph-magnifying-glass"></i><p>Busca en tu biblioteca y en las fuentes disponibles: canciones, artistas, álbumes y playlists.</p></div>
+      <div class="state"><i aria-hidden="true" class="ph ph-magnifying-glass"></i><p>Busca en tu biblioteca y en las fuentes disponibles: canciones, artistas, albumes y playlists.</p></div>
     {/if}
   {:else if empty}
-    <div class="state"><i aria-hidden="true" class="ph ph-magnifying-glass"></i><p>No hay resultados para «{searched}». Revisa la ortografía o prueba con otro título o artista.</p></div>
+    <div class="state"><i aria-hidden="true" class="ph ph-magnifying-glass"></i><p>No hay resultados para «{searched}». Revisa la ortografia o prueba con otro titulo o artista.</p></div>
   {:else}
     <div class:stale={loading} aria-busy={loading}>
     {#if emptyFilter}<div class="state"><p>No hay {FILTERS.find(f=>f[0]===filter)[1].toLowerCase()} para «{searched}».</p></div>{/if}
@@ -225,13 +234,13 @@
         <ul class="rows">{#each local.songs.slice(0,limit) as s,i (s.id)}
           {@const active=$currentTrack?.id===s.id}
           <li class="swipe" class:dragging={drag?.key==='l'+s.id}>
-            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i> A continuación</span>
+            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i> A continuacion</span>
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <div class="row-wrap" style:transform={drag?.key==='l'+s.id?`translateX(${drag.dx}px)`:''}
               on:pointerdown={e=>dragStart(e,'l'+s.id)} on:pointermove={dragMove} on:pointerup={()=>dragEnd(s)} on:pointercancel={()=>drag=null} on:dragstart|preventDefault>
               <button class="row" aria-label={`Reproducir ${s.title}`} on:click={guarded(()=>playLocal(i))}>
                 <span class="art"><Cover covers={s.coverArt?[coverArtUrl(s.coverArt,96)]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
-                <span class="text"><b class:playing={active}>{s.title}</b><small>Canción · {s.artist}</small></span></button>
+                <span class="text"><b class:playing={active}>{s.title}</b><small>Cancion · {s.artist}</small></span></button>
               <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
             </div></li>
         {/each}</ul>
@@ -254,11 +263,11 @@
     {/if}
 
     {#if shown.albums&&local.albums.length}
-      <section><h2>Álbumes</h2>
+      <section><h2>Albumes</h2>
         <ul class="rows">{#each local.albums.slice(0,limit) as a (a.id)}
           <li><button class="row" aria-label={`Abrir ${a.name}`} on:click={()=>openList(albumEntry(a))}>
             <span class="art"><Cover covers={a.coverArt?[coverArtUrl(a.coverArt,96)]:[]} size={96} /></span>
-            <span class="text"><b>{a.name}</b><small>Álbum · {a.artist}</small></span><i aria-hidden="true" class="ph ph-caret-right chevron"></i></button></li>
+            <span class="text"><b>{a.name}</b><small>Album · {a.artist}</small></span><i aria-hidden="true" class="ph ph-caret-right chevron"></i></button></li>
         {/each}</ul>
       </section>
     {/if}
@@ -275,24 +284,24 @@
     {/if}
 
     {#if shown.songs&&external.songs.length}
-      <section><h2>{local.songs.length?'Más canciones':'Canciones'}</h2>
+      <section><h2>{local.songs.length?'Mas canciones':'Canciones'}</h2>
         <ul class="rows">{#each external.songs.slice(0,filter==='todo'?8:50) as r,i (r.videoId)}
           {@const song=externalSong(r)}
           {@const active=$currentTrack?.id===song.id}
           <li class="swipe" class:dragging={drag?.key==='e'+r.videoId}>
-            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i> A continuación</span>
+            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i> A continuacion</span>
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <div class="row-wrap" style:transform={drag?.key==='e'+r.videoId?`translateX(${drag.dx}px)`:''}
               on:pointerdown={e=>dragStart(e,'e'+r.videoId)} on:pointermove={dragMove} on:pointerup={()=>dragEnd(song)} on:pointercancel={()=>drag=null} on:dragstart|preventDefault>
               <button class="row" aria-label={`Reproducir ${r.title}`} on:click={guarded(()=>playExternal(i))}>
                 <span class="art"><Cover covers={r.thumbnail?[r.thumbnail]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
-                <span class="text"><b class:playing={active}>{r.title||'Sin título'}</b><small>Canción · {r.channel||'Desconocido'}</small></span></button>
+                <span class="text"><b class:playing={active}>{r.title||'Sin titulo'}</b><small>Cancion · {r.channel||'Desconocido'}</small></span></button>
               <button class="icon" aria-label={`Opciones de ${r.title}`} on:click={e=>songMenu(e.currentTarget,song,{extra:externalActions(r)})}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
             </div></li>
         {/each}</ul>
       </section>
     {:else if shown.songs&&externalError}
-      <p class="hint" role="status">La búsqueda en fuentes externas no está disponible ahora mismo. Se muestran solo los resultados de tu biblioteca.</p>
+      <p class="hint" role="status">La busqueda en fuentes externas no esta disponible ahora mismo. Se muestran solo los resultados de tu biblioteca.</p>
     {/if}
     </div>
   {/if}

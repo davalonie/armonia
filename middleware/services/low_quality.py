@@ -32,7 +32,7 @@ LOW_KBPS = 64
 VERSION = "m1"
 SUFFIX = ".m4a"
 CONTENT_TYPE = "audio/mp4"
-# Its own folder inside Armonía's cache (homelab/audio_cache.py only touches its own files at the top level).
+# Its own folder inside Armonia's cache (homelab/audio_cache.py only touches its own files at the top level).
 DIR = Path(os.getenv("ARMONIA_LOW_DIR") or Path(os.getenv("MUSIC_CACHE_DIR") or "/app/cache") / "armonia-ahorro")
 MAX_BYTES = int(os.getenv("ARMONIA_LOW_MAX_MB", "500")) * 1024 * 1024
 MAX_AGE_SECONDS = int(float(os.getenv("ARMONIA_LOW_MAX_DAYS", "4")) * 86400)

@@ -19,7 +19,7 @@
     {view:'home',icon:'ph-house',label:'Inicio'},
     {view:'search',icon:'ph-magnifying-glass',label:'Buscar'},
     {view:'library',icon:'ph-books',label:'Biblioteca'},
-    {view:'more',icon:'ph-dots-three',label:'Más'},
+    {view:'more',icon:'ph-dots-three',label:'Mas'},
   ];
   const NAV_BOTTOM = [];
 </script>
@@ -34,8 +34,8 @@
     <button
       on:click={toggle}
       class="w-8 h-8 shrink-0 rounded-lg overflow-hidden hover:opacity-85 transition-opacity"
-      title={collapsed ? 'Mostrar el menú' : 'Plegar el menú'}
-      aria-label={collapsed ? 'Mostrar el menú' : 'Plegar el menú'}
+      title={collapsed ? 'Mostrar el menu' : 'Plegar el menu'}
+      aria-label={collapsed ? 'Mostrar el menu' : 'Plegar el menu'}
     >
       <img src="/armonia.svg" alt="" class="w-8 h-8" draggable="false">
     </button>

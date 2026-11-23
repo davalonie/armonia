@@ -1,8 +1,8 @@
-"""Laboratorio: un camino lento entre el emulador y el Armonía de laboratorio, con su velocidad y su retraso.
+"""Laboratorio: un camino lento entre el emulador y el Armonia de laboratorio, con su velocidad y su retraso.
 
 El emulador de esta versión no aplica `network speed`/`network delay` (medido 19-11-2026: las canciones llegaban
 al ritmo del propio servidor y el ping a 0,7 ms). Así que la app habla con este intermediario (127.0.0.1:18480,
-el puerto que ya usa) y él con Armonía (127.0.0.1:18481).
+el puerto que ya usa) y él con Armonia (127.0.0.1:18481).
 
 Un solo enlace compartido hacia el móvil, como una conexión real: todo lo que va al móvil hace cola en él y sale
 a la velocidad elegida, y cada trozo llega además con el retraso de ida. La cola admite como mucho QUEUE_S

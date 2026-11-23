@@ -14,6 +14,8 @@ import com.armonia.app.data.repository.LibraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import javax.inject.Inject
 
@@ -72,6 +74,36 @@ class PlaylistsViewModel @Inject constructor(
         viewModelScope.launch { runCatching { music.playlists().body()?.playlists }.getOrNull()?.let { mixed = it } }
     }
 
+    fun coverUrl(id: String) = repository.getCoverArtUrl(id, 128)
+
+    fun uploadCover(kind: String, id: String, owner: String, open: () -> java.io.InputStream?) {
+        viewModelScope.launch {
+            try {
+                check(owner == prefs.cachedUserId)
+                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val limit = 8 * 1024 * 1024
+                    requireNotNull(open()).use { input ->
+                        val out = java.io.ByteArrayOutputStream()
+                        val buffer = ByteArray(16 * 1024)
+                        while (true) {
+                            val n = input.read(buffer)
+                            if (n < 0) break
+                            require(out.size() + n <= limit) { "La imagen debe ocupar como maximo 8 MiB" }
+                            out.write(buffer, 0, n)
+                        }
+                        out.toByteArray()
+                    }
+                }
+                val response = music.uploadCover(kind, id, owner, bytes.toRequestBody("application/octet-stream".toMediaType()))
+                check(response.isSuccessful) { "El servidor rechazo la portada (${response.code()})" }
+                if (owner == prefs.cachedUserId) load()
+            } catch (e: Exception) {
+                if (owner == prefs.cachedUserId) error = e.message ?: "No se pudo guardar la portada"
+            }
+        }
+    }
+    val ownerId get() = prefs.cachedUserId
+
     fun create(name: String) {
         val trimmed = name.trim()
         if (trimmed.isBlank()) return
@@ -118,10 +150,10 @@ class PlaylistsViewModel @Inject constructor(
                     )
                     pollImport(b.importId)
                 } else {
-                    importStartError = parseDetail(resp.errorBody()?.string()) ?: "La importación ha fallado (${resp.code()})"
+                    importStartError = parseDetail(resp.errorBody()?.string()) ?: "La importacion ha fallado (${resp.code()})"
                 }
             } catch (e: Exception) {
-                importStartError = e.message ?: "La importación ha fallado"
+                importStartError = e.message ?: "La importacion ha fallado"
             } finally {
                 importStarting = false
             }

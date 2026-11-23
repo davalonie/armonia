@@ -73,7 +73,7 @@
     >
   </label>
   <label class="block mb-4">
-    <span class="block text-sm text-armonia-muted mb-1.5 font-medium">Título</span>
+    <span class="block text-sm text-armonia-muted mb-1.5 font-medium">Titulo</span>
     <input
       type="text"
       bind:value={localTitle}
@@ -83,7 +83,7 @@
     >
   </label>
   <label class="block mb-4">
-    <span class="block text-sm text-armonia-muted mb-1.5 font-medium">Álbum <span class="text-armonia-muted/50 font-normal">(opcional)</span></span>
+    <span class="block text-sm text-armonia-muted mb-1.5 font-medium">Album <span class="text-armonia-muted/50 font-normal">(opcional)</span></span>
     <input
       type="text"
       bind:value={localAlbum}
@@ -93,7 +93,7 @@
   </label>
   {#if showDuplicateWarning}
     <div class="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-sm text-yellow-300">
-      <strong>Ya en la biblioteca.</strong> Puede que esta canción ya esté en tu biblioteca. ¿Descargarla de todos modos?
+      <strong>Ya en la biblioteca.</strong> Puede que esta cancion ya este en tu biblioteca. ¿Descargarla de todos modos?
     </div>
     <div class="flex gap-3 justify-end mt-4">
       <button on:click={close} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancelar</button>

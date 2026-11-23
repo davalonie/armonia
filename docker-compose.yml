@@ -39,7 +39,7 @@ services:
       context: ./middleware
       args:
         ARMONIA_COMMIT: ${ARMONIA_COMMIT:-}
-        MUSIC_APP_NAME: ${MUSIC_APP_NAME:-Armonía}
+        MUSIC_APP_NAME: ${MUSIC_APP_NAME:-Armonia}
     ports: ["${MUSIC_BIND:-127.0.0.1}:${MUSIC_PORT:-8000}:8000"]
     networks: [entry, library, recommendations, history_alice, history_bob, history_carol]
     environment:
@@ -52,6 +52,7 @@ services:
       MUSIC_PUBLIC_ORIGIN: ${MUSIC_PUBLIC_ORIGIN:-}
       MUSIC_COOKIE_SECURE: ${MUSIC_COOKIE_SECURE:-true}
       MUSIC_SECRET_KEY_FILE: /run/secrets/credential_key
+      MUSIC_AURRAL_LOGIN_ORIGIN: http://aurral:3001
       MUSIC_INTEGRATIONS_FILE: /run/secrets/integrations.json
       MUSIC_SOURCES_FILE: /app/config/sources.json
       MUSIC_YOUTUBE_CAPABILITIES: ${MUSIC_YOUTUBE_CAPABILITIES:-}

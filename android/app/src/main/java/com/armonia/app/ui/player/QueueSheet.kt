@@ -48,16 +48,18 @@ fun QueueSheet(
     // With shuffle on, show the order tracks will actually play in. Each row keeps
     // its real queue index so tap/remove act on the right track; reordering by
     // drag only makes sense for the linear queue.
-    val rows: List<Pair<Int, Song>> = remember(queue, playOrder, shuffleOn) {
+    val rows = remember(queue, playOrder, shuffleOn, currentIndex) {
         val order = if (shuffleOn && playOrder.size == queue.size) playOrder else queue.indices.toList()
-        order.mapNotNull { i -> queue.getOrNull(i)?.let { i to it } }
+        visibleQueueRows(queue.map { it.id }, order, currentIndex)
     }
-    val currentPos = rows.indexOfFirst { it.first == currentIndex }
+    val currentPos = rows.indexOfFirst { it.index == currentIndex }
     val hasUpcoming = currentPos >= 0 && currentPos < rows.size - 1
 
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        player.moveInQueue(from.index, to.index)
+        val source = rows.getOrNull(from.index)?.index
+        val target = rows.getOrNull(to.index)?.index
+        if (source != null && target != null) player.moveInQueue(source, target)
     }
 
     ModalBottomSheet(
@@ -100,7 +102,7 @@ fun QueueSheet(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "La cola está vacía",
+                        text = "La cola esta vacia",
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                 }
@@ -114,11 +116,13 @@ fun QueueSheet(
                 ) {
                     itemsIndexed(
                         items = rows,
-                        key = { _, (_, song) -> System.identityHashCode(song) },
-                    ) { position, (index, song) ->
+                        key = { _, row -> row.key },
+                    ) { position, row ->
+                        val index = row.index
+                        val song = queue[index]
                         ReorderableItem(
                             reorderableState,
-                            key = System.identityHashCode(song),
+                            key = row.key,
                             enabled = !shuffleOn,
                         ) { _ ->
                             // draggableHandle() resolves on the reorderable item scope here.
@@ -272,7 +276,7 @@ private fun QueueRowContent(
                     Spacer(Modifier.width(4.dp))
                 }
                 Text(
-                    text = if (auto) "Música similar · ${song.artist}" else song.artist,
+                    text = if (auto) "Musica similar · ${song.artist}" else song.artist,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     maxLines = 1,
@@ -280,5 +284,19 @@ private fun QueueRowContent(
                 )
             }
         }
+    }
+}
+
+internal data class VisibleQueueRow(val index: Int, val key: String)
+
+internal fun visibleQueueRows(ids: List<String>, order: List<Int>, current: Int): List<VisibleQueueRow> {
+    val occurrences = mutableMapOf<String, Int>()
+    val keys = ids.map { id ->
+        val occurrence = occurrences.getOrDefault(id, 0)
+        occurrences[id] = occurrence + 1
+        "$occurrence:$id"
+    }
+    return order.drop(order.indexOf(current).coerceAtLeast(0)).mapNotNull { index ->
+        keys.getOrNull(index)?.let { VisibleQueueRow(index, it) }
     }
 }

@@ -1,7 +1,7 @@
 # Stage 1: build frontend (Vite + Svelte + Tailwind)
 FROM node:24-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8 AS assets
 WORKDIR /assets
-ARG MUSIC_APP_NAME=Armonía
+ARG MUSIC_APP_NAME=Armonia
 ENV VITE_APP_NAME=$MUSIC_APP_NAME
 
 # Install exactly what the lockfile pins (the versions Dependabot audits),

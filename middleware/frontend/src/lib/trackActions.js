@@ -16,7 +16,7 @@ export async function songMenu(anchor,song,{extra=[],onChange=null,download=true
   const track=fromQueueTrack(song);
   const header={title:song.title||track.title,subtitle:song.artist||track.artist,art:external?artUrl(song._previewThumb||track,96):trackArtUrl(song,96)};
   const queue=[
-    {label:'Reproducir a continuación',icon:'ph ph-queue',action:()=>{const token=playNext(song);showToast('Se reproducirá a continuación','info',()=>undoPlayNext(token));}},
+    {label:'Reproducir a continuacion',icon:'ph ph-queue',action:()=>{const token=playNext(song);showToast('Se reproducira a continuacion','info',()=>undoPlayNext(token));}},
     {label:'Añadir al final de la cola',icon:'ph ph-list-plus',action:()=>{addToQueue(song);showToast('Añadida a la cola');}},
     {label:'Añadir a playlist',icon:'ph ph-plus-circle',action:()=>showPlaylistPicker([track])},
   ];

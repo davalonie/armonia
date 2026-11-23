@@ -24,7 +24,7 @@ def main():
     env = {"HOME": "/work/home", "PATH": "/jdk/bin:/usr/bin:/bin", "JAVA_HOME": "/jdk",
            "ANDROID_HOME": "/sdk", "GRADLE_USER_HOME": "/gradle-cache", "LANG": "C.UTF-8",
            "AUDIT_PROXY_SOCK": "/work/proxy.sock"}
-    # El proxy solo admite los dominios HTTPS de las dependencias de compilación.
+    # El proxy solo admite los dominios HTTPS de las dependencias de compilacion.
     env["JAVA_TOOL_OPTIONS"] = "-Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=18888"
     with tempfile.TemporaryDirectory(prefix="build-", dir=OUTPUT) as tmp:
         work = Path(tmp)
@@ -60,13 +60,13 @@ def main():
                 if (work / "proxy.sock").is_socket():
                     break
                 if proxy.poll() is not None:
-                    sys.exit("El proxy de compilación terminó antes de arrancar.")
+                    sys.exit("El proxy de compilacion termino antes de arrancar.")
                 time.sleep(0.1)
             subprocess.run(args, env=env, check=True)
             for name in ("outputs", "test-results"):
                 source = project / "app/build" / name
                 if source.exists():
-                    # Solo se exportan los archivos de esta ejecución.
+                    # Solo se exportan los archivos de esta ejecucion.
                     destination = Path(tempfile.mkdtemp(prefix=name + "-", dir=OUTPUT))
                     shutil.copytree(source, destination, dirs_exist_ok=True)
                     print(destination.relative_to(ROOT))

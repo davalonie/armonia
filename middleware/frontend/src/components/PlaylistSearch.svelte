@@ -15,7 +15,7 @@
   }
   const key=t=>`${t.source}:${t.source_id}`;
   function toggle(t){const next=new Map(selected);next.has(key(t))?next.delete(key(t)):next.set(key(t),t);selected=next;}
-  async function add(){busy=true;error='';try{const count=selected.size;await onAdd([...selected.values()]);selected=new Map();notice=`Selección procesada (${count} canciones).`;}catch(e){error=e.message;}finally{busy=false;}}
+  async function add(){busy=true;error='';try{const count=selected.size;await onAdd([...selected.values()]);selected=new Map();notice=`Seleccion procesada (${count} canciones).`;}catch(e){error=e.message;}finally{busy=false;}}
   function preview(t){audition(toQueueTrack(t));}
 </script>
 <section class="music-card">
@@ -31,7 +31,7 @@
   <div class="results">
     {#each results as t}<div class="music-row"><label><input type="checkbox" checked={selected.has(key(t))} on:change={()=>toggle(t)}> {t.title} · {t.artist}</label><button on:click={()=>preview(t)}>Preescuchar</button></div>{/each}
   </div>
-  <button disabled={busy||!selected.size} on:click={add}>Añadir selección ({selected.size})</button>
+  <button disabled={busy||!selected.size} on:click={add}>Añadir seleccion ({selected.size})</button>
   <PreviewControls />
 </section>
 <style>.results{max-height:40vh;overflow:auto}input:not([type=checkbox]),select{max-width:100%;background:#181820;padding:.5rem;border:1px solid #555;border-radius:.4rem}input[type=checkbox]{width:auto}button{padding:.5rem;border:1px solid #555;border-radius:.4rem}button:disabled{opacity:.5}</style>

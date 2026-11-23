@@ -1,4 +1,4 @@
-"""Laboratorio: Armonía entrega el principio de la canción al momento y el resto a ritmo; las descargas, enteras.
+"""Laboratorio: Armonia entrega el principio de la canción al momento y el resto a ritmo; las descargas, enteras.
 
 Una canción ficticia de 4 min 20 s a 128 kbps (unos 4,2 MB), cuenta ficticia «ana», todo en 127.0.0.1.
 Se borra al terminar.

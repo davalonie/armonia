@@ -18,7 +18,7 @@
   let loaded=false,homeError='',detail=null,pages=[],busy=false,poll=null,token=0;
 
   const hour=new Date().getHours();
-  const greeting=hour<6?'Buenas noches':hour<13?'Buenos días':hour<21?'Buenas tardes':'Buenas noches';
+  const greeting=hour<6?'Buenas noches':hour<13?'Buenos dias':hour<21?'Buenas tardes':'Buenas noches';
   const liked=likedEntry;
   const day=seconds=>new Date(seconds*1000).toLocaleDateString('es-ES',{day:'numeric',month:'long'});
   const recentEntry=p=>({type:p.kind,id:p.id,title:p.name,covers:p.coverArt?[coverArtUrl(p.coverArt,160)]:(p.covers||[]),
@@ -94,7 +94,7 @@
   async function act(work,done){
     if(busy)return;busy=true;
     try{const result=await work();if(done)showToast(done(result));await loadHome();}
-    catch(e){showToast(e.status===429?'Espera un minuto antes de volver a actualizar.':e.status===409?'Todavía no hay artistas identificados en tus escuchas para crear la lista.':e.message,'error');}
+    catch(e){showToast(e.status===429?'Espera un minuto antes de volver a actualizar.':e.status===409?'Todavia no hay artistas identificados en tus escuchas para crear la lista.':e.message,'error');}
     finally{busy=false;}
   }
   const save=()=>act(()=>api.saveGenerated(detail.id),r=>`Copia guardada en tu biblioteca: ${r.name}`);
@@ -120,14 +120,14 @@
     on:back={()=>detail=null}>
     <div slot="empty">
       {#if detail.type==='generated'&&detail.state==='inactive'}
-        <p>Tu lista semanal reúne canciones de artistas similares a los que más escuchas.</p>
+        <p>Tu lista semanal reune canciones de artistas similares a los que mas escuchas.</p>
         <button class="pill" disabled={busy} on:click={activate}>Activar lista semanal</button>
       {:else if detail.type==='generated'}
-        <p>{detail.notice||'Esta lista todavía no tiene canciones disponibles.'}</p>
+        <p>{detail.notice||'Esta lista todavia no tiene canciones disponibles.'}</p>
       {:else if detail.type==='liked'}
-        <p>Marca canciones con el corazón y aparecerán aquí.</p>
+        <p>Marca canciones con el corazon y apareceran aqui.</p>
       {:else}
-        <p>Esta lista no tiene canciones todavía.</p>
+        <p>Esta lista no tiene canciones todavia.</p>
       {/if}
     </div>
   </PlaylistDetail>
@@ -148,7 +148,7 @@
           </div>
         {/each}
       </div>
-      {#if loaded&&!recent.length}<p class="hint">Las playlists que escuches aparecerán aquí.</p>{/if}
+      {#if loaded&&!recent.length}<p class="hint">Las playlists que escuches apareceran aqui.</p>{/if}
     </section>
 
     <section>
@@ -162,7 +162,7 @@
               <button class="card-open" on:click={()=>open(entry)} aria-label={`Abrir ${entry.title}`}>
                 <Cover covers={entry.covers} variant={entry.variant} label={entry.label} />
                 <strong>{entry.title}</strong>
-                <small>{entry.state==='inactive'?'Actívala para recibir canciones cada semana.':entry.count?entry.description:'Todavía sin canciones disponibles.'}</small>
+                <small>{entry.state==='inactive'?'Activala para recibir canciones cada semana.':entry.count?entry.description:'Todavia sin canciones disponibles.'}</small>
               </button>
               {#if entry.count}<span class="card-overlay"><button class="card-play" on:click={()=>play(entry)} aria-label={`Reproducir ${entry.title}`}><i aria-hidden="true" class="ph-fill ph-play"></i></button></span>{/if}
             </div>
@@ -173,13 +173,13 @@
         {#if status.updating}<p class="hint">Preparando tus listas a partir de lo que escuchas. Puede tardar un par de minutos.</p>{/if}
       {:else}
         <p class="hint">{homeError||status.error||(status.profile==='insufficient_profile'
-          ?'Escucha música durante unos días y aquí aparecerán listas hechas para ti.'
-          :'Todavía no hay listas para tu perfil. Se prepararán cuando haya artistas reconocidos en tus escuchas.')}</p>
+          ?'Escucha musica durante unos dias y aqui apareceran listas hechas para ti.'
+          :'Todavia no hay listas para tu perfil. Se prepararan cuando haya artistas reconocidos en tus escuchas.')}</p>
       {/if}
     </section>
 
     {#if releases.length}
-      {#each [[false,'Novedades para ti'],[true,'Próximamente']] as [upcoming,heading]}
+      {#each [[false,'Novedades para ti'],[true,'Proximamente']] as [upcoming,heading]}
         {@const rows=releases.filter(r=>!!r.upcoming===upcoming)}
         {#if rows.length}
           <section>
@@ -217,7 +217,7 @@
       </section>
     {/if}
 
-    {#each [['Lo que más escuchas',frequent],['Añadido recientemente a tu biblioteca',newest]] as [heading,albums]}
+    {#each [['Lo que mas escuchas',frequent],['Añadido recientemente a tu biblioteca',newest]] as [heading,albums]}
       {#if albums.length}
         <section>
           <header class="shelf-head"><h2>{heading}</h2></header>

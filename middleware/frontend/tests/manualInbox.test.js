@@ -63,6 +63,6 @@ test('HTTP and network failures have safe actionable messages without exposing u
     assert.doesNotMatch(text,/secret|private|upstream/);
     assert(text.length>10);
   }
-  assert.match(manualInboxError({name:'AbortError'}),/comprobar si el archivo se guardó/);
+  assert.match(manualInboxError({name:'AbortError'}),/comprobar si el archivo se guardo/);
   assert.match(manualInboxError({status:409}),/Actualiza/);
 });

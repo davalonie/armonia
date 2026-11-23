@@ -77,12 +77,17 @@ fun ArtistDetailScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
-                artist.album.isEmpty() -> Text(
-                    text = "Sin álbumes",
+                artist.album.isEmpty() && artist.song.isNullOrEmpty() -> Text(
+                    text = "Sin albumes",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(artist.song.orEmpty().size) { index ->
+                        val song = artist.song.orEmpty()[index]
+                        ListItem(headlineContent = { Text(song.title) }, supportingContent = { Text(song.artist) },
+                            modifier = Modifier.clickable { viewModel.play(index) })
+                    }
                     items(artist.album, key = { it.id }) { album ->
                         AlbumRow(
                             album = album,
@@ -131,7 +136,7 @@ private fun AlbumRow(
             )
             val subtitle = buildString {
                 album.year?.let { append(it).append(" · ") }
-                append(if (album.songCount == 1) "1 canción" else "${album.songCount} canciones")
+                append(if (album.songCount == 1) "1 cancion" else "${album.songCount} canciones")
             }
             Text(
                 text = subtitle,

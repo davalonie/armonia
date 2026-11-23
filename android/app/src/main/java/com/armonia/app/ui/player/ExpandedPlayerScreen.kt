@@ -145,10 +145,10 @@ fun ExpandedPlayerScreen(
                         text = {
                             Text(
                                 when (onPhone) {
-                                    com.armonia.app.offline.OfflineSongState.NONE -> "Descargar en el teléfono"
-                                    com.armonia.app.offline.OfflineSongState.DOWNLOADING -> "Descargando en el teléfono… (toca para cancelar)"
-                                    com.armonia.app.offline.OfflineSongState.DOWNLOADED -> "Quitar del teléfono"
-                                    com.armonia.app.offline.OfflineSongState.IN_COLLECTION -> "En el teléfono (álbum o playlist guardados)"
+                                    com.armonia.app.offline.OfflineSongState.NONE -> "Descargar en el telefono"
+                                    com.armonia.app.offline.OfflineSongState.DOWNLOADING -> "Descargando en el telefono… (toca para cancelar)"
+                                    com.armonia.app.offline.OfflineSongState.DOWNLOADED -> "Quitar del telefono"
+                                    com.armonia.app.offline.OfflineSongState.IN_COLLECTION -> "En el telefono (album o playlist guardados)"
                                 }
                             )
                         },
@@ -220,9 +220,9 @@ fun ExpandedPlayerScreen(
             text = {
                 Column {
                     when {
-                        sleepTimer.atTrackEnd -> Text("La reproducción se detendrá cuando termine esta canción.")
-                        remainingMin != null -> Text("La reproducción se detendrá en unos $remainingMin min.")
-                        else -> Text("Detener la reproducción tras:")
+                        sleepTimer.atTrackEnd -> Text("La reproduccion se detendra cuando termine esta cancion.")
+                        remainingMin != null -> Text("La reproduccion se detendra en unos $remainingMin min.")
+                        else -> Text("Detener la reproduccion tras:")
                     }
                     Spacer(Modifier.height(8.dp))
                     listOf(15, 30, 45, 60).forEach { minutes ->
@@ -234,7 +234,7 @@ fun ExpandedPlayerScreen(
                     TextButton(onClick = {
                         viewModel.musicPlayer.setSleepAtTrackEnd()
                         sleepDialogOpen = false
-                    }) { Text("Al terminar esta canción") }
+                    }) { Text("Al terminar esta cancion") }
                 }
             },
             confirmButton = {
@@ -256,7 +256,7 @@ fun ExpandedPlayerScreen(
         AlertDialog(
             onDismissRequest = { deleteConfirmOpen = false },
             title = { Text("¿Eliminar de la biblioteca?") },
-            text = { Text("«${currentSong.title}» se borrará del servidor para siempre. No se puede deshacer.") },
+            text = { Text("«${currentSong.title}» se borrara del servidor para siempre. No se puede deshacer.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteConfirmOpen = false

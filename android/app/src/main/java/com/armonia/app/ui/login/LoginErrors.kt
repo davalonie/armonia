@@ -4,7 +4,7 @@ package com.armonia.app.ui.login
 fun loginErrorMessage(code: Int): String = when (code) {
     401 -> "Usuario o contraseña incorrectos"
     429 -> "Demasiados intentos fallidos: espera unos minutos y vuelve a probar"
-    502, 503, 504 -> "Armonía no llega al servidor de música: comprueba que Navidrome está en marcha"
-    404 -> "Esa URL no es un servidor de Armonía"
-    else -> "No se pudo iniciar sesión (HTTP $code)"
+    502, 503, 504 -> "Armonia no llega al servidor de musica: comprueba que Navidrome esta en marcha"
+    404 -> "Esa URL no es un servidor de Armonia"
+    else -> "No se pudo iniciar sesion (HTTP $code)"
 }

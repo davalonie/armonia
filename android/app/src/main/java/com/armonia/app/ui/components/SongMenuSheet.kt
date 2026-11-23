@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
@@ -47,7 +48,7 @@ fun RatingStars(rating: Int, enabled: Boolean, modifier: Modifier = Modifier, on
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SongMenuSheet(song: Song, coverUrl: String?, onDismiss: () -> Unit, actions: SongActionsViewModel = hiltViewModel()) {
+fun SongMenuSheet(song: Song, coverUrl: String?, onDismiss: () -> Unit, actions: SongActionsViewModel = hiltViewModel(), onDownload: (() -> Unit)? = null) {
     val scope = rememberCoroutineScope()
     var starred by remember(song.id) { mutableStateOf(!song.starred.isNullOrEmpty()) }
     var rating by remember(song.id) { mutableStateOf(song.userRating ?: 0) }
@@ -77,20 +78,21 @@ fun SongMenuSheet(song: Song, coverUrl: String?, onDismiss: () -> Unit, actions:
                     }
                 }
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Valoración", Modifier.weight(1f))
+                    Text("Valoracion", Modifier.weight(1f))
                     RatingStars(rating, enabled = !busy) { value ->
                         scope.launch {
                             busy = true; error = null
-                            actions.rate(song, value).onSuccess { rating = value }.onFailure { error = "No se pudo guardar la valoración" }
+                            actions.rate(song, value).onSuccess { rating = value }.onFailure { error = "No se pudo guardar la valoracion" }
                             busy = false
                         }
                     }
                 }
             }
-            Entry(Icons.Default.SkipNext, "Reproducir a continuación") { actions.playNext(song); onDismiss() }
+            Entry(Icons.Default.SkipNext, "Reproducir a continuacion") { actions.playNext(song); onDismiss() }
             Entry(Icons.AutoMirrored.Filled.QueueMusic, "Añadir a la cola") { actions.addToQueue(song); onDismiss() }
             Entry(Icons.AutoMirrored.Filled.PlaylistPlay, "Añadir al final de la cola") { actions.addToEnd(song); onDismiss() }
             Entry(Icons.AutoMirrored.Filled.PlaylistAdd, "Añadir a una playlist") { playlistOpen = true }
+            onDownload?.let { Entry(Icons.Default.Download, "Descargar a la biblioteca", onClick = it) }
             error?.let { Text(it, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), color = MaterialTheme.colorScheme.error) }
         }
     }

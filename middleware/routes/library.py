@@ -11,10 +11,10 @@ from pydantic import BaseModel, Field
 import db
 from auth import get_current_session
 from config import NAVIDROME_URL
-from homelab import generated_playlists, store
+from homelab import generated_playlists, playlist_covers, store
 from homelab.models import Track, owner
 from routes.playlist_edit import updating_playlist
-from services import navidrome_client
+from services import library_artists, navidrome_client
 from services.navidrome_client import auth_params
 from services.tagger_service import DEFAULT_ALBUM
 
@@ -34,6 +34,10 @@ async def library_proxy(
         raise HTTPException(status_code=400, detail="invalid library path")
     if subpath.split('.')[0].lower() in {'stream', 'download'}:
         raise HTTPException(400, "use the dedicated authenticated audio endpoint")
+    if subpath in {"armoniaArtists", "armoniaArtist"}:
+        ident = None if subpath == "armoniaArtists" else request.query_params.get("id", "")
+        result = await library_artists.browse(sess, ident)
+        return {"subsonic-response": {"status": "ok", **result}}
     # Strip our auth params from forwarded query; auth_params() wins
     forwarded = [
         (k, v) for k, v in request.query_params.multi_items()
@@ -44,6 +48,20 @@ async def library_proxy(
     # Covers: the phone keeps them and asks again only with what it has (Navidrome answers 304 Not Modified,
     # a few hundred bytes instead of the image). Song covers ("mf-<id>") keep their name when they change.
     cover = verb == "getCoverArt"
+    cover_id = request.query_params.get("id", "")
+    if cover and cover_id.startswith("armonia-art-"):
+        with store.connection() as c:
+            row = c.execute("SELECT kind,id,owner,image FROM playlist_covers WHERE token=?", (cover_id,)).fetchone()
+        if not row:
+            raise HTTPException(404)
+        if row["kind"] == "local":
+            visible = await navidrome_client.import_playlist_request("getPlaylist", sess, [("id", row["id"])])
+            if visible.get("id") != row["id"]:
+                raise HTTPException(404)
+        else:
+            store.playlist(owner(sess), row["id"])
+        return Response(row["image"], media_type="image/jpeg",
+                        headers={"Cache-Control": "private, no-cache", "X-Content-Type-Options": "nosniff"})
     conditional = {h: request.headers[h] for h in ("if-none-match", "if-modified-since")
                    if cover and h in request.headers}
     playlist_id = request.query_params.get('playlistId') or request.query_params.get('id')
@@ -69,6 +87,17 @@ async def library_proxy(
         if isinstance(page, dict):
             page["defaultAlbum"] = DEFAULT_ALBUM
             content = json.dumps(result, separators=(",", ":")).encode()
+    if verb in {"getPlaylist", "getPlaylists", "deletePlaylist"} and upstream.status_code == 200:
+        result = json.loads(content)
+        body = result.get("subsonic-response", {})
+        if body.get("status") == "ok":
+            if verb == "deletePlaylist":
+                with store.connection(write=True) as c:
+                    c.execute("DELETE FROM playlist_covers WHERE kind='local' AND id=? AND owner=?", (playlist_id, owner(sess)))
+            else:
+                rows = [body["playlist"]] if body.get("playlist") else body.get("playlists", {}).get("playlist", [])
+                playlist_covers.attach(rows, "local")
+                content = json.dumps(result).encode()
     validators = {h: upstream.headers[h] for h in ("etag", "last-modified") if cover and h in upstream.headers}
     return Response(
         content=bytes(content),
@@ -121,6 +150,8 @@ def recent_playlists(sess=Depends(get_current_session), x_music_client: str | No
         except HTTPException:
             continue
         result.append(entry)
+    for kind in ("local", "mixed"):
+        playlist_covers.attach([entry for entry in result if entry["kind"] == kind], kind)
     return {'playlists': result}
 
 

@@ -85,7 +85,7 @@ class AddToPlaylistViewModel @Inject constructor(
                 repository.createPlaylist(name.trim()).getOrThrow()
                 playlists = repository.getPlaylists().getOrThrow().playlists?.playlist.orEmpty().filter { it.owner == account.username }
                 playlists.singleOrNull { it.id !in before && it.name == name.trim() }?.let { selected = selected + it.id }
-                message = "Playlist creada y marcada. Pulsa Guardar para añadir la canción."
+                message = "Playlist creada y marcada. Pulsa Guardar para añadir la cancion."
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { message = e.message }
             finally { busy = false }
@@ -100,7 +100,7 @@ class AddToPlaylistViewModel @Inject constructor(
                 // A playlist only holds library songs, so one not downloaded yet is downloaded first, wherever
                 // it is saved from. Sending its preview id instead used to save nothing while saying it had.
                 val localId = repository.localCopy(song.id) ?: run {
-                    check(song.downloadsOnSave()) { "Esta canción no se puede guardar en una playlist" }
+                    check(song.downloadsOnSave()) { "Esta cancion no se puede guardar en una playlist" }
                     // The download can take a while: say so instead of leaving the sheet silently disabled.
                     message = "Descargando «${song.title}»…"
                     repository.downloadForPlaylist(song, account).also { message = null; needsDownload = false }
@@ -160,7 +160,7 @@ fun AddToPlaylistSheet(song: Song, onDismiss: () -> Unit, viewModel: AddToPlayli
                     Icon(Icons.Default.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Nueva playlist")
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { byCount = !byCount }) { Text(if (byCount) "Orden: más canciones" else "Orden: nombre") }
+                TextButton(onClick = { byCount = !byCount }) { Text(if (byCount) "Orden: mas canciones" else "Orden: nombre") }
             }
             if (creating) Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(name, { name = it.take(150) }, label = { Text("Nombre de la playlist nueva") }, singleLine = true, modifier = Modifier.weight(1f))
@@ -183,7 +183,7 @@ fun AddToPlaylistSheet(song: Song, onDismiss: () -> Unit, viewModel: AddToPlayli
                         FavoritesCover(Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)))
                         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                             Text("Tus favoritos", style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                            if (FAVORITES in viewModel.included) Text("Ya está en tus favoritos",
+                            if (FAVORITES in viewModel.included) Text("Ya esta en tus favoritos",
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         }
                         Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
@@ -191,7 +191,7 @@ fun AddToPlaylistSheet(song: Song, onDismiss: () -> Unit, viewModel: AddToPlayli
                 }
                 val filtered = viewModel.playlists.filter { matchesSearch(query, it.name) }
                 if (filtered.isEmpty() && !viewModel.isLoading) item {
-                    Text(if (viewModel.playlists.isEmpty()) "Todavía no tienes playlists. Crea una con «Nueva playlist»." else "Ninguna playlist coincide con «${query.trim()}».",
+                    Text(if (viewModel.playlists.isEmpty()) "Todavia no tienes playlists. Crea una con «Nueva playlist»." else "Ninguna playlist coincide con «${query.trim()}».",
                         color = muted, modifier = Modifier.padding(vertical = 16.dp))
                 }
                 items(if (byCount) filtered.sortedByDescending { it.songCount } else filtered.sortedBy { it.name.lowercase() }, key = { it.id }) { p ->
@@ -212,7 +212,7 @@ fun AddToPlaylistSheet(song: Song, onDismiss: () -> Unit, viewModel: AddToPlayli
                         }
                         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                             Text(p.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(if (included) "Ya está en esta playlist" else if (p.songCount == 1) "1 canción" else "${p.songCount} canciones",
+                            Text(if (included) "Ya esta en esta playlist" else if (p.songCount == 1) "1 cancion" else "${p.songCount} canciones",
                                 style = MaterialTheme.typography.bodySmall, color = if (included) MaterialTheme.colorScheme.primary else muted)
                         }
                         Checkbox(checked = p.id in viewModel.selected, onCheckedChange = null, enabled = enabled)

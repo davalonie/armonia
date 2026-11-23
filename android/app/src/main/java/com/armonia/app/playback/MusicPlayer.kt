@@ -168,14 +168,14 @@ class MusicPlayer @Inject constructor(
     fun dismissPlaybackError() { _playbackError.value = null }
     private var reconnecting = false
 
-    // ── «Continuar con música similar» ───────────────────────────────────────
+    // ── «Continuar con musica similar» ───────────────────────────────────────
     // While the last song of the queue plays out (repeat off), a small batch of related songs
     // is appended behind it. Appending ahead keeps the transition seamless in the background,
     // on Bluetooth and in Android Auto. Pause, stop, logout or a lost connection never ask.
 
     private val _continueSimilar = MutableStateFlow(true)
     val continueSimilar: StateFlow<Boolean> = _continueSimilar.asStateFlow()
-    /** Ids of queue entries added automatically; the UI labels them «Música similar». */
+    /** Ids of queue entries added automatically; the UI labels them «Musica similar». */
     private val _autoSongs = MutableStateFlow<Set<String>>(emptySet())
     val autoSongs: StateFlow<Set<String>> = _autoSongs.asStateFlow()
     private var continuationEpoch = 0L
@@ -241,12 +241,12 @@ class MusicPlayer @Inject constructor(
         _autoSongs.value = _autoSongs.value.intersect(_queue.value.map { it.id }.toSet())
     }
 
-    private fun maybeContinue() {
+    private fun maybeContinue(atEnd: Boolean = false) {
         val c = controller ?: return
         if (!_continueSimilar.value || auditionSnapshot != null) return
-        if (c.repeatMode != Player.REPEAT_MODE_OFF || c.hasNextMediaItem() || !c.isPlaying) return
+        if (c.repeatMode != Player.REPEAT_MODE_OFF || c.hasNextMediaItem() || !c.playWhenReady || (!atEnd && !c.isPlaying)) return
         val duration = c.duration
-        if (duration <= 0 || duration - c.currentPosition > CONTINUE_BEFORE_END_MS) return
+        if (!atEnd && (duration <= 0 || duration - c.currentPosition > CONTINUE_BEFORE_END_MS)) return
         val current = _queue.value.getOrNull(c.currentMediaItemIndex) ?: return
         val situation = "$continuationEpoch:${c.currentMediaItemIndex}:${_queue.value.size}"
         if (continuationAsked == situation) return // Once per end of queue, however many ticks.
@@ -259,12 +259,13 @@ class MusicPlayer @Inject constructor(
         val known = (_queue.value.map(::trackKey) + heard + dismissed).distinct().takeLast(600)
         continuationJob = scope.launch {
             val batch = runCatching {
-                musicApi.continueSimilar(owner, com.armonia.app.homelab.ContinueRequest(artists, known)).checked()
+                musicApi.continueSimilar(owner, com.armonia.app.homelab.ContinueRequest(artists, known, current.id.takeIf { it.startsWith("preview|") }?.substringAfter('|'))).checked()
             }.getOrNull() ?: return@launch // Any failure: the queue simply ends.
             val now = controller ?: return@launch
             // Whatever the user did while the answer was on its way wins over the suggestion.
             if (epoch != continuationEpoch || owner != prefs.cachedUserId || !batch.enabled) return@launch
             if (!_continueSimilar.value || auditionSnapshot != null) return@launch
+            if (now.currentMediaItemIndex != at || _queue.value.getOrNull(at)?.id != current.id) return@launch
             if (now.repeatMode != Player.REPEAT_MODE_OFF || now.hasNextMediaItem()) return@launch
             val queued = (_queue.value.map(::trackKey) + dismissed).toSet()
             val fresh = batch.items.distinctBy { "${it.track.source}:${it.track.sourceId}" }
@@ -280,7 +281,10 @@ class MusicPlayer @Inject constructor(
             if (fresh.isEmpty()) return@launch
             _autoSongs.value = _autoSongs.value + fresh.map { it.id }
             _queue.value = _queue.value + fresh
+            val ended = now.playbackState == Player.STATE_ENDED
+            val nextIndex = now.mediaItemCount
             now.addMediaItems(fresh.map { it.toMediaItem() })
+            if (ended && now.playWhenReady) { now.seekToDefaultPosition(nextIndex); now.play() }
         }
     }
 
@@ -337,7 +341,9 @@ class MusicPlayer @Inject constructor(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 _buffering.value = playbackState == Player.STATE_BUFFERING
                 // A finished preview hands the player back to what was there before it.
-                if (playbackState == Player.STATE_ENDED && auditionSnapshot != null) stopAudition()
+                if (playbackState == Player.STATE_ENDED) {
+                    if (auditionSnapshot != null) stopAudition() else maybeContinue(atEnd = true)
+                }
             }
 
             override fun onPositionDiscontinuity(
@@ -384,7 +390,7 @@ class MusicPlayer @Inject constructor(
                 reconnecting = controller?.playWhenReady == true && PlaybackRecovery.retryable(error.errorCode, status)
                 // The service resumes a lost connection by itself (PlaybackRecovery); say so
                 // instead of reporting the song as failed. Any other failure is shown as is.
-                _playbackError.value = if (reconnecting) "Se perdió la conexión con el servidor. Reintentando…"
+                _playbackError.value = if (reconnecting) "Se perdio la conexion con el servidor. Reintentando…"
                     else describePlaybackError(error)
             }
         })
@@ -395,11 +401,11 @@ class MusicPlayer @Inject constructor(
         val http = error.cause as? HttpDataSource.InvalidResponseCodeException
         return when {
             http != null && song?.isPreview() == true && http.responseCode == 502 ->
-                "El servidor no ha podido obtener esta canción de la fuente externa"
-            http != null && http.responseCode == 401 -> "La sesión ha caducado; vuelve a iniciar sesión"
-            http != null && http.responseCode == 404 -> "Esta canción ya no está en el servidor"
+                "El servidor no ha podido obtener esta cancion de la fuente externa"
+            http != null && http.responseCode == 401 -> "La sesion ha caducado; vuelve a iniciar sesion"
+            http != null && http.responseCode == 404 -> "Esta cancion ya no esta en el servidor"
             http != null -> "No se pudo reproducir (HTTP ${http.responseCode})"
-            error.cause is HttpDataSource.HttpDataSourceException -> "Error de red; comprueba la conexión"
+            error.cause is HttpDataSource.HttpDataSourceException -> "Error de red; comprueba la conexion"
             else -> "No se pudo reproducir (${error.errorCodeName})"
         }
     }

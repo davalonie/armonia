@@ -1,5 +1,7 @@
 """Fixed, admin-configured destinations; never accept a proxy URL from a client."""
+import asyncio
 import json
+import logging
 import os
 import secrets
 from pathlib import Path
@@ -128,6 +130,26 @@ async def link_aurral(user, username, password):
         c.execute("INSERT INTO credentials VALUES (?, 'aurral', ?, ?) ON CONFLICT(owner,service) DO UPDATE SET "
                   "remote_id=excluded.remote_id, token=excluded.token",
                   (user, str(remote["user"]["id"]), cipher(db.DB_PATH.parent).encrypt(token.encode()).decode()))
+        c.execute("DELETE FROM aurral_unlinked WHERE owner=?", (user,))
+
+
+async def link_on_login(user, username, password):
+    # Only the bundled, explicitly trusted service can receive the shared bootstrap password.
+    target = os.environ.get("MUSIC_AURRAL_LOGIN_ORIGIN")
+    if not target:
+        return
+    try:
+        if aurral_origin() != fixed_origin(target) or not account(user).get("aurral_user_id"):
+            return
+        with store.connection() as c:
+            if c.execute("SELECT 1 FROM credentials WHERE owner=? AND service='aurral'", (user,)).fetchone():
+                return
+            if c.execute("SELECT 1 FROM aurral_unlinked WHERE owner=?", (user,)).fetchone():
+                return
+        async with asyncio.timeout(3):
+            await link_aurral(user, username, password)
+    except (HTTPException, TimeoutError, OSError, ValueError, RuntimeError):
+        logging.getLogger(__name__).info("Automatic Aurral link unavailable; manual linking remains available")
 
 
 def bridge_owner(key):

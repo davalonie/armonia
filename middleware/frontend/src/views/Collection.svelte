@@ -2,7 +2,7 @@
   import {albumList} from '../lib/albums.js';
   import FastScroll from '../components/FastScroll.svelte';
   import {scrollInitial,scrollMonth} from '../lib/fastScroll.js';
-  // Biblioteca, as in the app: «Nueva playlist» and «Importar playlist» on top, then the chips Playlists · Álbumes ·
+  // Biblioteca, as in the app: «Nueva playlist» and «Importar playlist» on top, then the chips Playlists · Albumes ·
   // Artistas · Canciones (the chosen one is remembered). «Tus favoritos» is the first row of Playlists.
   import {tick} from 'svelte';
   import Playlists from './Playlists.svelte';
@@ -14,7 +14,7 @@
   import PlaylistDetail from '../components/PlaylistDetail.svelte';
   import {coverArtUrl} from '../lib/api.js';
   import {loaders,albumEntry,count} from '../lib/lists.js';
-  const TABS=[['playlists','Playlists'],['albums','Álbumes'],['artists','Artistas'],['songs','Canciones']];
+  const TABS=[['playlists','Playlists'],['albums','Albumes'],['artists','Artistas'],['songs','Canciones']];
   const TAB_KEY='armonia:biblioteca';
   const savedTab=()=>{try{const t=localStorage.getItem(TAB_KEY);return TABS.some(([id])=>id===t)?t:'playlists';}catch{return 'playlists';}};
   let tab=savedTab(),playlistsPane,albums=null,error='',albumFilter='',albumSort='name',detail=null,token=0;
@@ -42,9 +42,9 @@
 </script>
 
 {#if detail}
-  <PlaylistDetail title={detail.entry.title} eyebrow="Álbum" description={detail.entry.description||''} meta={detail.meta||''}
+  <PlaylistDetail title={detail.entry.title} eyebrow="Album" description={detail.entry.description||''} meta={detail.meta||''}
     covers={detail.entry.covers} variant="plain" rows={detail.rows} loading={detail.loading} notice={detail.notice}
-    on:back={()=>{token++;detail=null;}}><div slot="empty"><p>Este álbum no tiene canciones disponibles.</p></div></PlaylistDetail>
+    on:back={()=>{token++;detail=null;}}><div slot="empty"><p>Este album no tiene canciones disponibles.</p></div></PlaylistDetail>
 {:else}
 <section class="collection">
   <div class="heading"><h1>Biblioteca</h1></div>
@@ -68,13 +68,13 @@
   <section class="collection body">
     <div class="toolbar">
       <label class="filter"><i aria-hidden="true" class="ph ph-magnifying-glass"></i>
-        <input type="search" bind:value={albumFilter} aria-label="Buscar en tus álbumes" placeholder="Buscar en tus álbumes"></label>
+        <input type="search" bind:value={albumFilter} aria-label="Buscar en tus albumes" placeholder="Buscar en tus albumes"></label>
       <label class="sort"><i aria-hidden="true" class="ph ph-arrows-down-up"></i>
-        <select bind:value={albumSort} aria-label="Ordenar álbumes"><option value="name">Nombre</option><option value="artist">Artista</option><option value="recent">Añadidos recientemente</option></select></label>
+        <select bind:value={albumSort} aria-label="Ordenar albumes"><option value="name">Nombre</option><option value="artist">Artista</option><option value="recent">Añadidos recientemente</option></select></label>
     </div>
     {#if error}<p class="none" role="alert">{error} <button class="retry" on:click={()=>{albums=null;void loadAlbums();}}>Reintentar</button></p>
-    {:else if !albums}<p class="none" role="status">Cargando álbumes…</p>
-    {:else if !shownAlbums.length}<p class="none">{albumFilter?`Ningún álbum coincide con «${albumFilter}».`:'Todavía no hay álbumes en tu biblioteca.'}</p>
+    {:else if !albums}<p class="none" role="status">Cargando albumes…</p>
+    {:else if !shownAlbums.length}<p class="none">{albumFilter?`Ningun album coincide con «${albumFilter}».`:'Todavia no hay albumes en tu biblioteca.'}</p>
     {:else}
       <FastScroll labels={albumLabels} list={albumGrid} />
       <div class="grid" bind:this={albumGrid}>{#each shownAlbums as a (a.id)}

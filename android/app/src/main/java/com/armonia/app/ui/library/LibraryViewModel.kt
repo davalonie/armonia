@@ -134,6 +134,8 @@ class LibraryViewModel @Inject constructor(
     }
 
     /** Runs the online search for the current [filterQuery] (called on submit). */
+    private var searchGeneration = 0L
+
     fun runOnlineSearch(remember: Boolean = true) {
         val q = filterQuery.trim()
         if (q.isBlank()) return
@@ -143,24 +145,33 @@ class LibraryViewModel @Inject constructor(
         onlineSearched = true
         onlineSongs = emptyList()
         onlineArtists = emptyList()
+        val generation = ++searchGeneration
+        val source = searchSource
         viewModelScope.launch {
-            // An answer for a query the user has already replaced must not show as its results.
-            fun current() = filterQuery.trim() == q && onlineSearched
-            try {
-                val resp = api.search(SearchRequest(query = q, source = searchSource))
-                if (!current()) return@launch
-                if (resp.isSuccessful) {
-                    onlineSongs = resp.body()?.songs ?: emptyList()
-                    onlineArtists = resp.body()?.artists ?: emptyList()
-                    // The first result is the likely press: have the server get it ready.
-                    onlineSongs.firstOrNull()?.let { musicPlayer.prepareSource(it.videoId) }
-                } else {
-                    onlineError = "El servidor respondió ${resp.code()}"
+            fun current() = generation == searchGeneration && filterQuery.trim() == q && onlineSearched
+            suspend fun fetch(scope: String) {
+                try {
+                    val response = api.search(SearchRequest(query = q, source = source, scope = scope))
+                    if (!current()) return
+                    if (!response.isSuccessful) {
+                        onlineError = "El servidor respondio ${response.code()}"
+                    } else if (scope == "songs") {
+                        onlineSongs = response.body()?.songs.orEmpty()
+                        onlineSongs.firstOrNull()?.let { musicPlayer.prepareSource(it.videoId) }
+                    } else {
+                        onlineArtists = response.body()?.artists.orEmpty()
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    if (current()) onlineError = e.message ?: "Sin conexion"
                 }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                if (current()) onlineError = e.message ?: "Sin conexión"
+            }
+            try {
+                kotlinx.coroutines.coroutineScope {
+                    if (source == "youtube_music") launch { fetch("artists") }
+                    fetch("songs")
+                }
             } finally {
                 if (current()) onlineLoading = false
             }
@@ -191,22 +202,14 @@ class LibraryViewModel @Inject constructor(
     }
 
     /** Streams an online search result without downloading it. */
-    fun playNext(result: SearchResult) = musicPlayer.playNext(result.asSong())
+    fun searchSong(result: SearchResult) = com.armonia.app.homelab.MusicTrack(
+        "youtube", result.videoId, result.title, result.channel, result.album.orEmpty(),
+        duration = result.duration.takeIf { it > 0 }?.toDouble(),
+    ).toSong().copy(coverArt = result.thumbnail)
 
-    fun addToQueue(result: SearchResult) = musicPlayer.addToQueue(result.asSong())
+    fun addToQueue(result: SearchResult) = musicPlayer.addToQueue(searchSong(result))
 
-    private fun SearchResult.asSong() = com.armonia.app.homelab.MusicTrack("youtube",videoId,title,channel,
-        duration=duration.toDouble()).toSong()
-
-    fun playPreview(result: SearchResult) {
-        musicPlayer.playPreview(
-            videoId = result.videoId,
-            title = result.title,
-            artist = result.channel,
-            thumbnailUrl = result.thumbnail,
-            durationSeconds = result.duration,
-        )
-    }
+    fun playPreview(result: SearchResult) = musicPlayer.playQueue(listOf(searchSong(result)))
 
     fun downloadOnline(result: SearchResult, artist: String, title: String, album: String?, force: Boolean = false) {
         downloadStates = downloadStates + (result.videoId to YtDownloadState.LOADING)

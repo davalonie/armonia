@@ -1,5 +1,5 @@
 // Album lists as in the app: the server names the album that collects loose songs («Singles», X-Armonia-Albums) and
-// it is not shown as an album in Álbumes or Inicio. Its songs stay in Canciones, playlists and search.
+// it is not shown as an album in Albumes or Inicio. Its songs stay in Canciones, playlists and search.
 import {library} from './api.js';
 
 export function withoutDefaultAlbum(page) {

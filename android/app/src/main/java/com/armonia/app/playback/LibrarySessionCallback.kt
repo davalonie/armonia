@@ -97,7 +97,7 @@ class LibrarySessionCallback @Inject constructor(
                 controller.uid, android.os.Process.myUid(), controller.isTrusted)) {
             return MediaSession.ConnectionResult.reject()
         }
-        // Diagnostics for "Android Auto sometimes doesn't show Armonía" (see Settings).
+        // Diagnostics for "Android Auto sometimes doesn't show Armonia" (see Settings).
         if (controller.packageName != context.packageName) {
             connectionLog.record(controller.packageName, "connected")
         }
@@ -158,7 +158,7 @@ class LibrarySessionCallback @Inject constructor(
     }
 
     /**
-     * Puts a song queued by hand where HandPickedQueue says: «Reproducir a continuación» right
+     * Puts a song queued by hand where HandPickedQueue says: «Reproducir a continuacion» right
      * after the song playing, «Añadir a la cola» behind the songs already queued by hand that come
      * next. With shuffle on, the play order is set so it plays there too (ExoPlayer alone would
      * put it at a random point of the shuffle).
@@ -236,12 +236,12 @@ class LibrarySessionCallback @Inject constructor(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val extras = Bundle().apply {
-            putString(MediaConstants.EXTRAS_KEY_ERROR_RESOLUTION_ACTION_LABEL_COMPAT, "Iniciar sesión")
+            putString(MediaConstants.EXTRAS_KEY_ERROR_RESOLUTION_ACTION_LABEL_COMPAT, "Iniciar sesion")
             putParcelable(MediaConstants.EXTRAS_KEY_ERROR_RESOLUTION_ACTION_INTENT_COMPAT, signIn)
         }
         return SessionError(
             SessionError.ERROR_SESSION_AUTHENTICATION_EXPIRED,
-            "Inicia sesión en ${com.armonia.app.BuildConfig.APP_NAME} en el teléfono",
+            "Inicia sesion en ${com.armonia.app.BuildConfig.APP_NAME} en el telefono",
             extras,
         )
     }
@@ -330,7 +330,7 @@ class LibrarySessionCallback @Inject constructor(
                         // Big library: A–Z folders instead of one enormous list (which the
                         // car UI truncates and takes ages to render).
                         groupByLetter(songs) { it.title }.map { (letter, group) ->
-                            createBrowsableItem("songs_letter_$letter", letter, if (group.size == 1) "1 canción" else "${group.size} canciones")
+                            createBrowsableItem("songs_letter_$letter", letter, if (group.size == 1) "1 cancion" else "${group.size} canciones")
                         }
                     }
                 }
@@ -346,7 +346,7 @@ class LibrarySessionCallback @Inject constructor(
                                     .setIsBrowsable(true)
                                     .setIsPlayable(false)
                                     .setTitle(artist.name)
-                                    .setSubtitle(if (artist.albumCount == 1) "1 álbum" else "${artist.albumCount} álbumes")
+                                    .setSubtitle(if (artist.albumCount == 1) "1 album" else "${artist.albumCount} albumes")
                                     .setArtworkUri(Uri.parse(repository.getCoverArtUrl(artist.coverArt ?: "")))
                                     .setExtras(Bundle().apply { putString("coverArt", artist.coverArt) })
                                     .build()
@@ -363,7 +363,7 @@ class LibrarySessionCallback @Inject constructor(
                                     .setIsBrowsable(true)
                                     .setIsPlayable(false)
                                     .setTitle(playlist.name)
-                                    .setSubtitle(if (playlist.songCount == 1) "1 canción" else "${playlist.songCount} canciones")
+                                    .setSubtitle(if (playlist.songCount == 1) "1 cancion" else "${playlist.songCount} canciones")
                                     .build()
                             )
                             .build()
@@ -382,7 +382,8 @@ class LibrarySessionCallback @Inject constructor(
                         }
                     } else if (parentId.startsWith("artist_id_")) {
                         val artistId = parentId.removePrefix("artist_id_")
-                        repository.getArtist(artistId).getOrNull()?.artist?.album?.map { album ->
+                        val artist = repository.getArtist(artistId).getOrNull()?.artist
+                        artist?.album.orEmpty().map { album ->
                             MediaItem.Builder()
                                 .setMediaId("album_id_${album.id}")
                                 .setMediaMetadata(
@@ -396,7 +397,9 @@ class LibrarySessionCallback @Inject constructor(
                                         .build()
                                 )
                                 .build()
-                        } ?: emptyList()
+                        } + artist?.song.orEmpty().map { song ->
+                            createPlayableItem(song, contextType = "artist", contextId = artistId)
+                        }
                     } else if (parentId.startsWith("album_id_")) {
                         val albumId = parentId.removePrefix("album_id_")
                         repository.getAlbum(albumId).getOrNull()?.album?.song?.map { song ->
@@ -436,7 +439,7 @@ class LibrarySessionCallback @Inject constructor(
                 MediaMetadata.Builder()
                     .setIsBrowsable(true)
                     .setIsPlayable(false)
-                    .setTitle("Inicia sesión en el teléfono")
+                    .setTitle("Inicia sesion en el telefono")
                     .setSubtitle("Open ${com.armonia.app.BuildConfig.APP_NAME} to log in, then come back")
                     .build()
             )
@@ -520,6 +523,7 @@ class LibrarySessionCallback @Inject constructor(
                 .filter { letterBucket(it.title) == contextId }
                 .sortedBy { it.title.lowercase() }
             "favorites" -> repository.getFavorites().getOrNull()?.starred?.song ?: emptyList()
+            "artist" -> repository.getArtist(contextId).getOrNull()?.artist?.song.orEmpty()
             "album" -> repository.getAlbum(contextId).getOrNull()?.album?.song ?: emptyList()
             "mixed" -> musicApi.playlist(contextId).body()?.items?.map{it.track.toSong()} ?: emptyList()
             "playlist" -> repository.getPlaylist(contextId).getOrNull()?.playlist?.entry ?: emptyList()

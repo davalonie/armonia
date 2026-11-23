@@ -36,8 +36,8 @@ export async function call(path, opts = {}) {
   catch (e) { if(opts.signal?.aborted)throw e;throw new Error('No se pudo conectar. Comprueba la red y vuelve a intentarlo.'); }
   const text = await res.text();
   if (!res.ok) {
-    const messages={400:'Revisa los datos e inténtalo de nuevo.',401:'Tu sesión ha caducado. Inicia sesión de nuevo.',403:'No tienes permiso para esta operación o fuente.',404:'Este elemento ya no está disponible.',409:'Los datos cambiaron en otro dispositivo. Actualiza antes de continuar.',429:'Hay demasiadas operaciones en curso. Espera un momento.'};
-    const error=new Error(messages[res.status]||'El servicio no está disponible. Conservamos tu progreso; vuelve a intentarlo.');
+    const messages={400:'Revisa los datos e intentalo de nuevo.',401:'Tu sesion ha caducado. Inicia sesion de nuevo.',403:'No tienes permiso para esta operacion o fuente.',404:'Este elemento ya no esta disponible.',409:'Los datos cambiaron en otro dispositivo. Actualiza antes de continuar.',429:'Hay demasiadas operaciones en curso. Espera un momento.'};
+    const error=new Error(messages[res.status]||'El servicio no esta disponible. Conservamos tu progreso; vuelve a intentarlo.');
     error.status=res.status;
     try { error.detail=JSON.parse(text).detail; } catch { /* Plain upstream error. */ }
     throw error;
@@ -72,10 +72,10 @@ export const logout = () => authCall("/api/logout", { method: "POST" });
 export const me = () => authCall("/api/me");
 
 // Returns { songs: [...], artists: [...] }
-export const search = (query, limit = 10, source = "youtube_music", signal = undefined) =>
+export const search = (query, limit = 10, source = "youtube_music", signal = undefined, scope = "all") =>
   call("/api/search", {
     method: "POST",
-    body: JSON.stringify({ query, limit, source }),
+    body: JSON.stringify({ query, limit, source, scope }),
     signal,
   });
 

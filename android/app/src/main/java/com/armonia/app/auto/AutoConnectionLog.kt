@@ -16,10 +16,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Remembers which apps connected to Armonía's media service, and when. It exists to
- * diagnose "Android Auto sometimes doesn't show Armonía": if the car session left
- * no entry here, Android Auto never asked (its own decision, before Armonía runs);
- * if it did connect, the problem is on Armonía's side. Kept in a small file because
+ * Remembers which apps connected to Armonia's media service, and when. It exists to
+ * diagnose "Android Auto sometimes doesn't show Armonia": if the car session left
+ * no entry here, Android Auto never asked (its own decision, before Armonia runs);
+ * if it did connect, the problem is on Armonia's side. Kept in a small file because
  * the process is usually started fresh by the car and may be killed afterwards.
  */
 @Singleton

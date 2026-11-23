@@ -63,7 +63,7 @@
   {#if loading}
     <div class="rows" aria-busy="true">{#each Array(6) as _}<div class="row skeleton"><span class="art"></span><span class="lines"><i></i><i></i></span></div>{/each}</div>
   {:else if !rows.length}
-    <div class="empty"><slot name="empty"><p>Esta lista no tiene canciones todavía.</p></slot></div>
+    <div class="empty"><slot name="empty"><p>Esta lista no tiene canciones todavia.</p></slot></div>
   {:else}
     <ol class="rows">
       {#each rows as row,i (i)}

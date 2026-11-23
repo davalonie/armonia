@@ -23,7 +23,7 @@ fun SavedCopyNotice(modifier: Modifier = Modifier) {
         Icon(Icons.Default.CloudOff, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(8.dp))
         Text(
-            "Sin conexión con el servidor. Se muestra lo guardado en el teléfono.",
+            "Sin conexion con el servidor. Se muestra lo guardado en el telefono.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )

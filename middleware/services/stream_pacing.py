@@ -1,6 +1,6 @@
 """Hands a song to the network at a pace the path can carry instead of all at once.
 
-Measured on the phone (18-11-2026, Tailscale capture on the server): Armonía passed a whole
+Measured on the phone (18-11-2026, Tailscale capture on the server): Armonia passed a whole
 3.5-4 MB song to Tailscale serve in a few milliseconds, which pushed it out in half a second,
 about ten times what the phone's path carries. Up to one packet in eight was lost and resent,
 and the song only started after the losses were recovered: 2.5-11 s instead of 0.2 s. Anything

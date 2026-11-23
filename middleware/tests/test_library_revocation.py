@@ -104,7 +104,7 @@ def test_queued_download_rechecks_in_worker_before_publish(monkeypatch, tmp_path
     def stage(video_id, artist, title, source, cancel, directory):
         path = Path(directory) / "fixture.mp3"
         path.write_bytes(b"authorized fixture audio")
-        return str(path)
+        return str(path), {}
     monkeypatch.setattr(yt, "_download_staged", stage)
     calls = []
     async def authorize():

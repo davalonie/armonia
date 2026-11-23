@@ -18,7 +18,7 @@ export function importWorkState(job) {
   const terminal = states ? count(states.ready)+count(states.skipped) : count(job.ready)+count(job.skipped);
   const accountedFor = Number.isInteger(job.total) && terminal+indexing===job.total && (!items||items.length===job.total);
   if (job.status==='running') return {pending:true,label:'En curso'};
-  if (job.error || job.status==='error' || job.status==='paused' || job.resumeAvailable) return {pending:true,label:'Necesita recuperación'};
+  if (job.error || job.status==='error' || job.status==='paused' || job.resumeAvailable) return {pending:true,label:'Necesita recuperacion'};
   if (review) return {pending:true,label:`${review} por revisar`};
   if (errors) return {pending:true,label:`${errors} con error`};
   if (indexing) return {pending:true,label:`${indexing} esperando la biblioteca`,onlyIndexing:accountedFor&&!queued&&!unavailable&&!legacySkipped&&job.sourceInfo?.source_complete===true&&!count(job.notRetrieved)};
@@ -26,7 +26,7 @@ export function importWorkState(job) {
   if (unavailable) return {pending:true,label:`${unavailable} sin recuperar de la fuente`};
   if (legacySkipped) return {pending:true,label:`${legacySkipped} omitidas por resolver`};
   if (job.sourceInfo?.source_complete!==true || count(job.notRetrieved)>0) return {pending:true,label:'Fuente por completar'};
-  if (job.hasPendingWork===true) return {pending:true,label:'Necesita revisión'};
+  if (job.hasPendingWork===true) return {pending:true,label:'Necesita revision'};
   // Older APIs have no explicit completion flag. Only fully accounted, terminal
   // positions with confirmed source coverage may leave the pending selector.
   const complete = job.status==='done' && Number.isInteger(job.total) && job.total>=0 && terminal===job.total

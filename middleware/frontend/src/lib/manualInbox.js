@@ -4,26 +4,26 @@ export const MAX_MANUAL_AUDIO_BYTES = 64 * 1024 * 1024;
 
 export function validateManualAudio(file) {
   if (!file || !/\.mp3$/i.test(file.name || '')) throw new Error('Selecciona un archivo MP3.');
-  if (!Number.isFinite(file.size) || file.size <= 0) throw new Error('El archivo está vacío.');
-  if (file.size > MAX_MANUAL_AUDIO_BYTES) throw new Error('El MP3 supera el límite de 64 MiB.');
+  if (!Number.isFinite(file.size) || file.size <= 0) throw new Error('El archivo esta vacio.');
+  if (file.size > MAX_MANUAL_AUDIO_BYTES) throw new Error('El MP3 supera el limite de 64 MiB.');
 }
 
 export function manualInboxError(error) {
   const messages = {
-    401: 'Tu sesión ha caducado. Inicia sesión de nuevo.',
+    401: 'Tu sesion ha caducado. Inicia sesion de nuevo.',
     403: 'No tienes permiso para guardar archivos en esta biblioteca.',
-    404: 'Este pendiente ya no está disponible. Actualiza la bandeja.',
-    409: 'El pendiente ha cambiado o hay otra operación en curso. Actualiza antes de reintentar.',
-    413: 'El archivo supera el límite permitido.',
+    404: 'Este pendiente ya no esta disponible. Actualiza la bandeja.',
+    409: 'El pendiente ha cambiado o hay otra operacion en curso. Actualiza antes de reintentar.',
+    413: 'El archivo supera el limite permitido.',
     415: 'Selecciona un archivo MP3.',
     422: 'No se ha podido leer el archivo como audio MP3.',
     429: 'Hay otras operaciones en curso. Espera un momento y reintenta.',
     507: 'No queda suficiente espacio libre en la biblioteca.',
   };
   if (messages[error?.status]) return messages[error.status];
-  if (error?.name === 'AbortError') return 'La operación tardó demasiado o se interrumpió. Actualiza la bandeja para comprobar si el archivo se guardó.';
+  if (error?.name === 'AbortError') return 'La operacion tardo demasiado o se interrumpio. Actualiza la bandeja para comprobar si el archivo se guardo.';
   // Never display an upstream error body, path, URL or credential here.
-  return 'No se pudo completar la operación. Actualiza la bandeja para comprobar el resultado antes de reintentar.';
+  return 'No se pudo completar la operacion. Actualiza la bandeja para comprobar el resultado antes de reintentar.';
 }
 
 export function pendingAudioLabel(item) {

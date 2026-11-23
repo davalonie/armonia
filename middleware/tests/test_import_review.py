@@ -819,3 +819,27 @@ def test_rereading_a_source_without_a_spotify_link_is_explained_not_a_server_err
     with pytest.raises(HTTPException) as error:
         asyncio.run(imp.decide(job.import_id, imp.Decision(revision=job.revision, action='refresh_source'), BackgroundTasks(), sess))
     assert error.value.status_code == 400 and job.status == 'paused'
+
+
+def test_search_advances_while_download_slots_are_busy(lab, monkeypatch):
+    sess, _, playlists, _ = lab
+    job = job_for(sess, [track(str(i)) for i in range(5)])
+    found_all = asyncio.Event()
+    searched = []
+    real_download = imp._download_with_retry
+
+    async def resolve(track, active, query):
+        searched.append(track["title"])
+        if len(searched) == len(job.items):
+            found_all.set()
+        return {"attempts": [], "provider_errors": 0, "candidates": [],
+                "selected": {"source_id": "video00000" + track["title"], "album": ""}}
+
+    async def wait_for_search(*args, **kw):
+        await asyncio.wait_for(found_all.wait(), timeout=2)
+        return await real_download(*args, **kw)
+
+    monkeypatch.setattr(imp.import_search, "resolve", resolve)
+    monkeypatch.setattr(imp, "_download_with_retry", wait_for_search)
+    run(job, sess)
+    assert playlists[job.playlist_id] == [f"local-video00000{i}" for i in range(5)]

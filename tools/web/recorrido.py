@@ -1,4 +1,4 @@
-"""Ejecutar con tools/web/web.py contra el laboratorio de Armonía."""
+"""Ejecutar con tools/web/web.py contra el laboratorio de Armonia."""
 pg = page(1200, 820)
 pg.get_by_role("button", name="Inicio", exact=True).first.click()
 pg.get_by_role("heading", name="Inicio", exact=True).wait_for(state="attached")

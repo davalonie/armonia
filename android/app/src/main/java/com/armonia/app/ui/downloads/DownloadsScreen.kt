@@ -77,7 +77,7 @@ fun DownloadsScreen(
                     modifier = Modifier.align(Alignment.Center),
                 )
                 viewModel.downloads.isEmpty() -> Text(
-                    text = "Todavía no hay descargas",
+                    text = "Todavia no hay descargas",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
@@ -103,7 +103,7 @@ fun DownloadsScreen(
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text("¿Quitar la descarga?") },
-            text = { Text("«${target.title}» se quitará de la lista.") },
+            text = { Text("«${target.title}» se quitara de la lista.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.delete(target.id)

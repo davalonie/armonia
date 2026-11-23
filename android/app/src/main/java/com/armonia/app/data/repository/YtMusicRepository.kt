@@ -38,7 +38,7 @@ class YtMusicRepository @Inject constructor(
     suspend fun getAlbum(browseId: String): Result<YtAlbum> = try {
         val resp = api.getYtAlbum(browseId)
         if (resp.isSuccessful && resp.body() != null) Result.success(resp.body()!!)
-        else Result.failure(Exception("No se pudo cargar el álbum (${resp.code()})"))
+        else Result.failure(Exception("No se pudo cargar el album (${resp.code()})"))
     } catch (e: Exception) {
         Result.failure(e)
     }

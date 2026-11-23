@@ -46,7 +46,7 @@
       else await deleteManualPending(item,opts);
       if(!alive||getSession()!==session)return;
       files={...files,[item.id]:null};
-      notice=action==='delete'?'Pendiente eliminado. Tu biblioteca se conserva.':action==='upload'?'Archivo guardado. La bandeja muestra si ya está disponible en la biblioteca.':'Estado actualizado.';
+      notice=action==='delete'?'Pendiente eliminado. Tu biblioteca se conserva.':action==='upload'?'Archivo guardado. La bandeja muestra si ya esta disponible en la biblioteca.':'Estado actualizado.';
     } catch(e) {
       if(alive&&getSession()===session)rowErrors={...rowErrors,[item.id]:manualInboxError(e)};
     } finally {
@@ -59,23 +59,23 @@
 <section class="inbox music-page">
   <button class="back" on:click={()=>showView('library')}>← Biblioteca</button>
   <div class="heading"><h1>Pendientes de añadir</h1><button disabled={loading||!!busy} on:click={load}>Actualizar</button></div>
-  <p class="intro">Aquí guardas las canciones que has omitido al importar. Puedes terminar tus playlists y recuperar estas canciones más adelante.</p>
-  <p class="intro">Aporta un MP3 que tengas permiso para guardar. Se añadirá a tu biblioteca; después puedes incluirlo en cualquier playlist desde Biblioteca.</p>
-  <p class="intro">Se guardará una copia MP3 a 192 kb/s; el archivo original de tu dispositivo se conserva.</p>
-  <label class="filter">Buscar pendientes<input type="search" bind:value={query} placeholder="Canción, artista o playlist" /></label>
+  <p class="intro">Aqui guardas las canciones que has omitido al importar. Puedes terminar tus playlists y recuperar estas canciones mas adelante.</p>
+  <p class="intro">Aporta un MP3 que tengas permiso para guardar. Se añadira a tu biblioteca; despues puedes incluirlo en cualquier playlist desde Biblioteca.</p>
+  <p class="intro">Se guardara una copia MP3 a 192 kb/s; el archivo original de tu dispositivo se conserva.</p>
+  <label class="filter">Buscar pendientes<input type="search" bind:value={query} placeholder="Cancion, artista o playlist" /></label>
   {#if error}<p role="alert">{error}</p>{/if}
   {#if notice}<p role="status">{notice}</p>{/if}
   {#if loading && !items.length}<p role="status">Cargando pendientes…</p>
-  {:else if !items.length && !error}<p class="empty">No tienes canciones pendientes. «Ninguna coincide» las guarda aquí para que puedas continuar con la importación.</p>
-  {:else if !shown.length}<p class="empty">No hay pendientes que coincidan con tu búsqueda.</p>
+  {:else if !items.length && !error}<p class="empty">No tienes canciones pendientes. «Ninguna coincide» las guarda aqui para que puedas continuar con la importacion.</p>
+  {:else if !shown.length}<p class="empty">No hay pendientes que coincidan con tu busqueda.</p>
   {:else}
     <div class="entries">{#each shown as item (item.id)}
       <article class="entry" data-pending-id={item.id} aria-labelledby={`pending-${item.id}`}>
-        <div class="entry-heading"><span class="art" aria-hidden="true">♫</span><div><h2 id={`pending-${item.id}`}>{item.track.title}</h2><p>{item.track.artist}</p><small>De {item.originName}{item.originIndex!=null?` · posición ${item.originIndex+1}`:''}</small></div></div>
+        <div class="entry-heading"><span class="art" aria-hidden="true">♫</span><div><h2 id={`pending-${item.id}`}>{item.track.title}</h2><p>{item.track.artist}</p><small>De {item.originName}{item.originIndex!=null?` · posicion ${item.originIndex+1}`:''}</small></div></div>
         <p class="state">{pendingAudioLabel(item)}</p>
         {#if rowErrors[item.id]}<p role="alert">{rowErrors[item.id]}</p>{/if}
         {#if item.status==='saved'}
-          {#if !item.songId}<p>El archivo ya está guardado. Puedes volver a consultar su indexación sin subirlo de nuevo.</p><button disabled={!!busy} on:click={()=>act(item,'refresh')}>Comprobar biblioteca</button>
+          {#if !item.songId}<p>El archivo ya esta guardado. Puedes volver a consultar su indexacion sin subirlo de nuevo.</p><button disabled={!!busy} on:click={()=>act(item,'refresh')}>Comprobar biblioteca</button>
           {:else}<button class="primary" on:click={()=>showView('library')}>Ir a Biblioteca</button>{/if}
         {:else}
           <label class="file">Elegir MP3 para {item.track.title}<input type="file" accept=".mp3,audio/mpeg" disabled={!!busy} on:change={event=>pick(item,event)} /></label>

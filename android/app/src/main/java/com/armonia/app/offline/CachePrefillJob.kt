@@ -29,7 +29,7 @@ import javax.inject.Inject
  * the weekly list, the favourites and the most played songs, in that order, within [SHARE] of the playback
  * cache, so on mobile data they play from the phone without data (the listener's choice, 18-11-2026). They go
  * into the playback cache like any song played (least recently used first out), so nothing here is a second
- * copy, and a new limit or «Vaciar caché» applies to them too. Android runs it a few times a day, only on
+ * copy, and a new limit or «Vaciar cache» applies to them too. Android runs it a few times a day, only on
  * an unmetered network; it stops when Android asks or after [RUN_MS] and goes on in the next run.
  */
 @UnstableApi

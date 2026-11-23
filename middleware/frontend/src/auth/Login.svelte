@@ -20,7 +20,7 @@
       setSession(result);
       dispatch('success');
     } catch (e) {
-      error = e.status===401 ? 'Usuario o contraseña incorrectos.' : (e.message || 'No se pudo conectar. Inténtalo de nuevo.');
+      error = e.status===401 ? 'Usuario o contraseña incorrectos.' : (e.message || 'No se pudo conectar. Intentalo de nuevo.');
       loading = false;
     }
   }
@@ -33,7 +33,7 @@
       <h1 class="font-london text-3xl text-armonia-text">{APP_NAME}</h1>
     </div>
     <div class="bg-armonia-surface rounded-2xl p-8 border border-white/5 shadow-2xl">
-      <h2 class="text-xl font-semibold mb-6 text-armonia-text">Iniciar sesión</h2>
+      <h2 class="text-xl font-semibold mb-6 text-armonia-text">Iniciar sesion</h2>
       {#if error}
         <div class="mb-4 p-3 rounded-xl bg-red-500/10 text-red-400 text-sm">{error}</div>
       {/if}

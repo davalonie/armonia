@@ -45,6 +45,11 @@ import com.armonia.app.data.repository.PreferencesRepository
 import com.armonia.app.homelab.*
 import com.armonia.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -69,6 +74,7 @@ data class HomeDetail(
 class HomeViewModel @Inject constructor(
     private val api: MusicApi, private val prefs: PreferencesRepository,
     private val library: LibraryRepository, val player: MusicPlayer,
+    private val offline: com.armonia.app.offline.OfflineManager, private val streamCache: com.armonia.app.playback.StreamCache,
 ) : ViewModel() {
     private val owner = prefs.cachedUserId
     var recent by mutableStateOf<List<RecentPlaylist>>(emptyList()); private set
@@ -84,6 +90,58 @@ class HomeViewModel @Inject constructor(
     var busy by mutableStateOf(false); private set
     var message by mutableStateOf<String?>(null)
     private var polling = false
+
+    var onPhone by mutableStateOf<List<Song>>(emptyList()); private set
+    var savedLists by mutableStateOf<List<com.armonia.app.offline.OfflineCollection>>(emptyList()); private set
+    private val account = prefs.accountNamespace
+
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    suspend fun loadOnPhone() {
+        val saved = library.savedSongMetadata(account).associateBy { it.id }.toMutableMap()
+        var lookedUp = emptySet<String>()
+        val inventory = streamCache.inventoryChanges.debounce(200).map { streamCache.completeLibraryIds(account) }
+            .distinctUntilChanged()
+        combine(offline.catalog, offline.progress, inventory, prefs.authState) { catalog, _, cached, auth ->
+            Triple(catalog, cached, auth.namespace)
+        }.collectLatest { (catalog, cached, namespace) ->
+            if (account != namespace || account != prefs.accountNamespace) {
+                onPhone = emptyList()
+                savedLists = emptyList()
+                if (detail?.kind == "phone") close()
+                return@collectLatest
+            }
+            val pinned = offline.cachedSongIds(catalog.allSongs())
+            val available = pinned + cached
+            val known = saved + player.queue.value.associateBy { it.id } + catalog.allSongs().associateBy { it.id }
+            fun publish(metadata: Map<String, Song>) {
+                if (account != prefs.accountNamespace) return
+                onPhone = songsOnPhone(available, metadata)
+                savedLists = catalog.collections.filter { it.key.startsWith("playlist:") && it.songs.any { s -> s.id in available } }
+                detail?.takeIf { it.kind == "phone" }?.let { openOnPhone(it.id) }
+            }
+            publish(known)
+            val missing = cached - known.keys
+            if (missing.isNotEmpty() && missing != lookedUp) {
+                library.getSongs().onSuccess { songs ->
+                    saved.putAll(songs.associateBy { it.id })
+                    publish(known + saved)
+                }
+                lookedUp = missing
+            }
+        }
+    }
+
+    fun openOnPhone(id: String) {
+        if (account != prefs.accountNamespace) return close()
+        val list = savedLists.firstOrNull { it.key == id }
+        val songs = if (id == "all") onPhone else {
+            if (list == null) return close()
+            val ids = onPhone.mapTo(HashSet()) { it.id }
+            list.songs.filter { it.id in ids }
+        }
+        detail = HomeDetail("phone", id, list?.title ?: "Tus canciones sin conexion",
+            cover = list?.coverArt?.let { art(it) }, songs = songs, loading = false)
+    }
 
     var releases by mutableStateOf<List<NewRelease>>(emptyList()); private set
     init {
@@ -149,8 +207,9 @@ class HomeViewModel @Inject constructor(
         "generated" -> api.homePlaylist(id).checked().let { list -> list.items.orEmpty().map { song(it.track, it.cover) } to list }
         "release" -> {
             var response = api.releaseTracks(id).checked()
+            var polls = 0
             while (response.preparing && detail?.id == id && owner == prefs.cachedUserId) {
-                kotlinx.coroutines.delay(2500)
+                delay(if (polls++ < 3) 400 else 2500)
                 if (detail?.id != id || owner != prefs.cachedUserId) break
                 response = api.releaseTracks(id).checked()
             }
@@ -184,8 +243,8 @@ class HomeViewModel @Inject constructor(
     fun close() { detail = null }
     fun playDetail(index: Int? = null) {
         val d = detail ?: return
-        if (d.songs.isEmpty()) return
-        player.playQueue(d.songs, index ?: player.collectionStart(d.songs), playlistId = d.id.takeUnless { d.kind == "release" }, playlistKind = d.kind)
+        if (d.songs.isEmpty() || account != prefs.accountNamespace) return
+        player.playQueue(d.songs, index ?: player.collectionStart(d.songs), playlistId = d.id.takeIf { d.kind in setOf("local", "mixed", "generated") }, playlistKind = d.kind)
     }
     fun play(kind: String, id: String) {
         val epoch = player.routeGuard.explicitPlay()
@@ -193,7 +252,7 @@ class HomeViewModel @Inject constructor(
             try {
                 val list = songs(kind, id).first
                 if (list.isNotEmpty()) player.playQueue(list, player.collectionStart(list), requestEpoch = epoch, playlistId = id, playlistKind = kind)
-                else message = "Esta lista todavía no tiene canciones."
+                else message = "Esta lista todavia no tiene canciones."
             } catch (e: Exception) { message = e.message ?: "Servicio no disponible" }
         }
     }
@@ -221,7 +280,7 @@ class HomeViewModel @Inject constructor(
     }
     fun activate() = act("Lista semanal activada. Las primeras canciones pueden tardar unos minutos.") {
         val r = api.activateWeekly(owner)
-        if (r.code() == 409) throw IllegalStateException("Todavía no hay artistas identificados en tus escuchas.")
+        if (r.code() == 409) throw IllegalStateException("Todavia no hay artistas identificados en tus escuchas.")
         r.checked()
     }
 }
@@ -291,7 +350,7 @@ private fun Heading(text: String, trailing: String? = null) {
 fun HomeScreen(onOpen: (String) -> Unit, vm: HomeViewModel = hiltViewModel()) {
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(vm.message) { vm.message?.let { snackbar.showSnackbar(it); vm.message = null } }
-    LaunchedEffect(Unit) { vm.load() }
+    LaunchedEffect(Unit) { vm.loadOnPhone() }
     Box(Modifier.fillMaxSize()) {
         val detail = vm.detail
         if (detail != null) { BackHandler { vm.close() }; DetailView(detail, vm) } else HomeList(vm, onOpen)
@@ -302,7 +361,7 @@ fun HomeScreen(onOpen: (String) -> Unit, vm: HomeViewModel = hiltViewModel()) {
 @Composable
 private fun HomeList(vm: HomeViewModel, onOpen: (String) -> Unit) {
     val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val greeting = if (hour < 6) "Buenas noches" else if (hour < 13) "Buenos días" else if (hour < 21) "Buenas tardes" else "Buenas noches"
+    val greeting = if (hour < 6) "Buenas noches" else if (hour < 13) "Buenos dias" else if (hour < 21) "Buenas tardes" else "Buenas noches"
     fun mixLabel(name: String) = name.removePrefix("Mix ")
     LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(bottom = 32.dp)) {
         item { Text(greeting, Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 14.dp), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold) }
@@ -321,14 +380,28 @@ private fun HomeList(vm: HomeViewModel, onOpen: (String) -> Unit) {
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
-        if (vm.loaded && vm.recent.isEmpty()) item { Text("Las playlists que escuches aparecerán aquí.", Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = Muted, fontSize = 14.sp) }
+        if (vm.loaded && vm.recent.isEmpty()) item { Text("Las playlists que escuches apareceran aqui.", Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = Muted, fontSize = 14.sp) }
+
+        item { Heading("En el telefono") }
+        item {
+            QuickCard("Tus canciones sin conexion", Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                onOpen = { vm.openOnPhone("all") }, onPlay = { vm.openOnPhone("all"); vm.playDetail() }) {
+                Cover(vm.onPhone.firstOrNull()?.coverArt?.let { vm.art(it) }, 56.dp)
+            }
+        }
+        items(vm.savedLists, key = { "phone:" + it.key }) { list ->
+            QuickCard(list.title, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                onOpen = { vm.openOnPhone(list.key) }, onPlay = { vm.openOnPhone(list.key); vm.playDetail() }) {
+                Cover(list.coverArt?.let { vm.art(it) }, 56.dp)
+            }
+        }
 
         item { Heading("Hecho para ti", if (vm.status?.updating == true) "Actualizando…" else null) }
         if (vm.generated.isNotEmpty()) item {
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 items(vm.generated, key = { it.key }) { g ->
                     val cover = vm.art(g.covers?.firstOrNull(), 400)
-                    ShelfCard(g.name, if (g.state == "inactive") "Actívala para recibir canciones cada semana." else if (g.count > 0) g.description else "Todavía sin canciones disponibles.",
+                    ShelfCard(g.name, if (g.state == "inactive") "Activala para recibir canciones cada semana." else if (g.count > 0) g.description else "Todavia sin canciones disponibles.",
                         onOpen = { vm.open("generated", g.key, g.name, g.description, cover) },
                         onPlay = if (g.count > 0) ({ vm.play("generated", g.key) }) else null) {
                         Cover(cover, null, band = mixLabel(g.name), bandKicker = if (g.kind == "weekly") "Cada semana" else "Mix")
@@ -338,14 +411,14 @@ private fun HomeList(vm: HomeViewModel, onOpen: (String) -> Unit) {
         } else item {
             val status = vm.status
             if (vm.loaded && vm.unreachable) Column(Modifier.padding(horizontal = 16.dp)) {
-                Text("No se ha podido conectar con Armonía. Comprueba la conexión o la VPN; tus listas siguen guardadas.", color = Muted, fontSize = 14.sp)
+                Text("No se ha podido conectar con Armonia. Comprueba la conexion o la VPN; tus listas siguen guardadas.", color = Muted, fontSize = 14.sp)
                 TextButton(onClick = { vm.load() }) { Text("Reintentar") }
             } else Text(when {
                 !vm.loaded -> "Cargando tus listas…"
                 status?.updating == true -> "Preparando tus listas a partir de lo que escuchas. Puede tardar un par de minutos."
                 status?.error != null -> status.error
-                status?.profile == "insufficient_profile" -> "Escucha música durante unos días y aquí aparecerán listas hechas para ti."
-                else -> "Todavía no hay listas para tu perfil. Se prepararán cuando haya artistas reconocidos en tus escuchas."
+                status?.profile == "insufficient_profile" -> "Escucha musica durante unos dias y aqui apareceran listas hechas para ti."
+                else -> "Todavia no hay listas para tu perfil. Se prepararan cuando haya artistas reconocidos en tus escuchas."
             }, Modifier.padding(horizontal = 16.dp), color = Muted, fontSize = 14.sp)
         }
 
@@ -353,7 +426,7 @@ private fun HomeList(vm: HomeViewModel, onOpen: (String) -> Unit) {
             item { Heading("Novedades para ti") }
             for (upcoming in listOf(false, true)) {
                 val rows = vm.releases.filter { it.upcoming == upcoming }
-                if (upcoming && rows.isNotEmpty()) item { Heading("Próximamente") }
+                if (upcoming && rows.isNotEmpty()) item { Heading("Proximamente") }
                 if (rows.isNotEmpty()) item {
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         items(rows, key = { it.id }) { release ->
@@ -380,7 +453,7 @@ private fun HomeList(vm: HomeViewModel, onOpen: (String) -> Unit) {
                 }
             }
         }
-        listOf("Lo que más escuchas" to vm.frequent, "Añadido recientemente a tu biblioteca" to vm.newest).forEach { (heading, albums) ->
+        listOf("Lo que mas escuchas" to vm.frequent, "Añadido recientemente a tu biblioteca" to vm.newest).forEach { (heading, albums) ->
             if (albums.isNotEmpty()) {
                 item { Heading(heading) }
                 item {
@@ -418,7 +491,7 @@ private fun DetailView(detail: HomeDetail, vm: HomeViewModel) {
                 if (!detail.loading) {
                     val n = detail.songs.size
                     val date = detail.updated?.takeIf { n > 0 }?.let { " · Actualizada el " + SimpleDateFormat("d 'de' MMMM", Locale("es", "ES")).format(Date(it * 1000)) }.orEmpty()
-                    Text("$n ${if (n == 1) "canción" else "canciones"}$date", Modifier.padding(top = 4.dp), color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+                    Text("$n ${if (n == 1) "cancion" else "canciones"}$date", Modifier.padding(top = 4.dp), color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
                     // A short weekly list is explained with the real counts, never padded.
                     val report = vm.status?.weekly
                     if (detail.weekly && report != null && report.listed < report.proposed)
@@ -446,10 +519,10 @@ private fun DetailView(detail: HomeDetail, vm: HomeViewModel) {
             detail.songs.isEmpty() -> item {
                 Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (generated && detail.state == "inactive") {
-                        Text("Tu lista semanal reúne canciones de artistas similares a los que más escuchas.", color = Muted)
+                        Text("Tu lista semanal reune canciones de artistas similares a los que mas escuchas.", color = Muted)
                         Button(onClick = { vm.activate() }, enabled = !vm.busy, modifier = Modifier.padding(top = 14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = OnAccent)) { Text("Activar lista semanal", fontWeight = FontWeight.Bold) }
-                    } else Text(notice ?: "Esta lista todavía no tiene canciones disponibles.", color = Muted)
+                    } else Text(notice ?: "Esta lista todavia no tiene canciones disponibles.", color = Muted)
                 }
             }
             else -> itemsIndexed(detail.songs) { index, song ->
@@ -466,3 +539,8 @@ private fun DetailView(detail: HomeDetail, vm: HomeViewModel) {
         }
     }
 }
+
+
+internal fun songsOnPhone(available: Set<String>, metadata: Map<String, Song>): List<Song> =
+    available.map { id -> metadata[id] ?: MusicTrack("navidrome", id, id, "").toSong() }
+        .sortedBy { it.title.lowercase() }

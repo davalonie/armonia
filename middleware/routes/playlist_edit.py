@@ -2,13 +2,17 @@
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, Literal
 from weakref import WeakValueDictionary
 
-from fastapi import APIRouter, Depends, HTTPException
+from anyio import to_thread
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
+import db
 from auth import get_current_session
+from homelab import playlist_covers, store
+from homelab.models import owner
 from services import navidrome_client as nd
 
 router = APIRouter()
@@ -67,3 +71,26 @@ async def edit(playlist_id: str, body: Edit, sess: dict = Depends(get_current_se
                 [("playlistId", playlist_id)] + [("songIndexToRemove", str(i)) for i in reversed(range(len(ids)))],
             )
         return {"count": len(body.songs)}
+
+
+@router.put("/api/playlist-covers/{kind}/{playlist_id}")
+async def upload_cover(kind: Literal["local", "mixed"], playlist_id: str, request: Request,
+                       sess: dict = Depends(get_current_session)):
+    user = owner(sess)
+    if kind == "local":
+        await nd.owned_playlist(playlist_id, sess)
+    else:
+        store.playlist(user, playlist_id)
+    data = bytearray()
+    async for chunk in request.stream():
+        if len(data) + len(chunk) > playlist_covers.MAX_BYTES:
+            raise HTTPException(413, "image exceeds 8 MiB")
+        data.extend(chunk)
+    image = await to_thread.run_sync(playlist_covers.jpeg, data)
+    async with updating_playlist(user, playlist_id):
+        if kind == "local":
+            visible = await nd.owned_playlist(playlist_id, sess)
+            if visible.get("id") != playlist_id:
+                raise HTTPException(404, "playlist not found")
+        db.require_active_session(sess)
+        return {"coverArt": playlist_covers.save(kind, playlist_id, user, image)}

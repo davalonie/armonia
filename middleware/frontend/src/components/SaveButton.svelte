@@ -11,7 +11,7 @@
 </script>
 
 {#if target}
-  <button class="save {size}" class:on={isSaved} aria-label={isSaved ? 'Guardada · cambiar dónde' : 'Guardar en una playlist'}
+  <button class="save {size}" class:on={isSaved} aria-label={isSaved ? 'Guardada · cambiar donde' : 'Guardar en una playlist'}
     title={isSaved ? 'Guardada en tus listas' : 'Guardar en una playlist'} on:click|stopPropagation={() => saveSheet.set(track)}>
     <i aria-hidden="true" class={isSaved ? 'ph-fill ph-check-circle' : 'ph ph-plus-circle'}></i>
   </button>

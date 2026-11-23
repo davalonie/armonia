@@ -64,3 +64,37 @@ def test_the_api_track_carries_them():
     }, 0)
     assert track["details"] == {"track": 4, "disc": 1, "date": "2019"}
     assert spotify_client._track({"title": "Bajamar", "subtitle": "Lúa Norte", "duration": 200000}, 0, embed=True)["details"] == {}
+
+
+def test_album_edition_requires_matching_recording_and_one_release():
+    from services.recording_album import match
+
+    row = {"wrapperType": "track", "kind": "song", "collectionName": "Mar y Tierra", "collectionId": 1,
+           "trackName": "Qué Más Da", "artistName": "Nikone, Hard GZ & Lupita's Friends", "trackTimeMillis": 269000,
+           "trackCount": 12, "trackNumber": 7, "discNumber": 1, "collectionArtistName": "Hard GZ & Nikone"}
+    args = ("Qué Más Da", "Nikone, Hard GZ, Lupita's Friends", 269.03)
+    single = {**row, "collectionName": "Qué Más Da - Single", "trackCount": 1}
+    assert match([single, row], *args)["album"] == "Mar y Tierra"
+    assert match([row, {**row, "collectionId": 2, "collectionName": "Otra edicion"}], *args) is None
+    for change in ({"trackName": "Qué Más Da (directo)"}, {"artistName": "Nikone"}, {"trackTimeMillis": 275000}):
+        assert match([{**row, **change}], *args) is None
+
+
+def test_review_changes_only_a_reviewed_copy_and_keeps_exact_backup(song, monkeypatch):
+    from tools import review_recording_album as review
+
+    tagger_service.tag(str(song), "Lúa Norte", "Bajamar", "Bajamar")
+    original = song.read_bytes()
+    monkeypatch.setattr(review.recording_album, "lookup", lambda *args: {
+        "album": "Mareas", "album_artist": "Lúa Norte", "track": 7, "disc": 1, "date": "2022-03-24"})
+    plan = review.proposal(song)
+    assert song.read_bytes() == original
+    backup = song.with_name("original.m4a")
+    review.apply(song, plan, backup)
+    assert backup.read_bytes() == original
+    assert read(song)["album"] == ["Mareas"] and read(song)["tracknumber"] == ["7"]
+    assert read(song)["originaldate"] == ["2022-03-24"]
+    with pytest.raises(ValueError, match="ha cambiado"):
+        review.apply(song, plan, song.with_name("second.m4a"))
+    song.write_bytes(backup.read_bytes())
+    assert song.read_bytes() == original

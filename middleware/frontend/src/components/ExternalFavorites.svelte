@@ -11,4 +11,4 @@
 <section class="music-page"><h2>Favoritos de fuentes externas</h2>
 {#if error}<p role="alert">{error}</p>{/if}
 {#each items as p,i}<div class="music-row"><button on:click={()=>playQueue(items.map(p=>toQueueTrack(p.track)),i)}>{p.track.title}<small>{p.track.artist} {p.rating?'· '+'★'.repeat(p.rating):''}</small></button><button aria-label={`Opciones de ${p.track.title}`} on:click={e=>externalMenu(e.currentTarget,p.track)}>⋮</button></div>{/each}
-{#if !items.length}<p class="muted">Marca una canción desde Buscar o una playlist para guardarla aquí.</p>{/if}</section>
+{#if !items.length}<p class="muted">Marca una cancion desde Buscar o una playlist para guardarla aqui.</p>{/if}</section>

@@ -129,7 +129,7 @@
 </script>
 
 {#if tools}<div role="group" aria-label="Controles de playlist" class="playlist-tools" on:touchstart={e=>touchStart=e.touches[0].clientY} on:touchend={reveal}>
-  {#if toolsOpen}<div class="actions"><input aria-label="Buscar en la lista" placeholder="Buscar en la lista" bind:value={filter}><label>Ordenar <select bind:value={sort}><option value="original">Orden de la playlist</option><option value="title">Título</option><option value="artist">Artista</option></select></label></div>{/if}
+  {#if toolsOpen}<div class="actions"><input aria-label="Buscar en la lista" placeholder="Buscar en la lista" bind:value={filter}><label>Ordenar <select bind:value={sort}><option value="original">Orden de la playlist</option><option value="title">Titulo</option><option value="artist">Artista</option></select></label></div>{/if}
   {#if playlistName}<h2 class="text-3xl font-semibold my-4">{playlistName}</h2>{/if}
   <div class="actions"><span>{songs.length} canciones</span><button aria-expanded={toolsOpen} on:click={()=>toolsOpen=!toolsOpen}>Buscar y ordenar</button>
   <button class="playlist-play" disabled={!songs.length} on:click={playFromHeader}>▶ Reproducir</button>
@@ -231,7 +231,7 @@
       <!-- Dots menu button -->
       <button
         class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-all opacity-100 md:opacity-0 group-hover:opacity-100 shrink-0"
-        title="Opciones de canción" aria-label={`Opciones de ${song.title}`}
+        title="Opciones de cancion" aria-label={`Opciones de ${song.title}`}
         on:click={e => openDots(e, song, i)}
       >
         <i aria-hidden="true" class="ph ph-dots-three-vertical text-armonia-muted text-lg pointer-events-none"></i>

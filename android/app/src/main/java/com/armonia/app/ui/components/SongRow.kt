@@ -69,13 +69,13 @@ fun SongRow(
     if (ratingOpen) AlertDialog(onDismissRequest = { if (!ratingBusy) ratingOpen = false },
         title = { Text("Valorar ${song.title}") },
         text = { Column {
-            Text(if (rating == 0) "Sin valoración" else "$rating de 5")
+            Text(if (rating == 0) "Sin valoracion" else "$rating de 5")
             Slider(rating.toFloat(), { rating = it.toInt() }, valueRange = 0f..5f, steps = 4, enabled = !ratingBusy)
             ratingError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         } },
         confirmButton = { TextButton(enabled = !ratingBusy, onClick = { scope.launch {
             ratingBusy = true
-            actions.rate(song, rating).onSuccess { ratingOpen = false }.onFailure { ratingError = "No se pudo guardar la valoración" }
+            actions.rate(song, rating).onSuccess { ratingOpen = false }.onFailure { ratingError = "No se pudo guardar la valoracion" }
             ratingBusy = false
         } }) { Text("Guardar") } },
         dismissButton = { TextButton(enabled = !ratingBusy, onClick = { ratingOpen = false }) { Text("Cancelar") } })
@@ -144,7 +144,7 @@ fun SongRow(
                 if (offline != null && offline.state != com.armonia.app.offline.OfflineSongState.NONE) {
                     Icon(
                         Icons.Default.DownloadDone,
-                        contentDescription = "En este teléfono",
+                        contentDescription = "En este telefono",
                         tint = if (offline.state == com.armonia.app.offline.OfflineSongState.DOWNLOADING)
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         else MaterialTheme.colorScheme.primary,
@@ -193,7 +193,7 @@ fun SongRow(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
                 }
                 HorizontalDivider()
-                DropdownMenuItem(text = { Text("Reproducir a continuación") }, onClick = { menuOpen = false; actions.playNext(song) })
+                DropdownMenuItem(text = { Text("Reproducir a continuacion") }, onClick = { menuOpen = false; actions.playNext(song) })
                 if (!song.id.contains('|')) RatingStars(rating, enabled = !ratingBusy, modifier = Modifier.padding(horizontal = 8.dp)) { value ->
                     scope.launch {
                         ratingBusy = true
@@ -235,10 +235,10 @@ fun SongRow(
                 )
                 if (offline != null) {
                     val (label, enabled) = when (offline.state) {
-                        com.armonia.app.offline.OfflineSongState.NONE -> "Descargar en el teléfono" to true
+                        com.armonia.app.offline.OfflineSongState.NONE -> "Descargar en el telefono" to true
                         com.armonia.app.offline.OfflineSongState.DOWNLOADING -> "Descargando… (toca para cancelar)" to true
-                        com.armonia.app.offline.OfflineSongState.DOWNLOADED -> "Quitar del teléfono" to true
-                        com.armonia.app.offline.OfflineSongState.IN_COLLECTION -> "En el teléfono (álbum o playlist guardados)" to false
+                        com.armonia.app.offline.OfflineSongState.DOWNLOADED -> "Quitar del telefono" to true
+                        com.armonia.app.offline.OfflineSongState.IN_COLLECTION -> "En el telefono (album o playlist guardados)" to false
                     }
                     DropdownMenuItem(
                         text = { Text(label) },
@@ -283,7 +283,7 @@ fun SongRow(
     }
 }
 
-/** "Descargar en el teléfono" / "Quitar del teléfono" for a song row. */
+/** "Descargar en el telefono" / "Quitar del telefono" for a song row. */
 data class OfflineSongAction(
     val state: com.armonia.app.offline.OfflineSongState,
     val onToggle: () -> Unit,

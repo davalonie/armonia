@@ -31,7 +31,7 @@ ARTISTS = "@artists"
 PER_ARTIST = 3
 REREAD_AFTER = 24 * 3600  # Aurral's flow changes weekly; a daily re-read is cheap.
 REBUILD_AFTER = 7 * 86400
-WEEKLY_NAME = "Armonía semanal"
+WEEKLY_NAME = "Armonia semanal"
 _tasks = {}
 _last_manual = {}
 _reports = {}  # Last weekly breakdown per user, persisted with the status row.
@@ -90,7 +90,7 @@ def _public(row, detail=False):
     result = {
         "key": row["key"],
         "kind": "weekly" if row["key"] == "weekly" else "similar",
-        "name": row["name"],
+        "name": WEEKLY_NAME if row["key"] == "weekly" else row["name"],
         "description": row["description"],
         "state": row["state"],
         "error": row["error"],
@@ -148,7 +148,7 @@ def save_copy(user, key):
     """An independent library playlist; later refreshes never rewrite it."""
     source = detail(user, key)
     if not source["items"]:
-        raise HTTPException(409, "esta lista todavía no tiene canciones")
+        raise HTTPException(409, "esta lista todavia no tiene canciones")
     day = time.strftime("%d/%m/%Y", time.localtime(source["updated"]))
     body = PlaylistWrite(
         name=f"{source['name']} · {day}"[:150],
@@ -255,7 +255,7 @@ async def build_weekly(user, sess, active, personal):
     discovery_profile.init()
     with store.connection() as c:
         flow = c.execute("SELECT flow FROM discovery_weekly WHERE owner=?", (user,)).fetchone()
-    description = "Canciones elegidas a partir de los artistas que más escuchas. Se renueva cada semana."
+    description = "Canciones elegidas a partir de los artistas que mas escuchas. Se renueva cada semana."
     row, known = _reusable(user, "weekly")
     previous = json.loads(row["items"]) if row else []
     if not flow:
@@ -271,7 +271,7 @@ async def build_weekly(user, sess, active, personal):
         recordings = flow_result["tracks"]
     except HTTPException:
         _write(user, "weekly", WEEKLY_NAME, description, previous, "error" if not previous else "ready",
-               "No se pudo consultar la lista semanal. Se conserva la última versión.", touch=False)
+               "No se pudo consultar la lista semanal. Se conserva la ultima version.", touch=False)
         return
     # Every proposal is accounted for, so a short list can be explained instead of guessed at.
     report = {"proposed": flow_result.get("proposed", len(recordings)), "eligible": len(recordings), "reused": 0,
@@ -301,13 +301,13 @@ async def build_weekly(user, sess, active, personal):
     failed = report["provider_error"] > 0
     if not items:
         # Never replace a playable list with an empty one because providers failed or nothing matched.
-        message = ("La lista semanal todavía se está generando en Aurral." if not recordings else
+        message = ("La lista semanal todavia se esta generando en Aurral." if not recordings else
                    "No hay una fuente disponible para las canciones propuestas esta semana.")
         _write(user, "weekly", WEEKLY_NAME, description, previous, "ready" if previous else "empty", message, touch=False)
         return
     changed = [i["track"]["source_id"] for i in items] != [i["track"]["source_id"] for i in previous]
     _write(user, "weekly", WEEKLY_NAME, description, items, "ready",
-           "Algunas canciones no pudieron consultarse; se reintentará." if failed else None, touch=changed or not row)
+           "Algunas canciones no pudieron consultarse; se reintentara." if failed else None, touch=changed or not row)
 
 
 async def _artist_songs(name, sess, active, cache):
@@ -365,9 +365,9 @@ async def build_similar(user, sess, active, personal, force):
             if not row:
                 continue
             _write(user, key, row["name"], row["description"], json.loads(row["items"]), row["state"],
-                   "No hay canciones disponibles ahora mismo; se conserva la última versión.", touch=False)
+                   "No hay canciones disponibles ahora mismo; se conserva la ultima version.", touch=False)
             continue
-        names = ", ".join(used[:3]) + " y más" if len(used) > 3 else _listed(used)
+        names = ", ".join(used[:3]) + " y mas" if len(used) > 3 else _listed(used)
         description = f"Artistas similares a {seed['name']}: {names}."
         _write(user, key, f"Mix {seed['name']}"[:150], description, items, "ready")
     if personal["state"] in {"ready", "no_similar_results", "insufficient_profile"}:
@@ -403,10 +403,17 @@ async def build_artists(user, active, personal, force):
         _write(user, ARTISTS, "", "", result, "ready")
 
 
+def _has_delivered_listen(user):
+    with store.connection() as c:
+        return c.execute("SELECT 1 FROM outbox WHERE owner=? AND destination='koito' AND state='sent' LIMIT 1",
+                         (user,)).fetchone() is not None
+
+
 async def _run(user, sess, force):
     def active():
         db.require_active_session(sess)
 
+    had_listen = _has_delivered_listen(user)
     profile, error = None, None
     try:
         personal = await discovery_profile.recommendations(user)
@@ -416,14 +423,14 @@ async def _run(user, sess, force):
         await build_similar(user, sess, active, personal, force)
         await build_artists(user, active, personal, force)
     except HTTPException as exc:
-        error = ("Vincula tu cuenta de recomendaciones en Más para generar tus listas." if exc.status_code == 424 else
+        error = ("Vincula tu cuenta de recomendaciones en Mas para generar tus listas." if exc.status_code == 424 else
                  "No se pudieron actualizar tus listas. Se conservan las anteriores.")
     except Exception:  # A background refresh must record its failure instead of dying silently.
         error = "No se pudieron actualizar tus listas. Se conservan las anteriores."
     try:
         previous = _row(user, STATUS)
         before = json.loads(previous["items"]) if previous else {}
-        value = {"profile": profile or before.get("profile"), "weekly": _reports.pop(user, None) or before.get("weekly")}
+        value = {"had_listen": had_listen, "profile": profile or before.get("profile"), "weekly": _reports.pop(user, None) or before.get("weekly")}
         _write(user, STATUS, "", "", value, "idle", error)
     except HTTPException:
         pass
@@ -434,10 +441,13 @@ def due(user):
     # Failed runs retry after ten minutes instead of on every visit to Inicio.
     if not row:
         return True
+    value = json.loads(row["items"])
+    if value.get("profile") == "insufficient_profile" and not value.get("had_listen") and _has_delivered_listen(user):
+        return True
     weekly = _row(user, "weekly")
     # An activated flow that has not produced tracks yet, or a failed run, is retried
     # after a few minutes instead of on every visit to Inicio or only the next day.
-    soon = row["error"] or (weekly and weekly["state"] == "empty")
+    soon = row["error"] or (value.get("had_listen") and value.get("profile") == "insufficient_profile") or (weekly and weekly["state"] == "empty")
     return time.time() - row["updated"] > (300 if soon else REREAD_AFTER)
 
 

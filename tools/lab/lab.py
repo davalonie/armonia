@@ -1,4 +1,4 @@
-"""Laboratorio aislado para la revisión de interfaz: Navidrome 0.64.2 propio + Armonía real.
+"""Laboratorio aislado para la revisión de interfaz: Navidrome 0.64.2 propio + Armonia real.
 
 Todo es ficticio (nombres, portadas, tonos generados con ffmpeg). Solo escucha en 127.0.0.1,
 usa contenedor, datos y puertos propios y no comparte nada con la instalación en uso.
@@ -6,7 +6,7 @@ usa contenedor, datos y puertos propios y no comparte nada con la instalación e
     python lab.py fixtures     # genera la música de prueba (etiquetada como lo hacía la importación)
     python lab.py up           # arranca Navidrome de laboratorio y crea la usuaria «ana»
     python lab.py seed         # playlist, favoritas y reproducciones de referencia
-    python lab.py server       # Armonía (uvicorn) contra ese Navidrome, en primer plano
+    python lab.py server       # Armonia (uvicorn) contra ese Navidrome, en primer plano
     python lab.py down         # para y borra el contenedor de laboratorio
 """
 import hashlib

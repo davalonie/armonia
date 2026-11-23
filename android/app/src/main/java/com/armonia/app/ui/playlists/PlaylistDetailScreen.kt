@@ -52,7 +52,7 @@ internal fun totalDuration(seconds: Int): String {
     return if (minutes >= 60) "${minutes / 60} h ${minutes % 60} min" else "$minutes min"
 }
 
-internal fun songCount(n: Int) = if (n == 1) "1 canción" else "$n canciones"
+internal fun songCount(n: Int) = if (n == 1) "1 cancion" else "$n canciones"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +61,7 @@ fun PlaylistDetailScreen(
     onAddSongs: () -> Unit = {},
     viewModel: PlaylistDetailViewModel = hiltViewModel(),
 ) {
-    // "Descargar en el teléfono" state for each song row.
+    // "Descargar en el telefono" state for each song row.
     val offlineSongs: com.armonia.app.ui.offline.OfflineSongsViewModel = hiltViewModel()
     val offlineStates by offlineSongs.states.collectAsState()
     val playlist = viewModel.playlist
@@ -119,7 +119,7 @@ fun PlaylistDetailScreen(
                     }) {
                         Icon(
                             if (searchOpen) Icons.Default.Close else Icons.Default.Search,
-                            contentDescription = if (searchOpen) "Cerrar la búsqueda" else "Buscar y ordenar en esta playlist",
+                            contentDescription = if (searchOpen) "Cerrar la busqueda" else "Buscar y ordenar en esta playlist",
                             tint = if (searchOpen) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                         )
                     }
@@ -150,6 +150,7 @@ fun PlaylistDetailScreen(
                     item(key = "header") {
                         PlaylistHeader(
                             name = playlist.name,
+                            cover = playlist.coverArt?.takeIf { it.startsWith("armonia-art-") }?.let { viewModel.getCoverUrl(it, 256) },
                             songs = entries.size,
                             seconds = entries.sumOf { it.duration },
                             isPinnedOffline = viewModel.isPinnedOffline,
@@ -167,13 +168,13 @@ fun PlaylistDetailScreen(
                     item(key = "add") { AddToThisListRow(onAddSongs) }
                     if (entries.isEmpty()) item(key = "empty") {
                         Text(
-                            "Esta playlist todavía no tiene canciones.",
+                            "Esta playlist todavia no tiene canciones.",
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
                         )
                     } else if (rows.isEmpty()) item(key = "none") {
                         Text(
-                            "Ninguna canción coincide con «${query.trim()}».",
+                            "Ninguna cancion coincide con «${query.trim()}».",
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
                         )
@@ -238,7 +239,7 @@ fun PlaylistDetailScreen(
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text("¿Eliminar de la biblioteca?") },
-            text = { Text("«${target.title}» se borrará del servidor para siempre, no solo de esta playlist. No se puede deshacer.") },
+            text = { Text("«${target.title}» se borrara del servidor para siempre, no solo de esta playlist. No se puede deshacer.") },
             confirmButton = {
                 TextButton(onClick = {
                     val toDelete = target
@@ -258,6 +259,7 @@ fun PlaylistDetailScreen(
 @Composable
 private fun PlaylistHeader(
     name: String,
+    cover: String?,
     songs: Int,
     seconds: Int,
     isPinnedOffline: Boolean,
@@ -270,6 +272,7 @@ private fun PlaylistHeader(
     val downloading = isPinnedOffline && offlineProgress?.running == true
     val failed = offlineProgress?.failed ?: 0
     Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)) {
+        if (cover != null) coil.compose.AsyncImage(cover, "Portada de $name", Modifier.size(96.dp))
         Text(
             text = name,
             style = MaterialTheme.typography.headlineMedium,
@@ -286,10 +289,10 @@ private fun PlaylistHeader(
         // The files are the server's library either way; this says whether the phone also has them.
         Text(
             text = when {
-                downloading -> "En tu biblioteca · Descargando en el teléfono ${offlineProgress?.done ?: 0}/${offlineProgress?.total ?: songs}"
-                isPinnedOffline && failed > 0 -> "En tu biblioteca · En el teléfono, $failed sin descargar"
-                isPinnedOffline -> "En tu biblioteca · Descargada en este teléfono"
-                else -> "En tu biblioteca · No descargada en el teléfono"
+                downloading -> "En tu biblioteca · Descargando en el telefono ${offlineProgress?.done ?: 0}/${offlineProgress?.total ?: songs}"
+                isPinnedOffline && failed > 0 -> "En tu biblioteca · En el telefono, $failed sin descargar"
+                isPinnedOffline -> "En tu biblioteca · Descargada en este telefono"
+                else -> "En tu biblioteca · No descargada en el telefono"
             },
             style = MaterialTheme.typography.bodySmall,
             color = if (isPinnedOffline && failed > 0 && !downloading) MaterialTheme.colorScheme.error
@@ -315,7 +318,7 @@ private fun SearchAndSort(query: String, onQuery: (String) -> Unit, sort: String
             placeholder = { Text("Buscar en esta playlist") },
             leadingIcon = { Icon(Icons.Default.Search, null) },
             trailingIcon = {
-                if (query.isNotEmpty()) IconButton(onClick = { onQuery("") }) { Icon(Icons.Default.Close, "Borrar la búsqueda") }
+                if (query.isNotEmpty()) IconButton(onClick = { onQuery("") }) { Icon(Icons.Default.Close, "Borrar la busqueda") }
             },
             singleLine = true,
             shape = RoundedCornerShape(28.dp),
@@ -328,7 +331,7 @@ private fun SearchAndSort(query: String, onQuery: (String) -> Unit, sort: String
             modifier = Modifier.fillMaxWidth().focusRequester(focus),
         )
         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            listOf("original" to "Orden de la lista", "title" to "Título", "artist" to "Artista").forEach { (key, label) ->
+            listOf("original" to "Orden de la lista", "title" to "Titulo", "artist" to "Artista").forEach { (key, label) ->
                 FilterChip(selected = sort == key, onClick = { onSort(key) }, label = { Text(label) })
             }
         }

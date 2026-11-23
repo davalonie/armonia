@@ -1,11 +1,13 @@
-"""«Continuar con música similar»: a small batch of related songs when a queue ends.
+"""«Continuar con musica similar»: a small batch of related songs when a queue ends.
 
-Songs come from the user's own generated lists (already built from Aurral and resolved to playable
-sources), so nothing new is asked of any provider and no listening history leaves the server.
+Prefer the account's generated playlists. A selected YouTube recording can also seed its own radio.
 """
 import json
 import random
 import time
+
+from requests import RequestException
+from ytmusicapi.exceptions import YTMusicError
 
 import db
 from homelab import generated_playlists as generated
@@ -68,3 +70,61 @@ def batch(user, artists, exclude, limit=BATCH, rng=random):
         if len(chosen) == limit:
             break
     return chosen
+
+
+def radio(video_id, exclude):
+    """A new listener may have no generated playlists yet. Ask for this recording's radio."""
+    from services.ytdlp_service import _music_search_client
+
+    if not generated._external_allowed(video_id):
+        return []
+    try:
+        with generated.ytdlp_service.search_connection_scope():
+            response = _music_search_client().get_watch_playlist(videoId=video_id, radio=True, limit=12)
+    except (RequestException, YTMusicError, KeyError, ValueError, TypeError, IndexError):
+        return []
+    rows = response.get("tracks") if isinstance(response, dict) else None
+    if not isinstance(rows, list):
+        return []
+    seen = {f"youtube:{video_id}", *exclude}
+    items = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        ident = row.get("videoId")
+        key = f"youtube:{ident}"
+        if not isinstance(ident, str) or len(ident) != 11 or key in seen or not generated._external_allowed(ident):
+            continue
+        artist = ", ".join(a["name"] for a in row.get("artists") or [] if isinstance(a, dict) and isinstance(a.get("name"), str))
+        album = row.get("album")
+        track = generated._track("youtube", ident, row.get("title"), artist, album.get("name") if isinstance(album, dict) else None, None)
+        if track:
+            seen.add(key)
+            items.append(generated._item(track))
+        if len(items) == BATCH:
+            break
+    return items
+
+
+async def library_followup(sess, artist, exclude):
+    """A new account may still have other playable recordings by the artist in its own library."""
+    wanted = _names(artist)
+    if not wanted:
+        return []
+    rows = await generated._local_songs(artist, sess)
+    seen = set(exclude)
+    items = []
+    for row in rows:
+        if not wanted.intersection(_names(row.get("artist"))):
+            continue
+        track = generated._track("navidrome", row.get("id"), row.get("title"), row.get("artist"),
+                                 row.get("album"), row.get("duration"))
+        if not track:
+            continue
+        key = f"navidrome:{track['source_id']}"
+        if key not in seen:
+            seen.add(key)
+            items.append(generated._item(track))
+            if len(items) == BATCH:
+                break
+    return items

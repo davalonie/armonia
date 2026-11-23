@@ -63,7 +63,7 @@
     const library=await readLibrary(token,{onProgress:name=>{if(alive)reading=`Leyendo «${name}»…`;}});
     if(!alive)return;
     spotifyUser=library.user;unreadable=library.unreadable;
-    if(!library.playlists.length){error='Spotify no ha entregado ninguna lista propia, canción guardada ni álbum.';show((await loadBatch()).batch);return;}
+    if(!library.playlists.length){error='Spotify no ha entregado ninguna lista propia, cancion guardada ni album.';show((await loadBatch()).batch);return;}
     reading='Preparando la lista…';
     show(await proposeFromSpotify(library.playlists));
   }
@@ -103,46 +103,46 @@
     <div class="sources">
       <article>
         <h2>Con el archivo de Exportify</h2>
-        <p>Incluye también las listas de otras personas que sigues y no depende de tu suscripción.</p>
+        <p>Incluye tambien las listas de otras personas que sigues y no depende de tu suscripcion.</p>
         <ol>
-          <li>Abre la web de <a href="https://github.com/watsonbox/exportify" target="_blank" rel="noopener noreferrer">Exportify</a> (enlazada en su página) e inicia sesión con Spotify.</li>
+          <li>Abre la web de <a href="https://github.com/watsonbox/exportify" target="_blank" rel="noopener noreferrer">Exportify</a> (enlazada en su pagina) e inicia sesion con Spotify.</li>
           <li>Pulsa «Exportar todo»: se descarga un archivo ZIP.</li>
-          <li>Elígelo aquí.</li>
+          <li>Eligelo aqui.</li>
         </ol>
         <label class="file">Archivo ZIP de Exportify<input type="file" accept=".zip,application/zip" disabled={!!busy} on:change={pickArchive} /></label>
         {#if busy==='zip'}<p role="status">Leyendo el archivo…</p>{/if}
       </article>
       <article>
-        <h2>Iniciando sesión en Spotify</h2>
-        <p>Lee tus listas propias o colaborativas, tus canciones guardadas y tus álbumes. Spotify no entrega a una aplicación personal las listas de otras personas, y exige que su dueño tenga Premium activo.</p>
+        <h2>Iniciando sesion en Spotify</h2>
+        <p>Lee tus listas propias o colaborativas, tus canciones guardadas y tus albumes. Spotify no entrega a una aplicacion personal las listas de otras personas, y exige que su dueño tenga Premium activo.</p>
         {#if clientId&&!editingId}
           <button class="primary" disabled={!!busy} on:click={connect}>Conectar con Spotify</button>
           {#if !fixed}<button class="link" on:click={()=>{editingId=true;draftId=clientId;}}>Cambiar identificador</button>{/if}
-          <p class="hint">El inicio de sesión ocurre en la página de Spotify. Armonía no recibe tu contraseña ni guarda el acceso.</p>
+          <p class="hint">El inicio de sesion ocurre en la pagina de Spotify. Armonia no recibe tu contraseña ni guarda el acceso.</p>
         {:else}
-          <label class="field">Client ID de tu aplicación de Spotify
-            <input bind:value={draftId} autocomplete="off" spellcheck="false" placeholder="32 letras y números" /></label>
-          <p class="hint">Se crea en developer.spotify.com con esta dirección de retorno: <code>{redirectUri()}</code>. No es un secreto; no escribas aquí el «Client secret».</p>
+          <label class="field">Client ID de tu aplicacion de Spotify
+            <input bind:value={draftId} autocomplete="off" spellcheck="false" placeholder="32 letras y numeros" /></label>
+          <p class="hint">Se crea en developer.spotify.com con esta direccion de retorno: <code>{redirectUri()}</code>. No es un secreto; no escribas aqui el «Client secret».</p>
           <button class="primary" disabled={!!busy||!/^[0-9a-f]{32}$/.test(draftId.trim())} on:click={keepId}>Guardar</button>
           {#if clientId}<button class="link" on:click={()=>editingId=false}>Cancelar</button>{/if}
         {/if}
       </article>
     </div>
   {:else if batch.status==='preview'}
-    <p class="intro">{batch.source==='spotify'?`Listas leídas de Spotify${spotifyUser?` (${spotifyUser})`:''}.`:'Listas encontradas en el archivo.'} Elige cuáles importar; puedes cambiarles el nombre.</p>
+    <p class="intro">{batch.source==='spotify'?`Listas leidas de Spotify${spotifyUser?` (${spotifyUser})`:''}.`:'Listas encontradas en el archivo.'} Elige cuales importar; puedes cambiarles el nombre.</p>
     <div class="bar"><button on:click={()=>all(true)}>Marcar todas</button><button on:click={()=>all(false)}>Ninguna</button></div>
     <ul class="rows">
       {#each batch.playlists as p (p.index)}
         <li class:off={!importable(p)}>
           <input type="checkbox" aria-label={`Importar ${p.name}`} bind:checked={chosen[p.index]} disabled={!importable(p)||!!busy} />
           <input class="name" aria-label={`Nombre para ${p.name}`} bind:value={names[p.index]} maxlength="150" disabled={!importable(p)||!!busy} />
-          <span class="count">{p.total} {p.total===1?'canción':'canciones'}</span>
+          <span class="count">{p.total} {p.total===1?'cancion':'canciones'}</span>
           <span class="note">{[noteLabel(p.note),p.existing?'Ya importada antes':''].filter(Boolean).join(' · ')}</span>
         </li>
       {/each}
     </ul>
     {#if unreadable.length}
-      <details class="unreadable"><summary>{unreadable.length} {unreadable.length===1?'lista no se puede leer':'listas no se pueden leer'} con el inicio de sesión</summary>
+      <details class="unreadable"><summary>{unreadable.length} {unreadable.length===1?'lista no se puede leer':'listas no se pueden leer'} con el inicio de sesion</summary>
         <p>Son de otras personas o de Spotify. Para traerlas usa el archivo de Exportify.</p>
         <ul>{#each unreadable as u}<li>{u.name}{u.owner?` · ${u.owner}`:''}{u.total!=null?` · ${u.total} canciones`:''}</li>{/each}</ul>
       </details>
@@ -151,7 +151,7 @@
       <button class="primary" disabled={!!busy||!selected.length} on:click={begin}>Importar {selected.length} {selected.length===1?'playlist':'playlists'} ({songs} canciones)</button>
       <button disabled={!!busy} on:click={discard}>Descartar</button>
     </div>
-    <p class="hint">Se importan una detrás de otra. Puedes cerrar esta página: el servidor continúa.</p>
+    <p class="hint">Se importan una detras de otra. Puedes cerrar esta pagina: el servidor continua.</p>
   {:else}
     <p class="status" role="status">
       {#if batch.status==='running'}Importando: {finished} de {queued} playlists terminadas.

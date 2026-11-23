@@ -9,7 +9,7 @@ export ANDROID_HOME="$sdk"
 export PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH:-"$root/runtime/browsers"}
 [[ $(node -p 'process.versions.node.split(".")[0]') == 24 ]] || { echo 'Se necesita Node 24.' >&2; exit 1; }
 "$python" -c 'import sys; assert sys.version_info[:2] == (3,12), "Se necesita Python 3.12"'
-# Prepara el ZIP en la caché compartida con build_android.py antes de entrar en Bubblewrap.
+# Prepara el ZIP en la cache compartida con build_android.py antes de entrar en Bubblewrap.
 "$python" - "$root" "${GRADLE_USER_HOME:-$root/runtime/android/gradle-cache}" <<'PYGRADLE'
 import fcntl
 import hashlib
@@ -32,7 +32,7 @@ checksum = props["distributionSha256Sum"].lower()
 if not re.fullmatch(r"[0-9a-f]{64}", checksum):
     sys.exit("distributionSha256Sum debe contener una suma SHA-256.")
 if props["zipStoreBase"] != "GRADLE_USER_HOME":
-    sys.exit("El proyecto debe usar GRADLE_USER_HOME para la distribución de Gradle.")
+    sys.exit("El proyecto debe usar GRADLE_USER_HOME para la distribucion de Gradle.")
 
 # PathAssembler del wrapper identifica cada URL mediante su MD5 expresado en base 36.
 number = int.from_bytes(hashlib.md5(url.encode(), usedforsecurity=False).digest(), "big")
@@ -57,7 +57,7 @@ with (folder / (name + ".lck")).open("a+b") as lock:
         if matches(archive):
             sys.exit(0)
         archive.unlink()
-        sys.exit("La suma del ZIP de Gradle en caché es incorrecta. Se ha retirado el archivo.")
+        sys.exit("La suma del ZIP de Gradle en cache es incorrecta. Se ha retirado el archivo.")
     with tempfile.NamedTemporaryFile(dir=folder, suffix=".part", delete=False) as out:
         temporary = Path(out.name)
     try:
@@ -78,7 +78,7 @@ trap 'rm -rf -- "$staging"' EXIT
 package() {
     local archive=$1 sum=$2 member=$3 destination=$4
     if [[ -e "$destination" ]]; then
-        echo "Ya existe $destination con otra revisión. Elige un ANDROID_HOME distinto." >&2
+        echo "Ya existe $destination con otra revision. Elige un ANDROID_HOME distinto." >&2
         return 1
     fi
     mkdir -p "$staging/$member"

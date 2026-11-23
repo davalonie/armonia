@@ -20,7 +20,7 @@ test('sign-in uses PKCE, read-only scopes and the exact return address; nothing 
   const pending=JSON.parse(storage.getItem('armonia.spotify-login'));
   const digest=Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(pending.verifier))).toString('base64url');
   assert.equal(url.searchParams.get('code_challenge'),digest);
-  await assert.rejects(beginLogin('secret-or-garbage',{location,storage,crypto:webcrypto}),/no es válido/);
+  await assert.rejects(beginLogin('secret-or-garbage',{location,storage,crypto:webcrypto}),/no es valido/);
 
   const requests=[];
   const fetch=async(address,options)=>{requests.push({address,body:new URLSearchParams(options.body)});return json({access_token:'fictional-access'});};
@@ -46,7 +46,7 @@ test('a return that is not ours, was refused or has another state never yields a
   await assert.rejects(completeLogin({search:`?error=access_denied&state=${state}`,location,storage,fetch:never}),/No has dado permiso/);
   await beginLogin(CLIENT,{location,storage,crypto:webcrypto});
   const again=JSON.parse(storage.getItem('armonia.spotify-login')).state;
-  await assert.rejects(completeLogin({search:`?code=x&state=${again}`,location,storage,fetch:async()=>json({},400)}),/rechazó/);
+  await assert.rejects(completeLogin({search:`?code=x&state=${again}`,location,storage,fetch:async()=>json({},400)}),/rechazo/);
 });
 
 const song=(n,extra={})=>({type:'track',name:`Song ${n}`,uri:`spotify:track:${n}`,duration_ms:200000,artists:[{name:'Uno'},{name:'Dos'}],album:{name:'Disco'},external_ids:{isrc:`ES${n}`},...extra});
@@ -86,7 +86,7 @@ test('reads saved songs, saved albums and every page of owned or collaborative p
   const library=await readLibrary('fictional-access',{fetch,wait:async ms=>waits.push(ms)});
   assert.deepEqual(waits,[1000],'a rate limit is waited out and retried');
   assert.equal(library.user,'Fixture');
-  assert.deepEqual(library.playlists.map(p=>[p.name,p.tracks.length]),[['Canciones que te gustan',2],['Álbumes guardados',1],['Mía',120],['Colaborativa',2]]);
+  assert.deepEqual(library.playlists.map(p=>[p.name,p.tracks.length]),[['Canciones que te gustan',2],['Albumes guardados',1],['Mía',120],['Colaborativa',2]]);
   const mine=library.playlists[2].tracks;
   // Each performer is kept apart from the display text; this album states no owner.
   assert.deepEqual(mine[0],{title:'Song 0',artist:'Uno, Dos',artists:['Uno','Dos'],albumArtist:'',album:'Disco',trackNumber:null,discNumber:null,releaseDate:null,duration:200,isrc:'ES0',sourceId:'spotify:track:0'});

@@ -49,7 +49,7 @@ async def top(kind: str, period: str = "month", sess=Depends(get_current_session
 def summary(request: Request, period: Literal["week", "month", "year", "always"] = "month",
             sess=Depends(get_current_session)):
     # The rankings are complete. For a heavy fictitious year (14,000 plays, 3,000 songs) that is ~1.5 MB of JSON and
-    # nothing in front of Armonía compresses it, so this answer does (~180 KB). The phone's HTTP client asks for gzip.
+    # nothing in front of Armonia compresses it, so this answer does (~180 KB). The phone's HTTP client asks for gzip.
     body = json.dumps(listening_stats.summary(owner(sess), period, int(time.time())), separators=(",", ":")).encode()
     if "gzip" in request.headers.get("accept-encoding", "").lower() and len(body) > 1024:
         return Response(gzip.compress(body, 6), media_type="application/json",

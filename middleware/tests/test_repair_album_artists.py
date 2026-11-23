@@ -68,7 +68,7 @@ def test_simulation_writes_nothing_and_apply_can_be_undone(tmp_path, capsys):
     before = {name: (root / name).read_bytes() for name in files}
 
     assert repair.main([str(root)]) == 0
-    assert "Simulación: no se ha escrito nada" in capsys.readouterr().out
+    assert "Simulacion: no se ha escrito nada" in capsys.readouterr().out
     assert {name: (root / name).read_bytes() for name in files} == before
 
     backup = tmp_path / "copia.json"

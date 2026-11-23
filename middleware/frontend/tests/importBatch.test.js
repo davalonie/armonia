@@ -8,7 +8,7 @@ globalThis.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.
 
 test('only a ZIP within the limit is sent, as it is',async()=>{
   assert.throws(()=>validateArchive({name:'lista.csv',size:10}),/ZIP/);
-  assert.throws(()=>validateArchive({name:'todo.zip',size:0}),/vacío/);
+  assert.throws(()=>validateArchive({name:'todo.zip',size:0}),/vacio/);
   assert.throws(()=>validateArchive({name:'todo.zip',size:MAX_ZIP_BYTES+1}),/8 MiB/);
   const requests=[];
   globalThis.fetch=async(path,options)=>{requests.push({path,options});return {ok:true,text:async()=>'{"id":"b"}'};};
@@ -28,7 +28,7 @@ test('rows say what happened to each playlist without inventing success',()=>{
   assert.equal(importable({total:3,note:'resource_limit'}),true);
   assert.equal(importable({total:0,note:'empty'}),false);
   assert.equal(importable({total:9,note:'too_large'}),false);
-  assert.equal(noteLabel('unreadable'),'Vacía o ilegible');
+  assert.equal(noteLabel('unreadable'),'Vacia o ilegible');
   assert.equal(noteLabel(null),'');
   assert.deepEqual(playlistProgress({state:'waiting'}),{label:'En espera',tone:'muted'});
   assert.deepEqual(playlistProgress({state:'failed'}),{label:'No se pudo iniciar',tone:'error'});
@@ -37,7 +37,7 @@ test('rows say what happened to each playlist without inventing success',()=>{
   assert.deepEqual(playlistProgress({state:'started',import:{status:'done',review:3}}),{label:'Importada · 3 por revisar',tone:'review'});
   assert.equal(playlistProgress({state:'started',import:{status:'paused',review:0}}).tone,'review');
   assert.equal(playlistProgress({state:'started',import:null}).label,'Historial eliminado');
-  assert.match(pauseReason('busy'),/otra importación/);
-  assert.match(pauseReason('interrupted'),/reinició/);
+  assert.match(pauseReason('busy'),/otra importacion/);
+  assert.match(pauseReason('interrupted'),/reinicio/);
   assert.equal(batchError({status:413}),'El archivo es demasiado grande o contiene demasiadas playlists.');
 });

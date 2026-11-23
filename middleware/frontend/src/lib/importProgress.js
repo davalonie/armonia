@@ -56,12 +56,12 @@ export function reviewImportItems(job, localFailures = {}) {
 }
 
 export function importItemFailure(item) {
-  if (item.state === 'indexing' && item.reason === 'index_pending') return 'El audio está guardado, pero la biblioteca aún no lo encuentra. Reintentar vuelve a consultar sin descargarlo de nuevo.';
-  if (item.reviewOrder > 0 && item.reason === 'service_unavailable' && ['pending', 'searching', 'downloading'].includes(item.state)) return 'Se interrumpió el procesamiento. Puedes reintentar.';
+  if (item.state === 'indexing' && item.reason === 'index_pending') return 'El audio esta guardado, pero la biblioteca aun no lo encuentra. Reintentar vuelve a consultar sin descargarlo de nuevo.';
+  if (item.reviewOrder > 0 && item.reason === 'service_unavailable' && ['pending', 'searching', 'downloading'].includes(item.state)) return 'Se interrumpio el procesamiento. Puedes reintentar.';
   if (item.state === 'download_failed') return item.reason === 'permission'
-    ? 'No se pudo descargar con los permisos actuales. Revisa la sesión o los permisos antes de reintentar.'
-    : 'No se pudo descargar esta elección. Puedes reintentar o buscar otra fuente.';
-  if (item.state === 'search_failed') return 'La búsqueda no pudo completarse. Puedes reintentarlo.';
+    ? 'No se pudo descargar con los permisos actuales. Revisa la sesion o los permisos antes de reintentar.'
+    : 'No se pudo descargar esta eleccion. Puedes reintentar o buscar otra fuente.';
+  if (item.state === 'search_failed') return 'La busqueda no pudo completarse. Puedes reintentarlo.';
   return '';
 }
 

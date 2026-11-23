@@ -55,8 +55,10 @@ import com.armonia.app.data.api.Song
 import com.armonia.app.ui.components.AddToPlaylistSheet
 import com.armonia.app.ui.components.MarqueeText
 import com.armonia.app.ui.components.SongRow
+import com.armonia.app.ui.ytmusic.YtDownloadState
 import com.armonia.app.ui.components.YtDownloadDialog
-import com.armonia.app.ui.ytmusic.DownloadButton
+import com.armonia.app.ui.components.SongMenuSheet
+import androidx.compose.material.icons.filled.MoreVert
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +74,7 @@ fun LibraryScreen(
     embedded: Boolean = false,
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
-    // "Descargar en el teléfono" state for each song row.
+    // "Descargar en el telefono" state for each song row.
     LaunchedEffect(initialSearch) { if (initialSearch.isNotBlank()) viewModel.searchFromHistory(initialSearch) }
     val offlineSongs: com.armonia.app.ui.offline.OfflineSongsViewModel = hiltViewModel()
     val offlineStates by offlineSongs.states.collectAsState()
@@ -86,6 +88,7 @@ fun LibraryScreen(
 
     var deleteTarget by remember { mutableStateOf<Song?>(null) }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    var menuTarget by remember { mutableStateOf<SearchResult?>(null) }
     var dlTarget by remember { mutableStateOf<SearchResult?>(null) }
     var searchOpen by remember { mutableStateOf(startWithSearch) }
     var sortSheetOpen by remember { mutableStateOf(false) }
@@ -129,7 +132,7 @@ fun LibraryScreen(
                                 viewModel.filterQuery = it
                                 if (onlineEnabled) viewModel.clearOnline()
                             },
-                            placeholder = { Text(if (onlineEnabled) "¿Qué quieres escuchar?" else "Buscar en favoritos…") },
+                            placeholder = { Text(if (onlineEnabled) "¿Que quieres escuchar?" else "Buscar en favoritos…") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(end = 12.dp)
@@ -142,7 +145,7 @@ fun LibraryScreen(
                                     viewModel.filterQuery = ""
                                     if (onlineEnabled) viewModel.clearOnline()
                                     focusRequester.requestFocus()
-                                }) { Icon(Icons.Default.Close, contentDescription = "Borrar la búsqueda") }
+                                }) { Icon(Icons.Default.Close, contentDescription = "Borrar la busqueda") }
                             },
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             keyboardActions = KeyboardActions(onSearch = {
@@ -228,13 +231,13 @@ fun LibraryScreen(
                             // Most likely no connection to the server — the music kept on
                             // the phone still plays.
                             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                OutlinedButton(onClick = onOpenOffline) { Text("Abrir música sin conexión") }
+                                OutlinedButton(onClick = onOpenOffline) { Text("Abrir musica sin conexion") }
                             }
                         }
                     } else if (!searching && items.isEmpty()) {
                         item {
                             CenteredMessage(
-                                text = if (isFavorites) "Todavía no tienes favoritos" else "La biblioteca está vacía",
+                                text = if (isFavorites) "Todavia no tienes favoritos" else "La biblioteca esta vacia",
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             )
                         }
@@ -280,7 +283,7 @@ fun LibraryScreen(
                         if (items.isNotEmpty() && showSongs) {
                             val shownLocal = if (filter == "todo") items.take(5) else items
                             item { SectionHeader("Canciones en tu biblioteca") }
-                            librarySongs(shownLocal, viewModel, isFavorites, playingSong?.id, isPlaying, onSongClick,
+                            librarySongs(shownLocal, viewModel, isFavorites, playingSong?.id, isPlaying, onSongClick, single = true,
                                 onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it },
                                 offlineAction = { offlineSongs.actionFor(it, offlineStates) })
                             if (shownLocal.size < items.size) item {
@@ -300,7 +303,7 @@ fun LibraryScreen(
                                         onClick = { keyboard?.hide(); viewModel.runOnlineSearch() },
                                     )
                                 }
-                                viewModel.onlineLoading -> {
+                                viewModel.onlineLoading && viewModel.onlineSongs.isEmpty() && viewModel.onlineArtists.isEmpty() -> {
                                     item { SectionHeader("Fuera de tu biblioteca · $sourceLabel") }
                                     item {
                                         Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -308,7 +311,7 @@ fun LibraryScreen(
                                         }
                                     }
                                 }
-                                viewModel.onlineError != null -> {
+                                viewModel.onlineError != null && viewModel.onlineSongs.isEmpty() && viewModel.onlineArtists.isEmpty() -> {
                                     item { SectionHeader("Fuera de tu biblioteca · $sourceLabel") }
                                     item {
                                         Column(Modifier.fillMaxWidth().padding(16.dp)) {
@@ -338,14 +341,13 @@ fun LibraryScreen(
                                             result = result,
                                             state = viewModel.downloadStates[result.videoId],
                                             onPlay = { viewModel.playPreview(result) },
-                                            onNext = { viewModel.playNext(result) },
                                             onQueue = { viewModel.addToQueue(result) },
-                                            onDownload = { dlTarget = result },
+                                            onMenu = { menuTarget = result },
                                         )
                                     }
                                     if (songs.size < viewModel.onlineSongs.size && showSongs) item {
                                         TextButton(onClick = { filter = "canciones" }, modifier = Modifier.padding(horizontal = 8.dp)) {
-                                            Text("Ver más canciones")
+                                            Text("Ver mas canciones")
                                         }
                                     }
                                     val nothingLocal = items.isEmpty() || !showSongs
@@ -414,6 +416,11 @@ fun LibraryScreen(
         AddToPlaylistSheet(song = song, onDismiss = { playlistTarget = null })
     }
 
+    menuTarget?.let { result ->
+        SongMenuSheet(viewModel.searchSong(result), result.thumbnail, onDismiss = { menuTarget = null },
+            onDownload = { menuTarget = null; dlTarget = result })
+    }
+
     dlTarget?.let { result ->
         val initialAlbum = if (viewModel.searchSource == "youtube_music") result.album.orEmpty() else ""
         YtDownloadDialog(
@@ -431,8 +438,8 @@ fun LibraryScreen(
     viewModel.duplicateWarning?.let { w ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissDuplicateWarning() },
-            title = { Text("Ya está en la biblioteca") },
-            text = { Text("«${w.title}» de ${w.artist} puede que ya esté en tu biblioteca. ¿Descargarla igualmente?") },
+            title = { Text("Ya esta en la biblioteca") },
+            text = { Text("«${w.title}» de ${w.artist} puede que ya este en tu biblioteca. ¿Descargarla igualmente?") },
             confirmButton = {
                 TextButton(onClick = { viewModel.forceDownloadOnline() }) { Text("Descargar igualmente") }
             },
@@ -448,7 +455,7 @@ fun LibraryScreen(
             onDismissRequest = { deleteTarget = null },
             title = { Text("¿Eliminar de la biblioteca?") },
             text = {
-                Text("«${target.title}» se eliminará definitivamente. No se puede deshacer.")
+                Text("«${target.title}» se eliminara definitivamente. No se puede deshacer.")
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -480,7 +487,7 @@ private fun RecentSearches(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "Búsquedas recientes",
+                "Busquedas recientes",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 modifier = Modifier.weight(1f),
@@ -512,7 +519,7 @@ private fun RecentSearches(
                 IconButton(onClick = { onRemove(q) }) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Quitar «$q» de las búsquedas recientes",
+                        contentDescription = "Quitar «$q» de las busquedas recientes",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )
                 }
@@ -532,25 +539,24 @@ private fun androidx.compose.foundation.lazy.LazyListScope.librarySongs(
     onSongClick: (Song) -> Unit,
     onDelete: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
+    single: Boolean = false,
     offlineAction: (Song) -> com.armonia.app.ui.components.OfflineSongAction,
 ) {
     itemsIndexed(items, key = { _, song -> song.id }) { index, song ->
         val isStarred = viewModel.isStarred(song, defaultStarred = isFavorites)
         val isCurrent = song.id == currentSongId
+        val play = {
+            if (single) viewModel.playFromList(listOf(song), 0) else viewModel.playFromList(items, index)
+            onSongClick(song)
+        }
         SongRow(
             song = song,
             isStarred = isStarred,
             getCoverUrl = { viewModel.getCoverArtUrl(it) },
-            onClick = {
-                viewModel.playFromList(items, index)
-                onSongClick(song)
-            },
+            onClick = play,
             onToggleStar = { viewModel.toggleStar(song, defaultStarred = isFavorites) },
             onAddToQueue = { viewModel.addToQueue(song) },
-            onPlay = {
-                viewModel.playFromList(items, index)
-                onSongClick(song)
-            },
+            onPlay = play,
             onDelete = { onDelete(song) },
             onAddToPlaylist = { onAddToPlaylist(song) },
             isCurrent = isCurrent,
@@ -658,15 +664,12 @@ private fun ArtistCard(artist: ArtistResult, onClick: () -> Unit) {
 @Composable
 private fun OnlineSongRow(
     result: SearchResult,
-    onNext: () -> Unit,
+    state: YtDownloadState?,
     onQueue: () -> Unit,
-    state: com.armonia.app.ui.ytmusic.YtDownloadState?,
     onPlay: () -> Unit,
-    onDownload: () -> Unit,
+    onMenu: () -> Unit,
 ) {
-    var queued by remember(result.videoId) { mutableStateOf(false) }
-    val enqueue = { onNext(); queued = true }
-    com.armonia.app.ui.components.SwipeToQueue(onQueue = { onQueue(); queued = true }) {
+    com.armonia.app.ui.components.SwipeToQueue(onQueue = onQueue) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -686,7 +689,7 @@ private fun OnlineSongRow(
             )
             Icon(
                 Icons.Default.PlayArrow,
-                contentDescription = "Vista previa",
+                contentDescription = "Reproducir",
                 tint = Color.White,
                 modifier = Modifier
                     .size(24.dp)
@@ -702,8 +705,14 @@ private fun OnlineSongRow(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
             )
         }
-        TextButton(onClick=enqueue){Text(if(queued) "En cola" else "Siguiente")}
-        DownloadButton(state, onDownload)
+        val downloadLabel = when (state) {
+            YtDownloadState.LOADING -> "Descargando"
+            YtDownloadState.DONE, YtDownloadState.DUPLICATE -> "En biblioteca"
+            YtDownloadState.ERROR -> "Fallo la descarga"
+            null -> null
+        }
+        if (downloadLabel != null) Text(downloadLabel, style = MaterialTheme.typography.labelSmall)
+        IconButton(onClick = onMenu) { Icon(Icons.Default.MoreVert, "Opciones de ${result.title}") }
     }
     }
 }
@@ -750,10 +759,10 @@ private val SORT_OPTIONS = listOf(
     SortKey.ADDED_DESC    to "Añadidas recientemente",
     SortKey.ARTIST_ASC    to "Artista A → Z",
     SortKey.ARTIST_DESC   to "Artista Z → A",
-    SortKey.TITLE_ASC     to "Título A → Z",
-    SortKey.TITLE_DESC    to "Título Z → A",
-    SortKey.DURATION_ASC  to "Más cortas primero",
-    SortKey.DURATION_DESC to "Más largas primero",
+    SortKey.TITLE_ASC     to "Titulo A → Z",
+    SortKey.TITLE_DESC    to "Titulo Z → A",
+    SortKey.DURATION_ASC  to "Mas cortas primero",
+    SortKey.DURATION_DESC to "Mas largas primero",
 )
 
 private fun sortLabel(key: SortKey) = SORT_OPTIONS.first { it.first == key }.second
