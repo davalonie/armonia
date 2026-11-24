@@ -202,6 +202,15 @@ class LibraryRepository @Inject constructor(
         }
     }
 
+    /**
+     * The web interface deleted [id] straight on the server: hide it here as [deleteInBackground] does,
+     * so Android Auto, the cache prefill and the cached song list stop offering it at once.
+     */
+    fun deletedOnServer(id: String) {
+        recentlyDeleted[id] = System.currentTimeMillis()
+        notifyLibraryChanged()
+    }
+
     private suspend fun <T> handleResponse(call: suspend () -> retrofit2.Response<com.armonia.app.data.api.SubsonicResponseWrapper>): Result<SubsonicResponse> {
         return try {
             val account = prefs.cachedAuth

@@ -36,7 +36,7 @@ import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.armonia.app.MainActivity
+import com.armonia.app.AppEntry
 import com.armonia.app.R
 import com.armonia.app.data.repository.LibraryRepository
 import com.armonia.app.data.repository.PreferencesRepository
@@ -127,7 +127,7 @@ class PlaybackService : MediaLibraryService() {
         val sessionActivity = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java),
+            AppEntry.intent(this),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 

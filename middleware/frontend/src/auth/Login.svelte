@@ -2,6 +2,7 @@
   import { APP_NAME } from '../lib/brand.js';
   import { createEventDispatcher, onMount } from 'svelte';
   import { call, login, setSession } from '../lib/api.js';
+  import { mobileLogin } from '../lib/native.js';
 
   const dispatch = createEventDispatcher();
 
@@ -11,10 +12,40 @@
   let error = '';
   let passEl;
   let authentik = false;
-  onMount(() => { call('/api/oidc/config').then(r => authentik = r.enabled).catch(() => {}); });
+  // On the phone the server is typed here, as in the Kotlin app; the browser already knows its own.
+  let server = '';
+  let defaultsRead = false;
+  onMount(async () => {
+    if (mobileLogin) {
+      const last = await mobileLogin.defaults().catch(() => ({server: '', username: ''}));
+      server = last.server;
+      if (last.username) username = last.username;
+      defaultsRead = true;
+      return;
+    }
+    call('/api/oidc/config').then(r => authentik = r.enabled).catch(() => {});
+  });
+  // The Authentik button appears once the typed server offers it.
+  let authentikTimer;
+  $: if (mobileLogin && defaultsRead) checkAuthentik(server);
+  function checkAuthentik(typed) {
+    clearTimeout(authentikTimer);
+    authentik = false;
+    authentikTimer = setTimeout(async () => {
+      const r = await mobileLogin.authentik({server: typed}).catch(() => ({enabled: false}));
+      if (typed === server) authentik = r.enabled;
+    }, 450);
+  }
 
   async function signInWithAuthentik() {
     loading = true;
+    if (mobileLogin) {
+      error = '';
+      try { await mobileLogin.browserSignIn({server}); }
+      catch (e) { error = e.message; }
+      loading = false;
+      return;
+    }
     try {
       const {url} = await call('/api/oidc/web', {method: 'POST'});
       location.assign(url);
@@ -28,6 +59,12 @@
     if (!username.trim() || !password) return;
     loading = true;
     error = '';
+    if (mobileLogin) {
+      // The phone keeps the session; it opens the library itself once signed in.
+      try { await mobileLogin.signIn({server, username: username.trim(), password}); password = ''; }
+      catch (e) { error = e.message || 'No se pudo conectar. Intentalo de nuevo.'; loading = false; }
+      return;
+    }
     try {
       const result = await login(username.trim(), password);
       setSession(result);
@@ -51,6 +88,20 @@
         <div class="mb-4 p-3 rounded-xl bg-red-500/10 text-red-400 text-sm">{error}</div>
       {/if}
       <form on:submit|preventDefault={doLogin}>
+        {#if mobileLogin}
+          <label class="block mb-4">
+            <span class="block text-sm text-armonia-muted mb-1.5 font-medium">URL del servidor (p. ej. http://192.168.1.50:8000)</span>
+            <input
+              type="url"
+              bind:value={server}
+              autocomplete="url"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="https://"
+              class="w-full bg-armonia-bg text-armonia-text placeholder-armonia-muted rounded-xl py-3 px-4 focus:outline-hidden focus:ring-2 focus:ring-armonia-accent/50 transition-all border border-white/10"
+            >
+          </label>
+        {/if}
         <label class="block mb-4">
           <span class="block text-sm text-armonia-muted mb-1.5 font-medium">Usuario</span>
           <input

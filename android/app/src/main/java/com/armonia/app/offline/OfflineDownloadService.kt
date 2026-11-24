@@ -11,7 +11,7 @@ import androidx.media3.exoplayer.offline.DownloadNotificationHelper
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.Requirements
 import androidx.media3.exoplayer.scheduler.Scheduler
-import com.armonia.app.MainActivity
+import com.armonia.app.AppEntry
 import com.armonia.app.R
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -51,7 +51,7 @@ class OfflineDownloadService : DownloadService(
 
     override fun getForegroundNotification(downloads: MutableList<Download>, notMetRequirements: Int): Notification {
         val open = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
+            this, 0, AppEntry.intent(this), PendingIntent.FLAG_IMMUTABLE,
         )
         val message = when {
             notMetRequirements and Requirements.NETWORK_UNMETERED != 0 -> getString(R.string.offline_downloads_waiting_wifi)

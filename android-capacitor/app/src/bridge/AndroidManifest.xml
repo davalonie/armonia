@@ -1,6 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
-        <activity android:name=".web.AddSongsActivity" android:exported="false" />
+        <!-- The whole interface is the web one; the Kotlin core (android/app/src/main) does the rest. -->
+        <activity android:name=".web.LaunchActivity" android:exported="true"
+            android:theme="@style/Theme.Armonia">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".web.LoginActivity" android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".web.LibraryActivity" android:exported="false"
             android:theme="@style/AppTheme.NoActionBar" android:launchMode="singleTop" />
     </application>

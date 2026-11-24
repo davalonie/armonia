@@ -1,4 +1,4 @@
-package com.armonia.app.ui.login
+package com.armonia.app.security
 
 /** Turns a login HTTP status into something a person can act on. */
 fun loginErrorMessage(code: Int): String = when (code) {

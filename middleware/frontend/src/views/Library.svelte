@@ -10,10 +10,10 @@
 
   const SORT_OPTIONS = [
     { key: 'added-desc', label: 'Añadidas recientemente' },
-    { key: 'artist-asc', label: 'Artista' },
   ];
   const SORT_TOGGLES = [
     { keys: ['title-asc', 'title-desc'],       labels: ['A → Z', 'Z → A'] },
+    { keys: ['artist-asc', 'artist-desc'],     labels: ['Artista A → Z', 'Artista Z → A'] },
     { keys: ['duration-asc', 'duration-desc'], labels: ['Mas cortas', 'Mas largas'] },
   ];
 
@@ -37,6 +37,7 @@
       case 'title-asc':     s.sort((a, b) => (a.title || '').localeCompare(b.title || '')); break;
       case 'title-desc':    s.sort((a, b) => (b.title || '').localeCompare(a.title || '')); break;
       case 'artist-asc':    s.sort((a, b) => (a.artist || '').localeCompare(b.artist || '') || (a.title || '').localeCompare(b.title || '')); break;
+      case 'artist-desc':   s.sort((a, b) => (b.artist || '').localeCompare(a.artist || '') || (a.title || '').localeCompare(b.title || '')); break;
       case 'duration-asc':  s.sort((a, b) => (a.duration || 0) - (b.duration || 0)); break;
       case 'duration-desc': s.sort((a, b) => (b.duration || 0) - (a.duration || 0)); break;
       case 'added-desc':    s.sort((a, b) => (b.created || '').localeCompare(a.created || '')); break;

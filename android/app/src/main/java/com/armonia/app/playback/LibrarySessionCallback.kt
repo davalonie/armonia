@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.gson.Gson
-import com.armonia.app.MainActivity
+import com.armonia.app.AppEntry
 import com.armonia.app.data.api.ArmoniaApi
 import com.armonia.app.data.api.SearchRequest
 import com.armonia.app.data.api.SearchResult
@@ -232,7 +232,7 @@ class LibrarySessionCallback @Inject constructor(
         val signIn = PendingIntent.getActivity(
             context,
             0,
-            Intent(context, MainActivity::class.java),
+            AppEntry.intent(context),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val extras = Bundle().apply {

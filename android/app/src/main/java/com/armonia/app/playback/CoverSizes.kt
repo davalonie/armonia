@@ -1,7 +1,6 @@
-package com.armonia.app.ui.components
+package com.armonia.app.playback
 
 import coil.ImageLoader
-import com.armonia.app.playback.PathRate
 
 /**
  * The size of the big cover in the full player: 1024 px on Wi-Fi, 600 px on mobile data (the listener's

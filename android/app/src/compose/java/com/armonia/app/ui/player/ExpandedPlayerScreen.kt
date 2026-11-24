@@ -58,7 +58,7 @@ fun ExpandedPlayerScreen(
     val loader = androidx.compose.ui.platform.LocalContext.current.imageLoader
     // 1024 px on Wi-Fi, 600 px on mobile data unless the big one is already on the phone (CoverSizes).
     val coverUrl = remember(currentSong.coverArt) {
-        currentSong.coverArt?.let { art -> com.armonia.app.ui.components.CoverSizes.player({ viewModel.getCoverUrl(art, it) }, loader) }
+        currentSong.coverArt?.let { art -> com.armonia.app.playback.CoverSizes.player({ viewModel.getCoverUrl(art, it) }, loader) }
     }
     // A small copy is enough behind a blur; it is decoded once per song, not per progress tick.
     val backdropUrl = remember(currentSong.coverArt) { currentSong.coverArt?.let { viewModel.getCoverUrl(it, 96) } }

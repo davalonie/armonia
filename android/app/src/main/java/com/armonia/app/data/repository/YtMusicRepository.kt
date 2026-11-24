@@ -5,7 +5,6 @@ import com.armonia.app.data.api.ArmoniaApi
 import com.armonia.app.data.api.YtAlbum
 import com.armonia.app.data.api.YtArtist
 import com.armonia.app.data.api.YtSong
-import com.armonia.app.ui.ytmusic.DuplicateException
 import javax.inject.Inject
 import javax.inject.Singleton
 

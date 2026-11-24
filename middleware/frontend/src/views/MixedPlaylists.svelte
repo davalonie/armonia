@@ -32,7 +32,7 @@
     {label:'Reproducir a continuacion',icon:'ph ph-queue',action:()=>playNext(toQueueTrack(t))},
     {label:'Añadir a playlist',icon:'ph ph-playlist',action:()=>showPlaylistPicker([t])},
     ...[0,1,2,3,4,5].map(rating=>({label:rating?`Valorar ${rating} estrellas`:'Quitar valoracion',action:()=>libApi('setRating',{id:t.source_id,rating}).then(()=>showToast('Valoracion guardada')).catch(e=>showToast(e.message,'error'))})),
-    {label:'Descargar archivo',action:()=>{const a=document.createElement('a');a.href=streamUrl(t.source_id);a.download=t.title;a.click();}},...extra]);
+    ...(mobile?[]:[{label:'Descargar archivo',action:()=>{const a=document.createElement('a');a.href=streamUrl(t.source_id);a.download=t.title;a.click();}}]),...extra]);
   }
   function addCurrent(){return addTracks([fromQueueTrack($currentTrack)]);}
 </script>

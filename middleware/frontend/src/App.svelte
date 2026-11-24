@@ -1,5 +1,5 @@
 <script>
-  import { mobile } from './lib/native.js';
+  import { mobile, mobileLogin } from './lib/native.js';
   import {SEARCH_SOURCE_KEY} from './lib/searchSource.js';
   import { onMount,tick } from 'svelte';
   import { getSession, setSession, me } from './lib/api.js';
@@ -80,6 +80,8 @@
   async function checkSession() {
     checking=true;
     checkError='';
+    // The phone's sign-in page: the native side opens the library once an account is in.
+    if (mobileLogin) { checking = false; return; }
     if (mobile) {
       try {
         const identity=await mobile.identity();

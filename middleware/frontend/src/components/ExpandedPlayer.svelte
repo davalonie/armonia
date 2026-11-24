@@ -10,6 +10,7 @@
   import { showToast } from '../lib/stores/toastStore.js';
   import { showPlaylistPicker } from '../lib/stores/playlistPickerStore.js';
   import { deleteTrack } from '../lib/api.js';
+  import { command } from '../lib/stores/nativePlayback.js';
   import { fmtTime } from '../lib/util.js';
   import Marquee from './Marquee.svelte';
   import {openLibraryArtist} from '../lib/stores/viewStore.js';
@@ -67,6 +68,8 @@
         label: 'Eliminar archivo de la biblioteca', icon: 'ph ph-trash', danger: true,
         action: async () => {
           if (!confirm(`¿Eliminar el archivo de «${selected.title}» de la biblioteca? No se puede deshacer.`)) return;
+          // On the phone the native player is closed first, as the Kotlin app did: it must not keep playing a deleted file.
+          if (mobile) { await command('close'); expandedPlayerOpen.set(false); }
           try { await deleteTrack(selected.id); expandedPlayerOpen.set(false); }
           catch (err) { showToast(`No se pudo eliminar: ${err.message}`, 'error'); }
         },

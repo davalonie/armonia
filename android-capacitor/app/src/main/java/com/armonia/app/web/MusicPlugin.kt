@@ -106,7 +106,31 @@ class MusicPlugin : Plugin() {
             }
         }
         screen.auth()
+        followServerChange(method, url, result.getInteger("status") ?: 0, result.getString("text").orEmpty())
         result
+    }
+
+    /**
+     * The web changes the library straight on the server; the Kotlin screens did it through
+     * LibraryRepository and MusicPlayer, which keep caches the car, the notification and the
+     * offline search read. Mirror those side effects here, once the server has accepted the change.
+     */
+    private fun followServerChange(method: String, url: okhttp3.HttpUrl, status: Int, text: String) {
+        if (status !in 200..299) return
+        val segments = url.pathSegments
+        when {
+            method == "DELETE" && segments.size == 3 && segments[1] == "track" ->
+                screen.library.deletedOnServer(segments[2])
+            segments.size == 3 && segments[1] == "library" && segments[2] in setOf("star", "unstar") -> {
+                val ok = runCatching {
+                    JSONObject(text).getJSONObject("subsonic-response").getString("status") == "ok"
+                }.getOrDefault(false)
+                val ids = url.queryParameterValues("id").filterNotNull().toSet()
+                if (!ok || ids.isEmpty()) return
+                screen.player.syncStarred(ids, segments[2] == "star")
+                screen.library.notifyLibraryChanged()
+            }
+        }
     }
 
     @PluginMethod fun logout(call: PluginCall) = perform(call, checkAfter = false) {
@@ -179,6 +203,7 @@ class MusicPlugin : Plugin() {
             "move" -> player.moveInQueue(index, call.getInt("to", index)!!)
             "clear" -> player.clearUpcoming()
             "close" -> player.closePlayer()
+            "dismissError" -> player.dismissPlaybackError()
             "audition" -> player.audition(track(), resumeAfter = call.getBoolean("resumeAfter") == true)
             "stopAudition" -> player.stopAudition(resume = call.getBoolean("resume", true) == true)
             "similar" -> check(player.setContinueSimilar(call.getBoolean("enabled") == true))
@@ -308,28 +333,10 @@ class MusicPlugin : Plugin() {
             val pinned = collections.flatMap { it.songs }
             val available = screen.offline.cachedSongIds(pinned) + screen.streamCache.completeLibraryIds(account)
             val known = (screen.library.savedSongMetadata(account) + screen.player.queue.value + pinned).associateBy { it.id }
-            com.armonia.app.ui.homelab.songsOnPhone(available, known)
+            com.armonia.app.offline.songsOnPhone(available, known)
         } else collections.first { it.key == key }.songs
         screen.auth()
         JSObject().put("songs", JSONArray(screen.gson.toJson(songs)))
-    }
-
-    @PluginMethod fun editPlaylist(call: PluginCall) {
-        screen.runOnUiThread {
-            try {
-                val session = screen.auth()
-                val id = requireNotNull(call.getString("id")).also { require(it.isNotBlank()) }
-                val intent = Intent(screen, AddSongsActivity::class.java)
-                    .putExtra("id", id).putExtra("account", session.namespace)
-                startActivityForResult(call, intent, "editorClosed")
-            } catch (_: Exception) { call.reject("No se pudo abrir la playlist.") }
-        }
-    }
-
-    @com.getcapacitor.annotation.ActivityCallback
-    private fun editorClosed(call: PluginCall?, result: androidx.activity.result.ActivityResult) {
-        if (call == null) return
-        perform(call) { JSObject() }
     }
 
     @PluginMethod fun playlists(call: PluginCall) = perform(call) {

@@ -78,7 +78,8 @@
       <i class="ph-fill ph-skip-back text-xl"></i>
     </button>
     <button aria-label={$playing ? 'Pausar' : 'Reproducir audio'} on:click={togglePlayPause} class="play-btn rounded-full flex items-center justify-center">
-      <i class="ph-fill {$playing ? 'ph-pause' : 'ph-play'} text-lg"></i>
+      <!-- The Material PlayArrow / Pause icons of the Kotlin mini player: an icon only, no ring. -->
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d={$playing ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'} fill="currentColor"/></svg>
     </button>
     <button aria-label="Cancion siguiente" on:click={next} class="hidden md:block text-armonia-muted hover:text-white transition-colors">
       <i class="ph-fill ph-skip-forward text-xl"></i>
@@ -198,15 +199,10 @@
 
   /* ── Play / Pause button ──────────────────────── */
   .play-btn {
-    width: 40px;
-    height: 40px;
-    border: 2px solid #c4a3ff;
+    width: 48px;
+    height: 48px;
+    flex: none;
     color: #c4a3ff;
-    transition: background-color 0.15s ease, color 0.15s ease;
   }
 
-  .play-btn:hover {
-    background-color: #c4a3ff;
-    color: #09090b;
-  }
 </style>

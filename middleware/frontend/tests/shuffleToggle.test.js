@@ -16,5 +16,5 @@ test('with shuffle on, Play starts from a random song inside the list', () => {
 
 test('list headers no longer start shuffled playback: the button is the global switch', () => {
   assert.doesNotMatch(source, /export function playShuffled/);
-  assert.match(source, /export function playList\(tracks\)/);
+  assert.match(source, /export function playList\(tracks(, epoch = undefined)?\)/);
 });

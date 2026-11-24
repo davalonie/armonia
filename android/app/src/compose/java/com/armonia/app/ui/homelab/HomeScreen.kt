@@ -1,5 +1,6 @@
 package com.armonia.app.ui.homelab
 
+import com.armonia.app.offline.songsOnPhone
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -541,6 +542,3 @@ private fun DetailView(detail: HomeDetail, vm: HomeViewModel) {
 }
 
 
-internal fun songsOnPhone(available: Set<String>, metadata: Map<String, Song>): List<Song> =
-    available.map { id -> metadata[id] ?: MusicTrack("navidrome", id, id, "").toSong() }
-        .sortedBy { it.title.lowercase() }

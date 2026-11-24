@@ -32,7 +32,12 @@ export function observeNativePlayer(stores) {
       stores.sleepTimer.set(s.sleep);
       const preview = s.auditionId && nativeQueue.find(t => t.id === s.auditionId);
       stores.previewState.set(preview ? {track:preview, status:s.buffering?'loading':s.playing?'playing':'paused', note:'Fragmento central · 10 segundos'} : null);
-      if (s.error && s.error !== lastError) showToast(s.error,'error');
+      // As the Kotlin screens did: say it once, then clear it so the next song starts clean
+      // and a later failure with the same text is reported again.
+      if (s.error && s.error !== lastError) {
+        showToast(s.error,'error');
+        mobile.command({action:'dismissError'}).catch(()=>{});
+      }
       lastError = s.error;
       stores.currentIndex.set(s.index);
       stores.playing.set(s.playing);

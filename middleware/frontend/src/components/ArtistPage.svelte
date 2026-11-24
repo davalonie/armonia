@@ -71,7 +71,7 @@
     class="flex items-center gap-2 text-armonia-muted hover:text-armonia-text transition-colors mb-6 group"
   >
     <i class="ph ph-arrow-left text-lg group-hover:-translate-x-0.5 transition-transform"></i>
-    <span class="text-sm font-medium">Back</span>
+    <span class="text-sm font-medium">Volver</span>
   </button>
 
   {#if loading}
@@ -111,7 +111,7 @@
     {#if artist.topSongs?.length}
       {@const songs = allSongs ?? artist.topSongs}
       <section class="mb-10">
-        <h3 class="text-lg font-semibold mb-3 pl-1">{allSongs ? 'Songs' : 'Top Songs'}</h3>
+        <h3 class="text-lg font-semibold mb-3 pl-1">{allSongs ? 'Canciones' : 'Canciones principales'}</h3>
         <div class="flex flex-col gap-1">
           {#each songs as song}
             <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
@@ -140,8 +140,8 @@
               <button
                 class="w-8 h-8 rounded-full flex items-center justify-center {mobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} hover:bg-white/10 transition-all text-armonia-muted hover:text-white shrink-0"
                 disabled={mobile && downloadRow($serverDownloads[song.videoId]).disabled}
-                title={mobile ? downloadRow($serverDownloads[song.videoId]).label : 'Download'}
-                aria-label={mobile ? downloadRow($serverDownloads[song.videoId]).label+' '+song.title : 'Download '+song.title}
+                title={mobile ? downloadRow($serverDownloads[song.videoId]).label : 'Descargar'}
+                aria-label={mobile ? downloadRow($serverDownloads[song.videoId]).label+' '+song.title : 'Descargar '+song.title}
                 on:click|stopPropagation={() => openDownload(song)}
               >
                 <i class="ph {mobile ? downloadRow($serverDownloads[song.videoId]).icon : 'ph-download-simple'} text-base pointer-events-none"></i>
@@ -157,10 +157,10 @@
           >
             {#if loadingMore}
               <i class="ph ph-circle-notch animate-spin-slow"></i>
-              Loading…
+              Cargando…
             {:else}
               <i class="ph ph-caret-down"></i>
-              Show all songs
+              Ver todas las canciones
             {/if}
           </button>
         {/if}
@@ -170,7 +170,7 @@
     <!-- Albums -->
     {#if artist.albums?.length}
       <section class="mb-10">
-        <h3 class="text-lg font-semibold mb-3 pl-1">Albums</h3>
+        <h3 class="text-lg font-semibold mb-3 pl-1">Albumes</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {#each artist.albums as album}
             <button
@@ -200,7 +200,7 @@
     <!-- Singles & EPs -->
     {#if artist.singles?.length}
       <section class="mb-10">
-        <h3 class="text-lg font-semibold mb-3 pl-1">Singles & EPs</h3>
+        <h3 class="text-lg font-semibold mb-3 pl-1">Sencillos y EP</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {#each artist.singles as single}
             <button

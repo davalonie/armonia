@@ -1,4 +1,4 @@
-package com.armonia.app.ui.login
+package com.armonia.app.security
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

@@ -77,7 +77,7 @@ El teléfono abre los recursos locales y muestra sus descargas en **Inicio → E
 
 ### Paridad funcional de Kotlin y Capacitor
 
-Kotlin es la referencia. Capacitor conserva su botón de reproducción morado (`#c4a3ff`). Ambas APK usan el mismo servicio Media3, la misma caché de audio y el mismo cargador Coil, cada una con su propio almacenamiento. Las pruebas del 24 de noviembre de 2026 usaron un emulador Android 15, dos cuentas de laboratorio y un servidor Navidrome.
+Kotlin es la referencia de comportamiento y de aspecto; el botón del minirreproductor es, como en Kotlin, solo el icono de reproducir o pausar en el color de acento, sin aro. Ambas APK usan el mismo servicio Media3, la misma caché de audio y el mismo cargador Coil, cada una con su propio almacenamiento. Las pruebas del 24 de noviembre de 2026 usaron un emulador Android 15, dos cuentas de laboratorio y un servidor Navidrome.
 
 | Función | Resultado observado |
 | --- | --- |
@@ -88,12 +88,25 @@ Kotlin es la referencia. Capacitor conserva su botón de reproducción morado (`
 | Playlists mixtas | Una lista mixta de dos pistas locales se descargó desde su ficha y se reprodujo sin servidor después de cerrar la app. Se probó una segunda lista con una pista que permitía solo streaming. El teléfono explicó la restricción y evitó crear una descarga parcial. Retirar la primera lista conservó la otra colección que compartía las pistas. |
 | Biblioteca sin servidor | Se desconectó el túnel al servidor y se reinició el proceso. La pestaña habitual de playlists mostró la lista y el detalle conservó los títulos en su último orden. «En el teléfono» permite reproducir las pistas disponibles. |
 | Reproducción y cola | Se activó y canceló el temporizador y se comprobó la pausa al finalizar la canción. Añadir a continuación, añadir a la cola y añadir al final conservan posiciones distintas. «Deshacer» retiró solo la copia recién insertada. Se probaron el salto por toque, la reordenación, los gestos de añadir y quitar, el orden aleatorio de Media3 y la navegación al artista. La preescucha de diez segundos devolvió la cola que estaba sonando. |
-| Edición de playlists | Desde la pantalla de una lista se abrió el editor de Kotlin, se añadió una canción y se cambió su posición. Se seleccionó un PNG con el selector de Android. Navidrome devolvió la portada personalizada y el orden nuevos. |
+| Edición de playlists | Desde la pantalla de una lista se abrió el editor «Añadir canciones», ahora una página web con el mismo comportamiento que el de Kotlin. Se añadió una canción, un segundo toque inmediato no la retiró, «Deshacer» la quitó del servidor, la preescucha de diez segundos mostró su progreso y se paró al cerrar con Atrás. También se cambió la posición de una canción. Se seleccionó un PNG con el selector de Android. Navidrome devolvió la portada personalizada y el orden nuevos. |
 | Importación desde archivos de Spotify | Desde la APK se importó un CSV y se verificaron las dos pistas y su orden en Navidrome. La importación múltiple abrió el navegador de Android. Un ZIP de Exportify con dos listas se importó en el navegador del laboratorio y se cotejó el contenido de ambas en Navidrome. Estas pruebas se hicieron con archivos exportados, sin iniciar sesión en una cuenta real de Spotify. |
 | MP3 pendiente de añadir | Se abrió una referencia de prueba, se eligió un MP3 desde «Descargas» en el selector de Android y se guardó desde la APK. Tras el escaneo, Navidrome devolvió el identificador de la canción con el título y artista correctos. |
 | Cuentas y controles de Android | Al cambiar de usuario, la segunda cuenta mostró su propio historial, sin la cola ni las descargas de la primera. Al volver con Authentik se recuperó la playlist descargada 2/2. Con la pantalla bloqueada, el control de Android avanzó a la siguiente pista y la app mostró la misma cola al desbloquear. |
-| Pantallas y ajustes | Se recorrieron Inicio, Biblioteca, Buscar, Más, álbumes, artistas, favoritos, importación, historial y ajustes. Se comprobó el color del botón de reproducción, el cambio de fuente de búsqueda y la persistencia del ahorro de datos en las preferencias Android. |
+| Pantallas y ajustes | Se recorrieron Inicio, Biblioteca, Buscar, Más, álbumes, artistas, favoritos, importación, historial y ajustes. Se comprobó el botón de reproducción, el cambio de fuente de búsqueda y la persistencia del ahorro de datos en las preferencias Android. |
 
 En una prueba anterior con el Galaxy A55 también se reprodujo una playlist descargada en modo avión, se cambió de pista con la pantalla bloqueada y se navegó y reprodujo desde Android Auto con el Desktop Head Unit. En esta ronda también se verificó en el emulador que el cliente multimedia de Android puede explorar la biblioteca y reproducir una playlist con Armonía cerrada. Koito registró una escucha nueva en la cuenta que reprodujo la música y la otra cuenta conservó su historial.
 
 La prueba de instrumentación `CarLibraryTest` comprueba el catálogo con el navegador multimedia clásico de Android y la reproducción con Media3. Acepta el argumento `playlist` con el nombre de una lista del laboratorio y requiere una sesión ya iniciada.
+
+### Una sola interfaz
+
+La APK Capacitor ya no contiene ninguna pantalla Compose. Su núcleo Kotlin (reproducción, descargas, caché, sesión y datos) es el mismo que el de la APK Kotlin; toda la interfaz es la web empaquetada. El inicio de sesión también es una página web: decide entre la biblioteca y el login según la sesión guardada, rellena el servidor y el último usuario, muestra «Entrar con Authentik» cuando el servidor lo ofrece y devuelve los mismos mensajes de error que Kotlin.
+
+La interfaz Compose sigue en el repositorio, en `android/app/src/compose/`, y solo la compila la APK Kotlin, para poder compararlas o volver a ella.
+
+Correcciones de esta revisión, comprobadas en el emulador:
+
+- Un error de reproducción se muestra una vez y se borra en el núcleo, como hacía Kotlin, de modo que un fallo repetido vuelve a avisar.
+- Borrar la canción que suena desde el reproductor cierra antes la reproducción.
+- Marcar o quitar un favorito desde una lista actualiza también la cola nativa y el corazón de la notificación; borrar una canción en el servidor la retira enseguida de Android Auto y de la precarga.
+- La notificación de reproducción, la de descargas y el inicio de sesión de Android Auto abren la entrada de la app que se está usando. Tras volver de Authentik la app queda con una sola pantalla en la pila.

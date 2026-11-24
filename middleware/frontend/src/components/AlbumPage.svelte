@@ -53,7 +53,7 @@
   async function downloadAlbum() {
     if (!album?.tracks?.length || downloadingAll) return;
     downloadingAll = true;
-    showToast(`Downloading album '${album.title}' (${album.tracks.length} tracks)…`, 'info');
+    showToast(`Descargando el album «${album.title}» (${album.tracks.length} canciones)…`, 'info');
     try {
       for (const t of album.tracks) {
         if(mobile && downloadRow($serverDownloads[t.videoId],duplicates.has(t.videoId)).disabled)continue;
@@ -81,7 +81,7 @@
     class="flex items-center gap-2 text-armonia-muted hover:text-armonia-text transition-colors mb-6 group"
   >
     <i class="ph ph-arrow-left text-lg group-hover:-translate-x-0.5 transition-transform"></i>
-    <span class="text-sm font-medium">Back</span>
+    <span class="text-sm font-medium">Volver</span>
   </button>
 
   {#if loading}
@@ -108,7 +108,7 @@
       <div class="min-w-0 flex-1">
         <p class="text-xs uppercase tracking-widest text-armonia-muted mb-1 font-semibold">{album.type || 'Album'}</p>
         <h2 class="text-3xl font-bold text-armonia-text mb-1 leading-tight">{album.title}</h2>
-        <p class="text-armonia-muted text-sm mb-4">{album.artist}{album.year ? ` · ${album.year}` : ''} · {album.tracks?.length || 0} tracks</p>
+        <p class="text-armonia-muted text-sm mb-4">{album.artist}{album.year ? ` · ${album.year}` : ''} · {album.tracks?.length || 0} canciones</p>
         <button
           on:click={downloadAlbum}
           disabled={downloadingAll}
@@ -119,7 +119,7 @@
             Queuing…
           {:else}
             <i class="ph-bold ph-download-simple"></i>
-            Download album
+            Descargar album
           {/if}
         </button>
       </div>
@@ -150,8 +150,8 @@
           <button
             class="w-8 h-8 rounded-full flex items-center justify-center {mobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} hover:bg-white/10 transition-all text-armonia-muted hover:text-white shrink-0"
             disabled={mobile && downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).disabled}
-                title={mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).label : 'Download'}
-                aria-label={mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).label+' '+track.title : 'Download '+track.title}
+                title={mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).label : 'Descargar'}
+                aria-label={mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).label+' '+track.title : 'Descargar '+track.title}
             on:click|stopPropagation={() => openDownload(track)}
           >
             <i class="ph {mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).icon : 'ph-download-simple'} text-base pointer-events-none"></i>

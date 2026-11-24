@@ -1,4 +1,4 @@
-package com.armonia.app.ui.homelab
+package com.armonia.app.offline
 
 import com.armonia.app.homelab.MusicTrack
 import org.junit.Assert.assertEquals

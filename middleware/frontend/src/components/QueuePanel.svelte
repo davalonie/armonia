@@ -68,6 +68,7 @@
       <i class="ph ph-x text-lg"></i>
     </button>{/if}
   </div>
+  {#if mobile}<p class="px-5 pt-2 text-xs text-armonia-muted shrink-0">{$shuffleOn?'Aleatorio activado: se muestra el orden real':'Arrastra para reordenar'}</p>{/if}
 
   <div class="flex-1 overflow-y-auto pb-6">
     {#if current}

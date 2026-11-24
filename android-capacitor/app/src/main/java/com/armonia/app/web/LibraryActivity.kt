@@ -14,12 +14,12 @@ import coil.fetch.SourceResult
 import coil.imageLoader
 import coil.request.Options
 import com.armonia.app.R
-import com.armonia.app.MainActivity
+import com.armonia.app.AppEntry
 import com.armonia.app.data.repository.AuthSnapshot
 import com.armonia.app.data.repository.PreferencesRepository
 import com.armonia.app.offline.OfflineManager
 import com.armonia.app.playback.MusicPlayer
-import com.armonia.app.ui.components.CoverSizes
+import com.armonia.app.playback.CoverSizes
 import com.getcapacitor.BridgeActivity
 import com.getcapacitor.BridgeWebViewClient
 import com.getcapacitor.CapConfig
@@ -144,7 +144,7 @@ class LibraryActivity : BridgeActivity() {
         lifecycleScope.launch {
             prefs.authState.collect {
                 if (!isFinishing && (it.sessionId.isBlank() || it.namespace != account)) {
-                    startActivity(Intent(this@LibraryActivity, MainActivity::class.java))
+                    AppEntry.restart(this@LibraryActivity)
                     finish()
                 }
             }

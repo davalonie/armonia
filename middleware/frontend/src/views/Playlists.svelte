@@ -12,6 +12,7 @@
   import {createEventDispatcher} from 'svelte';
   const dispatch=createEventDispatcher();
   import PlaylistSearch from '../components/PlaylistSearch.svelte';
+  import PhoneAddSongs from '../components/PhoneAddSongs.svelte';
   import {appendLocal,replaceLocal} from '../lib/playlistEdits.js';
   import {showToast} from '../lib/stores/toastStore.js';
   import ImportReview from '../components/ImportReview.svelte';
@@ -182,15 +183,18 @@
   }
 
   async function openSongPicker(plId, plName) {
-    if(mobile){
-      try { await mobile.editPlaylist({id:plId}); if(top.id===plId) await loadPlaylist(plId); else await loadPlaylists(); }
-      catch(e){showToast(e.message,'error');}
-      return;
-    }
+    if(mobile){ phoneAdder={id:plId,name:plName}; return; }
     songPickerPlaylistId = plId;
     songPickerPlaylistName = plName;
     songPickerOpen = true;
     spDialogEl?.showModal();
+  }
+
+  // The phone editor saves each song on its own; the lists are read again when it closes.
+  let phoneAdder=null;
+  async function phoneAdderClosed(){
+    const plId=phoneAdder?.id;phoneAdder=null;
+    if(top.id===plId) await loadPlaylist(plId); else await loadPlaylists();
   }
 
   async function addLocal(tracks){
@@ -337,6 +341,8 @@
     <button on:click={renamePlaylist} class="px-5 py-2.5 bg-armonia-accent hover:bg-armonia-accentHover text-armonia-bg rounded-xl text-sm font-semibold transition-colors">Guardar</button>
   </div>
 </dialog>
+
+{#if phoneAdder}<PhoneAddSongs id={phoneAdder.id} name={phoneAdder.name} on:close={phoneAdderClosed} />{/if}
 
 <!-- Song picker dialog -->
 <dialog bind:this={spDialogEl} on:close={() => { songPickerOpen = false; }}

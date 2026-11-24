@@ -10,3 +10,16 @@ ext.appIdSuffix = ''
 ext.defaultVersionCode = '10020'
 ext.oidcClient = 'kotlin'
 apply from: rootProject.file('music-app.gradle')
+
+// The Compose interface lives apart from the shared core (src/main), which the Capacitor app
+// (android-capacitor/) builds with its web interface instead. Only this Kotlin app adds it.
+android {
+    sourceSets {
+        main {
+            java.srcDir 'src/compose/java'
+            kotlin.srcDir 'src/compose/java'
+        }
+        debug.manifest.srcFile 'src/compose/AndroidManifest.xml'
+        release.manifest.srcFile 'src/compose/AndroidManifest.xml'
+    }
+}

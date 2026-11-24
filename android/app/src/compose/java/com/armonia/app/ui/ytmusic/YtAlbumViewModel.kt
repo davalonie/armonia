@@ -10,7 +10,7 @@ import com.armonia.app.data.api.YtAlbum
 import com.armonia.app.data.api.YtAlbumTrack
 import com.armonia.app.data.repository.DownloadTracker
 import com.armonia.app.data.repository.YtMusicRepository
-import com.armonia.app.ui.ytmusic.DuplicateException
+import com.armonia.app.data.repository.DuplicateException
 import com.armonia.app.ui.ytmusic.DuplicateWarning
 import com.armonia.app.ui.ytmusic.YtDownloadState
 import com.armonia.app.playback.MusicPlayer

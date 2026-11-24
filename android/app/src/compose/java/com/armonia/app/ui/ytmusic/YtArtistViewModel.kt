@@ -1,5 +1,6 @@
 package com.armonia.app.ui.ytmusic
 
+import com.armonia.app.data.repository.DuplicateException
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -23,8 +24,6 @@ fun com.armonia.app.data.repository.TrackedDownload.toRowState(): YtDownloadStat
     "error", "cancelled", "timeout" -> YtDownloadState.ERROR
     else -> YtDownloadState.LOADING
 }
-
-class DuplicateException : Exception("already in library")
 
 data class DuplicateWarning(val videoId: String, val artist: String, val title: String, val album: String?)
 

@@ -841,6 +841,14 @@ class MusicPlayer @Inject constructor(
         }
     }
 
+    /** A favourite changed outside the player (a list or a menu): the queue, notification and car follow it. */
+    fun syncStarred(ids: Set<String>, starred: Boolean) {
+        val list = _queue.value
+        if (list.none { it.id in ids && it.starred.isNullOrEmpty() == starred }) return
+        val value = if (starred) java.time.Instant.now().toString() else null
+        _queue.value = list.map { if (it.id in ids) it.copy(starred = value) else it }
+    }
+
     fun closePlayer() {
         cancelSleepTimer()
         resetContinuation(forget = true)

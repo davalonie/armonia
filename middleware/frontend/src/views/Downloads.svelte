@@ -130,7 +130,7 @@
             <button
               on:click={() => remove(job.id)}
               class="w-8 h-8 rounded-full flex items-center justify-center text-armonia-muted hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-              title="Remove"
+              title="Quitar"
             >
               <i class="ph ph-trash text-sm pointer-events-none"></i>
             </button>
