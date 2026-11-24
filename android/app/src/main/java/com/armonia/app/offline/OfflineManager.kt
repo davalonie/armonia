@@ -98,6 +98,16 @@ class OfflineManager @Inject constructor(
     private val _catalog = MutableStateFlow(OfflineCatalog())
     val catalog: StateFlow<OfflineCatalog> = _catalog.asStateFlow()
 
+    private fun ownsCatalog(account: String) =
+        account.isNotBlank() && loadedAccount == account && prefs.accountNamespace == account
+
+    fun songStatesFor(account: String): Map<String, OfflineSongState> =
+        if (ownsCatalog(account)) songStates.value else emptyMap()
+
+    fun collectionsFor(account: String): List<OfflineCollection> =
+        if (ownsCatalog(account))
+            catalog.value.collections else emptyList()
+
     private val _progress = MutableStateFlow<Map<String, OfflineProgress>>(emptyMap())
     val progress: StateFlow<Map<String, OfflineProgress>> = _progress.asStateFlow()
 

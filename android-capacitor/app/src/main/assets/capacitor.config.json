@@ -1,0 +1,7 @@
+{
+  "appId": "io.github.davalonie.armonia.capacitor",
+  "appName": "Armonia Capacitor",
+  "webDir": "public",
+  "server": {"hostname": "app.armonia.local", "androidScheme": "https"},
+  "android": {"allowMixedContent": false, "loggingBehavior": "none"}
+}

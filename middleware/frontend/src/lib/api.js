@@ -1,3 +1,4 @@
+import { mobile } from './native.js';
 const KEY_SESSION = "armonia.session";
 let currentSession;
 
@@ -18,6 +19,7 @@ export function getSession() {
 
 export function setSession(s) {
   currentSession=s ? { username:s.username, userId:s.userId } : null;
+  if (mobile) return;
   if (s) {
     localStorage.setItem(KEY_SESSION, JSON.stringify({ username: s.username, userId: s.userId }));
   } else {
@@ -32,7 +34,14 @@ export async function call(path, opts = {}) {
     headers["Content-Type"] = "application/json";
   }
   let res;
-  try { res = await fetch(path, { ...opts, headers, credentials: 'same-origin' }); }
+  try {
+    if (mobile) {
+      if (opts.body != null && typeof opts.body !== 'string') throw new Error('Formato de carga no compatible');
+      const result = await mobile.request({path, method: opts.method || 'GET', body: opts.body,
+        albumGroups: headers['X-Armonia-Albums'] === '1'});
+      res = new Response(result.text || null, {status: result.status});
+    } else res = await fetch(path, { ...opts, headers, credentials: 'same-origin' });
+  }
   catch (e) { if(opts.signal?.aborted)throw e;throw new Error('No se pudo conectar. Comprueba la red y vuelve a intentarlo.'); }
   const text = await res.text();
   if (!res.ok) {
@@ -67,7 +76,7 @@ export const login = (username, password) =>
     body: JSON.stringify({ username, password }),
   });
 
-export const logout = () => authCall("/api/logout", { method: "POST" });
+export const logout = () => mobile ? mobile.logout() : authCall("/api/logout", { method: "POST" });
 
 export const me = () => authCall("/api/me");
 
@@ -79,11 +88,14 @@ export const search = (query, limit = 10, source = "youtube_music", signal = und
     signal,
   });
 
-export const download = (videoId, artist, title, source = "youtube_music", album = "", force = false) =>
-  call("/api/download", {
+export async function download(videoId, artist, title, source = "youtube_music", album = "", force = false) {
+  const job = await call("/api/download", {
     method: "POST",
     body: JSON.stringify({ videoId, artist, title, source, album, force }),
   });
+  if (mobile && job.jobId) await mobile.trackDownload({videoId,title,jobId:job.jobId});
+  return job;
+}
 
 export const searchArtists = (query, limit = 10) =>
   call("/api/search/artists", {
@@ -151,6 +163,7 @@ export function previewUrl(videoId) {
 
 export function coverArtUrl(coverArtId, size = 300) {
   if (!coverArtId) return "";
+  if (mobile && /^https?:\/\//i.test(coverArtId)) return coverArtId;
   const qs = new URLSearchParams({
     id: coverArtId,
     size: String(size),

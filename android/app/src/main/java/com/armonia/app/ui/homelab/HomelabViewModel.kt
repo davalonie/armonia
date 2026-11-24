@@ -74,7 +74,9 @@ class HomelabViewModel @Inject constructor(
     fun delete()=act{selected?.let{api.delete(it.id!!,it.revision,owner).checked()};selected=null;lists=api.playlists().checked().playlists}
     fun export()=act{selected?.let{val r=api.export(it.id!!,owner,mapOf("revision" to it.revision)).checked();error="Copia en Navidrome: ${r["exported"]} canciones; ${r["omitted"]} externas omitidas"}}
     fun pin()=act{selected?.let{p->
-        for(item in p.items) if(item.track.source!="navidrome") check(api.capabilities(item.track.source,item.track.sourceId).checked()["offline"]==true){"Una cancion no permite descarga offline"}
+        val auth = prefs.cachedAuth
+        check(api.canKeepOffline(p.items.map { it.track }, auth)) { "Una cancion no permite descarga offline" }
+        check(prefs.cachedAuth == auth)
         // Reuse Media3 DownloadManager and the existing offline catalogue.
         offline.pin(OfflineCollection(key="mixed:${p.id}",title=p.name,subtitle="Playlist mixta",coverArt=null,songs=p.items.map{it.track.toSong()},pinnedAt=System.currentTimeMillis()))
     }}

@@ -122,7 +122,7 @@ interface MusicApi {
     @POST("/api/recent-playlists") suspend fun rememberPlaylist(@Header("X-Music-Owner") owner:String,@Body body:PlaylistContext):Response<JsonObject>
     @GET("/api/home/settings") suspend fun playbackSettings():Response<PlaybackSettings>
     @PUT("/api/home/settings") suspend fun savePlaybackSettings(@Header("X-Music-Owner") owner:String,@Body body:PlaybackSettings):Response<PlaybackSettings>
-    @PUT("/api/playlist-covers/{kind}/{id}") suspend fun uploadCover(@Path("kind") kind:String, @Path("id") id:String, @Header("X-Music-Owner") owner:String, @Body image:okhttp3.RequestBody): Response<Map<String,String>>
+    @PUT("/api/playlist-covers/{kind}/{id}") suspend fun uploadCover(@Path("kind") kind:String, @Path("id") id:String, @Header("X-Music-Owner") owner:String, @Body image:okhttp3.RequestBody, @Tag auth:com.armonia.app.data.repository.AuthSnapshot?=null): Response<Map<String,String>>
     @POST("/api/home/continue") suspend fun continueSimilar(@Header("X-Music-Owner") owner:String,@Body body:ContinueRequest):Response<ContinueBatch>
     @GET("/api/imports") suspend fun imports():Response<ImportHistory>
     @GET("/api/import/{id}") suspend fun importJob(@Path("id") id:String):Response<ImportJob>
@@ -153,9 +153,13 @@ interface MusicApi {
     @POST("/api/listening/events") suspend fun listen(@Header("X-Music-Owner") owner:String,@Body event:PlayEvent): Response<JsonObject>
     @GET("/api/listening/top/{kind}") suspend fun top(@Path("kind") kind:String,@Query("period") period:String="month"): Response<JsonObject>
     @GET("/api/listening/status") suspend fun delivery(): Response<JsonObject>
-    @GET("/api/sources/{source}/{id}/capabilities") suspend fun capabilities(@Path("source") source:String,@Path("id") id:String): Response<Map<String,Boolean>>
+    @GET("/api/sources/{source}/{id}/capabilities") suspend fun capabilities(@Path("source") source:String,@Path("id") id:String,
+        @Tag auth:com.armonia.app.data.repository.AuthSnapshot?=null): Response<Map<String,Boolean>>
     @POST("/api/sources/{id}/save") suspend fun saveSource(@Path("id") id:String,@Header("X-Music-Owner") owner:String): Response<JsonObject>
 }
+suspend fun MusicApi.canKeepOffline(tracks: List<MusicTrack>, auth: com.armonia.app.data.repository.AuthSnapshot): Boolean =
+    tracks.all { it.source == "navidrome" || capabilities(it.source, it.sourceId, auth).checked()["offline"] == true }
+
 fun <T> Response<T>.checked(): T {
     if(!isSuccessful) throw IllegalStateException(when(code()) {
         401->"Sesion caducada";403->"Accion no autorizada";404->"Recurso no disponible";

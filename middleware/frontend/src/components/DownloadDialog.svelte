@@ -43,7 +43,7 @@
       dispatch('download', { jobId, artist: a, title: t });
       showToast(`Descargando «${t}»…`, 'info');
     } catch (e) {
-      if (e.message?.includes('409') && e.message?.includes('already in library')) {
+      if (e.status === 409 && e.detail === 'already in library') {
         showDuplicateWarning = true;
       } else {
         close();

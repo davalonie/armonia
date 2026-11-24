@@ -1,7 +1,7 @@
 <script>
   import { APP_NAME } from '../lib/brand.js';
-  import { createEventDispatcher } from 'svelte';
-  import { login, setSession } from '../lib/api.js';
+  import { createEventDispatcher, onMount } from 'svelte';
+  import { call, login, setSession } from '../lib/api.js';
 
   const dispatch = createEventDispatcher();
 
@@ -10,6 +10,19 @@
   let loading = false;
   let error = '';
   let passEl;
+  let authentik = false;
+  onMount(() => { call('/api/oidc/config').then(r => authentik = r.enabled).catch(() => {}); });
+
+  async function signInWithAuthentik() {
+    loading = true;
+    try {
+      const {url} = await call('/api/oidc/web', {method: 'POST'});
+      location.assign(url);
+    } catch (e) {
+      error = e.message;
+      loading = false;
+    }
+  }
 
   async function doLogin() {
     if (!username.trim() || !password) return;
@@ -72,6 +85,10 @@
           {/if}
         </button>
       </form>
+      {#if authentik}
+        <button class="w-full mt-3 py-3 border border-white/20 rounded-xl" disabled={loading}
+          on:click={signInWithAuthentik}>Entrar con Authentik</button>
+      {/if}
     </div>
     <p class="text-center text-sm text-armonia-muted mt-6">Usa tu usuario y contraseña de Navidrome</p>
   </div>

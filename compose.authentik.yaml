@@ -1,0 +1,25 @@
+services:
+  music:
+    environment:
+      MUSIC_OIDC_ISSUER: ${MUSIC_OIDC_ISSUER:?Indica el emisor de Authentik}
+      MUSIC_OIDC_CLIENT_ID: ${MUSIC_OIDC_CLIENT_ID:?Indica el cliente OIDC}
+      MUSIC_OIDC_SECRET_FILE: /run/secrets/oidc_client_secret
+      MUSIC_ANDROID_APPLICATION_ID: ${MUSIC_ANDROID_APPLICATION_ID:-io.github.davalonie.armonia}
+      MUSIC_OIDC_GROUP: ${MUSIC_OIDC_GROUP:-}
+      MUSIC_PUBLIC_ORIGIN: ${MUSIC_PUBLIC_ORIGIN:?Indica el origen público de Armonia}
+    networks:
+      library:
+        ipv4_address: ${MUSIC_PROXY_IP:-10.253.248.2}
+    secrets: [oidc_client_secret]
+  navidrome:
+    environment:
+      ND_EXTAUTH_USERHEADER: X-Armonia-User
+      ND_EXTAUTH_TRUSTEDSOURCES: ${MUSIC_PROXY_IP:-10.253.248.2}/32
+networks:
+  library:
+    ipam:
+      config:
+        - subnet: ${MUSIC_LIBRARY_SUBNET:-10.253.248.0/28}
+secrets:
+  oidc_client_secret:
+    file: ./secrets/oidc-client-secret

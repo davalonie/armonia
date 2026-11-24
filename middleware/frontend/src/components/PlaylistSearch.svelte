@@ -16,7 +16,7 @@
   const key=t=>`${t.source}:${t.source_id}`;
   function toggle(t){const next=new Map(selected);next.has(key(t))?next.delete(key(t)):next.set(key(t),t);selected=next;}
   async function add(){busy=true;error='';try{const count=selected.size;await onAdd([...selected.values()]);selected=new Map();notice=`Seleccion procesada (${count} canciones).`;}catch(e){error=e.message;}finally{busy=false;}}
-  function preview(t){audition(toQueueTrack(t));}
+  function preview(t){audition(toQueueTrack(t),true);}
 </script>
 <section class="music-card">
   <form class="actions" on:submit|preventDefault={find}>

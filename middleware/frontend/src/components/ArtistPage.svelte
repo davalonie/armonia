@@ -3,8 +3,10 @@
   import { getArtist, getArtistSongs } from '../lib/api.js';
   import { fmtDuration } from '../lib/util.js';
   import { trackJob } from '../lib/jobs.js';
-  import { playPreviewTrack } from '../lib/stores/playerStore.js';
-  import { previewUrl } from '../lib/api.js';
+  import {toQueueTrack} from '../lib/homelab.js';
+  import {mobile} from '../lib/native.js';
+  import {downloadRow} from '../lib/jobs.js';
+  import { serverDownloads, playPreviewTrack } from '../lib/stores/playerStore.js';
   import DownloadDialog from './DownloadDialog.svelte';
   import Marquee from './Marquee.svelte';
 
@@ -56,21 +58,15 @@
   }
 
   function playPreview(song) {
-    playPreviewTrack({
-      id: null,
-      title: song.title,
-      artist: song.artist || artist?.name || 'Unknown',
-      coverArt: null,
-      _previewUrl: previewUrl(song.videoId),
-      _previewThumb: song.thumbnail || '',
-      duration: song.duration || 0,
-    });
+    playPreviewTrack(toQueueTrack({source:'youtube',source_id:song.videoId,title:song.title,
+      artist:song.artist || artist?.name || 'Desconocido',album:song.album || '',duration:song.duration || null}, song.thumbnail));
   }
 </script>
 
 <div class="w-full animate-slide-up">
   <!-- Back -->
   <button
+    data-phone-back aria-label="Volver"
     on:click={() => dispatch('back')}
     class="flex items-center gap-2 text-armonia-muted hover:text-armonia-text transition-colors mb-6 group"
   >
@@ -142,11 +138,13 @@
                 <span class="text-xs text-armonia-muted tabular-nums shrink-0">{fmtDuration(song.duration)}</span>
               {/if}
               <button
-                class="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-armonia-muted hover:text-white shrink-0"
-                title="Download"
+                class="w-8 h-8 rounded-full flex items-center justify-center {mobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} hover:bg-white/10 transition-all text-armonia-muted hover:text-white shrink-0"
+                disabled={mobile && downloadRow($serverDownloads[song.videoId]).disabled}
+                title={mobile ? downloadRow($serverDownloads[song.videoId]).label : 'Download'}
+                aria-label={mobile ? downloadRow($serverDownloads[song.videoId]).label+' '+song.title : 'Download '+song.title}
                 on:click|stopPropagation={() => openDownload(song)}
               >
-                <i class="ph ph-download-simple text-base pointer-events-none"></i>
+                <i class="ph {mobile ? downloadRow($serverDownloads[song.videoId]).icon : 'ph-download-simple'} text-base pointer-events-none"></i>
               </button>
             </div>
           {/each}

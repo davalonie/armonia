@@ -11,7 +11,8 @@ import com.armonia.app.data.api.ArmoniaApi
 import com.armonia.app.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import android.content.Context
+import com.armonia.app.security.BrowserLogin
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,6 +34,13 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    fun startBrowserLogin(context: Context) {
+        viewModelScope.launch {
+            try { BrowserLogin.start(context, serverUrl, prefs) }
+            catch (_: Exception) { error = "No se ha podido abrir el navegador" }
+        }
+    }
+
     fun login(onSuccess: () -> Unit) {
         val url = serverUrl.trim()
         if (url.isEmpty()) {
@@ -40,14 +48,8 @@ class LoginViewModel @Inject constructor(
             return
         }
         
-        val parsed = url.toHttpUrlOrNull()
-        if (parsed == null || parsed.username.isNotEmpty() || parsed.password.isNotEmpty() ||
-            parsed.encodedPath != "/" || parsed.query != null || parsed.fragment != null) {
-            error = "URL del servidor no valida"
-            return
-        }
-        if(!com.armonia.app.BuildConfig.DEBUG && !parsed.isHttps) {
-            error="Usa HTTPS para proteger las credenciales, tambien en LAN/Tailscale"
+        if (BrowserLogin.origin(url) == null) {
+            error = "Introduce el origen del servidor con HTTPS (HTTP disponible en debug)"
             return
         }
 
@@ -57,17 +59,11 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 prefs.saveServerUrl(url)
-                // Note: In a real app, we might need to recreate the Retrofit instance 
-                // if the base URL changes, or use a dynamic base URL interceptor.
-                
                 val response = api.login(LoginRequest(username, password))
                 if (response.isSuccessful) {
                     response.body()?.sessionId?.let {
-                        prefs.saveLastUsername(response.body()?.username ?: username)
-                        val identity = response.body()?.userId
-                            ?: throw IllegalStateException("No se ha podido resolver la identidad de Navidrome")
-                        prefs.saveIdentity(identity)
-                        prefs.saveSessionId(it)
+                        val account = requireNotNull(response.body())
+                        prefs.saveLogin(url, account.username ?: username, requireNotNull(account.userId), it)
                         password = ""
                         onSuccess()
                     } ?: run {

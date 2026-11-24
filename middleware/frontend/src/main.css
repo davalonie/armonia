@@ -150,3 +150,80 @@
 @media (max-width:767px) { button { min-height:44px; } .music-page { padding:1.2rem; } }
 @media (min-width:768px) { [role="row"] { padding-top:.5rem; padding-bottom:.5rem; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; } }
+
+/* Android's embedded frontend follows the Compose dimensions in dp. WebView
+   reports its system bar insets in CSS pixels on the account-local origin. */
+.capacitor{--font-sans:'Armonia Inter',sans-serif;--mob-nav-h:80px;--color-armonia-text:#eee;background:#121015;color-scheme:dark}
+.capacitor #view{margin-top:env(safe-area-inset-top,0px);height:calc(100% - env(safe-area-inset-top,0px));scrollbar-width:none}
+.capacitor .mobile-nav{border:0;backdrop-filter:none}
+.capacitor .mobile-nav>div{height:80px}
+.capacitor .mobile-nav button{gap:3px}
+.capacitor .mobile-nav button>span:last-child{font-size:10px;line-height:16px;letter-spacing:.5px}
+.capacitor #mini-player{height:62px;padding:8px 8px 10px 12px;gap:12px;background:#242424;border:0;box-shadow:none}
+.capacitor #mini-player>button:first-of-type{width:44px;height:44px;border-radius:8px;background:#2e2e2e}
+.capacitor #mini-player>div:first-child{height:2px}
+.capacitor .phone-back{width:48px;height:48px;display:grid;place-items:center;font-size:24px;flex:none}
+.capacitor .home .greeting{font-size:24px;line-height:32px;margin-bottom:18px}
+.capacitor .home section{margin-bottom:24px}
+.capacitor .home .quick-open{gap:8px}
+.capacitor .home h2{font-size:22px;line-height:28px;font-weight:700;letter-spacing:0}
+.capacitor .home .shelf{padding-bottom:0}
+.capacitor .home .cover,.capacitor .phone-downloads .cover{box-shadow:none;background:linear-gradient(135deg,#6d3fd0,#2b1c50)}
+.capacitor .cover.liked{background:linear-gradient(135deg,#5b2dd6,#a78bfa,#c9f2e4)}
+.capacitor .cover .tint{background:linear-gradient(transparent,#1115)}
+.capacitor .collection:not(.body){padding:0 16px}
+.capacitor .collection .heading h1{font-size:30px;line-height:38px;margin:0;letter-spacing:0}
+.capacitor .collection .actions,.capacitor .collection .chips{height:48px;align-items:center;gap:8px;margin:0;padding:0;flex-wrap:nowrap}
+.capacitor .collection .chips{margin:0 -16px;padding:0 16px}
+.capacitor .collection .assist,.capacitor .collection .chip,.capacitor .search .chip{height:32px;min-height:0;display:flex;align-items:center;padding:0 16px;border:1px solid #2e2e2e;border-radius:8px;background:transparent;color:#eee;font-size:14px;line-height:20px;font-weight:500}
+.capacitor .collection .assist i{display:none}
+.capacitor .collection .chip.on,.capacitor .search .chip.on{color:#eee;background:#1e1e1e;border-color:#1e1e1e}
+.capacitor .pane>.playlist-pane,.capacitor .playlist-pane{padding:8px 16px 16px}
+.capacitor .playlist-pane.drilled{padding:0}
+.capacitor .playlist-pane .toolbar{margin-bottom:8px;position:relative;gap:0}
+.capacitor .playlist-pane .filter{height:56px;border:1px solid #444;border-radius:4px;background:transparent;padding:0 46px 0 14px;gap:16px}
+.capacitor .playlist-pane .filter i{font-size:24px}
+.capacitor .playlist-pane .filter input{font-size:16px}
+.capacitor .list-options{position:absolute;right:0}
+.capacitor .list-options summary{list-style:none;padding:10px;color:#aaa}
+.capacitor .list-options>div{position:absolute;right:0;top:100%;width:200px;z-index:2;padding:12px;background:#242424;border-radius:8px}
+.capacitor .list-options label,.capacitor .list-options button{display:block;padding:8px;text-align:left}
+.capacitor .playlist-pane .list{padding:8px 0;gap:12px}
+.capacitor .playlist-pane .list .art{width:48px;height:48px}
+.capacitor .playlist-pane .cover{border-radius:8px;box-shadow:none}
+.capacitor .playlist-pane .text b{font-size:16px;line-height:24px}
+.capacitor .playlist-pane .text small{font-size:12px}
+.capacitor .add-song{width:100%;height:72px;display:flex;align-items:center;gap:12px;font-size:14px}
+.capacitor .add-song i{width:52px;height:52px;border-radius:8px;background:#2e2e2e;display:grid;place-items:center;font-size:24px;color:#c4a3ff}
+.capacitor .phone-playlist [role=button].group{padding:10px 0;border-radius:0;min-height:72px}
+.capacitor .phone-playlist [role=button].group>.relative{height:52px;width:52px;background:#2e2e2e}
+.capacitor .phone-playlist [role=button].group>.relative>span:first-child{display:none}
+.capacitor .phone-playlist [role=button].group>button[title="Like"],.capacitor .phone-playlist [role=button].group>button[title="Unlike"]{display:none}
+.capacitor .search:not(.subpage){padding:0 16px 24px}
+.capacitor .search .search-bar{display:flex;align-items:center;gap:4px;height:64px;margin:0 -4px 0 -12px;position:sticky;top:0;background:#121015;z-index:6}
+.capacitor .search .field{flex:1;position:static;height:56px;border-radius:28px;background:#242424;color:#eee;box-shadow:none;padding:0 16px;outline:none;gap:14px}
+.capacitor .search .field input,.capacitor .search .field input::placeholder,.capacitor .search .clear{color:#eee;font-size:16px;font-weight:400;letter-spacing:.5px}
+.capacitor .search section{margin-top:16px}
+.capacitor .search .section-head h2{color:#bbb;font-size:14px;line-height:20px;font-weight:500}
+.capacitor .search .row{padding:8px 0;min-height:72px;gap:12px}
+.capacitor .search .row .cover{border-radius:8px;background:#2e2e2e;box-shadow:none}
+.capacitor .search .row .cover .placeholder{display:none}
+.capacitor .search .row .text b{font-size:14px}
+.capacitor .search .row .text small{font-size:12px}
+.capacitor .queue-panel{inset:auto 0 0;width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 24px);border:0;border-radius:28px 28px 0 0;padding-bottom:calc(env(safe-area-inset-bottom) + 12px);overflow:auto}
+.capacitor .queue-handle{display:grid;place-items:center;width:100%;height:48px;flex:none}
+.capacitor .queue-handle span{background:#eee;border-radius:2px;width:32px;height:4px}
+.capacitor .queue-head{height:64px;padding:8px 16px;border:0}
+.capacitor .queue-head h2{font-size:20px}
+.capacitor .queue-current{padding:0}
+.capacitor .queue-current>p,.capacitor .queue-upcoming{display:none}
+.capacitor .queue-current>div{background:#30251f;border-radius:0;padding:8px 16px;min-height:60px}
+.capacitor .expanded-player>div:nth-child(3){background:linear-gradient(#101013d9,#000) !important}
+.capacitor .expanded-player .player-cover{container-type:size}
+.capacitor .expanded-player .player-cover .cover-frame{width:min(100cqw,100cqh);height:min(100cqw,100cqh);border-radius:14px;background:#171719;box-shadow:none}
+.capacitor .expanded-player .player-cover+div{margin:0 0 20px}
+.capacitor .expanded-player button.bg-white{background:var(--color-armonia-accent)}
+.capacitor .expanded-player button[aria-label="Cancion anterior"],.capacitor .expanded-player button[aria-label="Cancion siguiente"]{color:#fff}
+
+.capacitor .expanded-player .cover-frame img{width:100%;height:100%;border-radius:inherit;box-shadow:none}
+.capacitor .expanded-player .cover-frame{overflow:hidden}

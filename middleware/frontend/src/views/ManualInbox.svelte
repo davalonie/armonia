@@ -1,4 +1,5 @@
 <script>
+  import {mobile,mobileImport} from '../lib/native.js';
   import {onMount} from 'svelte';
   import {getSession} from '../lib/api.js';
   import {currentView,showView} from '../lib/stores/viewStore.js';
@@ -41,14 +42,17 @@
     const timer=setTimeout(()=>controller?.abort(),360000);
     try {
       const opts={signal:controller.signal};
-      if(action==='upload')await uploadManualAudio(item,files[item.id],opts);
+      if(action==='upload'&&mobile){
+        const result=await mobileImport.pickManualAudio({id:item.id,revision:item.revision});
+        if(result.cancelled)return;
+      }else if(action==='upload')await uploadManualAudio(item,files[item.id],opts);
       else if(action==='refresh')await refreshManualPending(item,opts);
       else await deleteManualPending(item,opts);
       if(!alive||getSession()!==session)return;
       files={...files,[item.id]:null};
       notice=action==='delete'?'Pendiente eliminado. Tu biblioteca se conserva.':action==='upload'?'Archivo guardado. La bandeja muestra si ya esta disponible en la biblioteca.':'Estado actualizado.';
     } catch(e) {
-      if(alive&&getSession()===session)rowErrors={...rowErrors,[item.id]:manualInboxError(e)};
+      if(alive&&getSession()===session)rowErrors={...rowErrors,[item.id]:mobile&&action==='upload'?e.message:manualInboxError(e)};
     } finally {
       clearTimeout(timer);controller=null;busy=null;
       if(alive&&getSession()===session)await load();
@@ -57,16 +61,17 @@
 </script>
 
 <section class="inbox music-page">
-  <button class="back" on:click={()=>showView('library')}>← Biblioteca</button>
-  <div class="heading"><h1>Pendientes de añadir</h1><button disabled={loading||!!busy} on:click={load}>Actualizar</button></div>
+  <button class="back" data-phone-back on:click={()=>showView('library')}>← Biblioteca</button>
+  <div class="heading"><h1>Pendientes de añadir</h1>{#if !mobile}<button disabled={loading||!!busy} on:click={load}>Actualizar</button>{/if}</div>
   <p class="intro">Aqui guardas las canciones que has omitido al importar. Puedes terminar tus playlists y recuperar estas canciones mas adelante.</p>
   <p class="intro">Aporta un MP3 que tengas permiso para guardar. Se añadira a tu biblioteca; despues puedes incluirlo en cualquier playlist desde Biblioteca.</p>
   <p class="intro">Se guardara una copia MP3 a 192 kb/s; el archivo original de tu dispositivo se conserva.</p>
-  <label class="filter">Buscar pendientes<input type="search" bind:value={query} placeholder="Cancion, artista o playlist" /></label>
+  {#if mobile}<small>MP3 de hasta 64 MiB.</small><button class="refresh" disabled={loading||!!busy} on:click={load}>Actualizar</button>{/if}
+  {#if !mobile || items.length}<label class="filter">Buscar pendientes<input type="search" bind:value={query} placeholder="Cancion, artista o playlist" /></label>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
   {#if notice}<p role="status">{notice}</p>{/if}
   {#if loading && !items.length}<p role="status">Cargando pendientes…</p>
-  {:else if !items.length && !error}<p class="empty">No tienes canciones pendientes. «Ninguna coincide» las guarda aqui para que puedas continuar con la importacion.</p>
+  {:else if !items.length && !error}<p class="empty">No tienes canciones pendientes. {#if !mobile}«Ninguna coincide» las guarda aqui para que puedas continuar con la importacion.{/if}</p>
   {:else if !shown.length}<p class="empty">No hay pendientes que coincidan con tu busqueda.</p>
   {:else}
     <div class="entries">{#each shown as item (item.id)}
@@ -78,10 +83,11 @@
           {#if !item.songId}<p>El archivo ya esta guardado. Puedes volver a consultar su indexacion sin subirlo de nuevo.</p><button disabled={!!busy} on:click={()=>act(item,'refresh')}>Comprobar biblioteca</button>
           {:else}<button class="primary" on:click={()=>showView('library')}>Ir a Biblioteca</button>{/if}
         {:else}
-          <label class="file">Elegir MP3 para {item.track.title}<input type="file" accept=".mp3,audio/mpeg" disabled={!!busy} on:change={event=>pick(item,event)} /></label>
+          {#if mobile}<button class="primary" disabled={!!busy} on:click={()=>act(item,'upload')}>Elegir MP3</button>
+          {:else}<label class="file">Elegir MP3 para {item.track.title}<input type="file" accept=".mp3,audio/mpeg" disabled={!!busy} on:change={event=>pick(item,event)} /></label>
           {#if files[item.id]}<p class="filename">{files[item.id].name} · {(files[item.id].size/1024/1024).toFixed(1)} MiB</p>{/if}
           {#if fileErrors[item.id]}<p role="alert">{fileErrors[item.id]}</p>{/if}
-          <button class="primary" disabled={!!busy||!files[item.id]} on:click={()=>act(item,'upload')}>Guardar MP3 en biblioteca</button>
+          <button class="primary" disabled={!!busy||!files[item.id]} on:click={()=>act(item,'upload')}>Guardar MP3 en biblioteca</button>{/if}
         {/if}
         <button class="remove" disabled={!!busy} on:click={()=>act(item,'delete')}>Quitar de pendientes</button>
         {#if busy===item.id}<p role="status">Guardando cambios…</p>{/if}

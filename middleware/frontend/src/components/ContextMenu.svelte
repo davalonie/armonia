@@ -52,7 +52,7 @@
           </span>
         </div>
       {:else}
-        <button role="menuitem"
+        <button role="menuitem" disabled={item.disabled}
           class="item w-full flex items-center gap-3 px-4 text-left transition-colors {item.danger ? 'text-red-400 hover:bg-red-500/10' : 'text-armonia-text hover:bg-white/5'}"
           on:click={() => { closeContextMenu(); item.action(); }}
         >

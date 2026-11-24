@@ -23,6 +23,7 @@ from routes import (
     manual_inbox,
     membership,
     mixed_playlists,
+    oidc,
     playlist_edit,
     search,
     stats,
@@ -141,6 +142,7 @@ app.add_middleware(NoCacheStaticMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(auth_routes.router)
+app.include_router(oidc.router)
 app.include_router(mixed_playlists.router)
 app.include_router(discover.router)
 app.include_router(home.router)

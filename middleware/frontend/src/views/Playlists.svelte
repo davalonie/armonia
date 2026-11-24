@@ -1,4 +1,7 @@
 <script>
+  import {pullRefresh} from '../lib/pullRefresh.js';
+  import {mobile,mobileImport} from '../lib/native.js';
+  import PhonePlaylist from '../components/PhonePlaylist.svelte';
   import {onMount} from 'svelte';
   import {currentView,showView} from '../lib/stores/viewStore.js';
   import {stopPreview} from '../lib/stores/playerStore.js';
@@ -24,6 +27,7 @@
   let detailCover = null;
   let loading = true;
   let error = '';
+  let stale = false, loadGeneration = 0;
 
   // Dialogs
   let createOpen = false;
@@ -51,6 +55,7 @@
   }
 
   $: top = stack[stack.length - 1];
+  $: dispatch('detail',stack.length>1);
   $: filteredPlaylists = playlistFilter
     ? playlists.filter(p => p.name.toLowerCase().includes(playlistFilter.toLowerCase()))
     : playlists;
@@ -59,24 +64,51 @@
   $: top, loadCurrent();
 
   async function loadCurrent() {
-    loading = true; error = '';
+    const generation = ++loadGeneration;
+    loading = true; error = ''; stale = false;
     try {
       if (top.type === 'playlists') await loadPlaylists();
       else if (top.type === 'playlist') await loadPlaylist(top.id);
-    } catch (e) { error = e.message; }
-    finally { loading = false; }
+    } catch (e) { if (generation === loadGeneration) error = e.message; }
+    finally { if (generation === loadGeneration) loading = false; }
   }
 
   async function loadPlaylists() {
-    const [r,m]=await Promise.all([libApi('getPlaylists'),api.playlists()]);
-    playlists=[...(r.playlists?.playlist||[]).map(p=>({...p,kind:'local'})),...m.playlists.map(p=>({...p,kind:'mixed',songCount:p.item_count,changed:new Date(p.updated*1000).toISOString()}))];
-    playlistFilter = '';
+    const generation = loadGeneration;
+    function publish(local, mixed) {
+      if (generation !== loadGeneration || top.type !== 'playlists') return;
+      playlists=[...local.map(p=>({...p,kind:'local'})),...mixed.map(p=>({...p,kind:'mixed',songCount:p.item_count,changed:new Date(p.updated*1000).toISOString()}))];
+    }
+    if (!mobile) {
+      const [r,m] = await Promise.all([libApi('getPlaylists'),api.playlists()]);
+      publish(r.playlists?.playlist || [],m.playlists);
+      return;
+    }
+    const cached = (await mobile.playlists({cached:true})).playlists;
+    if (cached && generation === loadGeneration) { publish(cached,[]); loading=false; }
+    const mixes = api.playlists().then(r=>r.playlists).catch(()=>[]);
+    try {
+      const {playlists:local} = await mobile.playlists({});
+      publish(local,await mixes);
+      if (generation === loadGeneration) { stale=false; error=''; }
+    } catch(e) {
+      if (!cached) throw e;
+      if (generation === loadGeneration) stale=true;
+    }
   }
 
   async function loadPlaylist(id) {
-    const r = await libApi('getPlaylist', { id });
-    detailCover = r.playlist?.coverArt;
-    songs = r.playlist?.entry || [];
+    const generation = loadGeneration;
+    function publish(list) {
+      if (generation !== loadGeneration || top.id !== id) return;
+      detailCover=list.coverArt;
+      songs=list.entry || [];
+    }
+    if (!mobile) { publish((await libApi('getPlaylist',{id})).playlist); return; }
+    const cached = (await mobile.playlists({id,cached:true})).playlist;
+    if (cached && generation === loadGeneration) { publish(cached); loading=false; }
+    try { publish((await mobile.playlists({id})).playlist); if (generation===loadGeneration) stale=false; }
+    catch(e) { if (!cached) throw e; if (generation===loadGeneration) stale=true; }
   }
 
   onMount(()=>{let first=true;return currentView.subscribe(view=>{if(first){first=false;return;}if(['library','playlists'].includes(view)&&top?.type==='playlists')void loadPlaylists().catch(e=>error=e.message);});});
@@ -85,7 +117,14 @@
   function goTo(idx) { stack = stack.slice(0, idx + 1); }
 
   let picker, artworkTarget;
-  function chooseCover(p){artworkTarget=p;picker.value='';picker.click();}
+  async function chooseCover(p){
+    if (mobile) {
+      try { if (!(await mobileImport.pickCover({kind:p.kind,id:p.id})).cancelled) await loadPlaylists(); }
+      catch(e){ showToast(e.message,'error'); }
+      return;
+    }
+    artworkTarget=p;picker.value='';picker.click();
+  }
   async function uploadCover(){
     const file=picker.files?.[0], p=artworkTarget;
     if(!file||!p)return;
@@ -143,6 +182,11 @@
   }
 
   async function openSongPicker(plId, plName) {
+    if(mobile){
+      try { await mobile.editPlaylist({id:plId}); if(top.id===plId) await loadPlaylist(plId); else await loadPlaylists(); }
+      catch(e){showToast(e.message,'error');}
+      return;
+    }
     songPickerPlaylistId = plId;
     songPickerPlaylistName = plName;
     songPickerOpen = true;
@@ -162,7 +206,7 @@
 
   // Called from Biblioteca's «Nueva playlist» and «Importar playlist».
   export function openCreate(){createName='';createOpen=true;createDialogEl?.showModal();}
-  export function openImport(){importOpen=true;importDialogEl?.showModal();}
+  export function openImport(){if(mobile){showView('import-review');return;}importOpen=true;importDialogEl?.showModal();}
   let mixedDialogEl,mixedName='',mixedError='';
   function openCreateMixed(){mixedName='';mixedError='';mixedDialogEl?.showModal();}
   async function createMixed(){
@@ -176,10 +220,11 @@
 </script>
 
 <input hidden type="file" accept="image/jpeg,image/png,image/webp" bind:this={picker} on:change={uploadCover}>
-<div class="w-full max-w-5xl mx-auto p-4 md:p-8">
+<div use:pullRefresh={loadCurrent} class="playlist-pane w-full max-w-5xl mx-auto p-4 md:p-8" class:drilled={mobile && stack.length>1}>
 
   <!-- Breadcrumb -->
-  {#if stack.length > 1}
+  {#if mobile && top.type==='mixed'}<button class="phone-back" data-phone-back aria-label="Volver" on:click={()=>goTo(0)}><i class="ph ph-arrow-left"></i></button>
+  {:else if !mobile && stack.length > 1}
     <div class="flex items-center gap-2 text-sm text-armonia-muted mb-6 flex-wrap">
       {#each stack as crumb, i}
         {#if i < stack.length - 1}
@@ -193,6 +238,7 @@
     </div>
   {/if}
 
+  {#if stale}<p role="status" class="text-sm text-armonia-muted">Copia guardada en el teléfono <button class="p-2" on:click={loadCurrent}>Actualizar</button></p>{/if}
   {#if loading}
     <div class="flex items-center justify-center py-20 opacity-50">
       <i class="ph ph-circle-notch text-4xl animate-spin-slow"></i>
@@ -204,27 +250,32 @@
   {:else if top.type === 'playlists'}
     <div class="toolbar">
       <label class="filter"><i aria-hidden="true" class="ph ph-magnifying-glass"></i>
-        <input type="search" bind:value={playlistFilter} aria-label="Buscar en tus playlists" placeholder="Buscar en tus playlists"></label>
+        <input type="search" bind:value={playlistFilter} aria-label="Buscar en tus playlists" placeholder={mobile?"Buscar en tus playlists…":"Buscar en tus playlists"}></label>
+      {#if mobile}<details class="list-options"><summary aria-label="Opciones de playlists"><i class="ph ph-dots-three-vertical"></i></summary>
+        <div><label>Ordenar playlists <select bind:value={playlistSort}><option value="recent">Recientes</option><option value="name">Nombre</option><option value="size">Numero de canciones</option></select></label>
+        <button on:click={e=>{e.currentTarget.closest('details').open=false;openCreateMixed();}}>Nueva lista con canciones externas</button></div>
+      </details>{/if}
     </div>
-    <label class="sort"><i aria-hidden="true" class="ph ph-arrows-down-up"></i><span class="sr-only">Ordenar playlists</span>
+    {#if !mobile}    <label class="sort"><i aria-hidden="true" class="ph ph-arrows-down-up"></i><span class="sr-only">Ordenar playlists</span>
       <select bind:value={playlistSort} aria-label="Ordenar playlists">
         <option value="recent">Recientes</option><option value="name">Nombre</option><option value="size">Numero de canciones</option>
       </select></label>
+{/if}
     <ul class="lists">
       {#if !playlistFilter}
         <li><button class="list" on:click={()=>dispatch('favorites')}>
           <span class="art"><Cover variant="liked" /></span>
-          <span class="text"><b>Tus favoritos</b><small>Lista · canciones que te gustan</small></span>
-          <i aria-hidden="true" class="ph ph-caret-right chevron"></i></button></li>
+          <span class="text"><b>Tus favoritos</b>{#if !mobile}<small>Lista · canciones que te gustan</small>{/if}</span>
+          {#if !mobile}<i aria-hidden="true" class="ph ph-caret-right chevron"></i>{/if}</button></li>
       {/if}
       {#each sortedPlaylists as p (p.kind+p.id)}
         <li><button class="list" aria-label={`Abrir ${p.name}`} on:click={() => push({ type: p.kind==='mixed'?'mixed':'playlist', id: p.id, label: p.name })}>
             {#if p.kind==='mixed'&&!p.coverArt}<span class="art mixed"><i aria-hidden="true" class="ph ph-playlist"></i></span>
             {:else}<span class="art"><Cover covers={p.coverArt?[coverArtUrl(p.coverArt,96)]:(p.covers||[])} size={96} /></span>{/if}
-            <span class="text"><b>{p.name}</b><small>{p.kind==='mixed'?'con canciones externas':'Playlist'} · {p.songCount || 0} {p.songCount === 1 ? 'cancion' : 'canciones'}</small></span></button>
+            <span class="text"><b>{p.name}</b><small>{p.kind==='mixed'?'con canciones externas · ':mobile?'':'Playlist · '}{p.songCount || 0} {p.songCount === 1 ? 'cancion' : 'canciones'}</small></span></button>
           <button class="more" aria-label={`Opciones de ${p.name}`} on:click={e => openDots(e, p)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button></li>
       {/each}
-      {#if !playlistFilter}
+      {#if !mobile && !playlistFilter}
         <li><button class="list" on:click={openCreateMixed}>
           <span class="art mixed"><i aria-hidden="true" class="ph ph-plus"></i></span>
           <span class="text"><b>Nueva lista con canciones externas</b><small>Mezcla tu biblioteca con canciones de YouTube sin descargarlas</small></span></button></li>
@@ -236,6 +287,12 @@
   {:else if top.type === 'mixed'}
     {#key top.id}<MixedPlaylists initialId={top.id||null} />{/key}
   {:else if top.type === 'playlist'}
+    {#if mobile}
+      <PhonePlaylist title={top.label} {songs} playlistId={top.id} cover={detailCover} onRefresh={()=>loadPlaylist(top.id)} on:back={()=>goTo(0)}>
+        <div slot="organize"><details><summary>Reordenar canciones</summary>{#each songs as song,i}<div class="flex items-center gap-3 p-2"><span class="flex-1 truncate">{i+1}. {song.title}</span><button aria-label={`Subir ${song.title}`} disabled={i===0} on:click={()=>moveSong(i,-1)}>↑</button><button aria-label={`Bajar ${song.title}`} disabled={i===songs.length-1} on:click={()=>moveSong(i,1)}>↓</button></div>{/each}</details></div>
+        <button class="add-song" on:click={()=>openSongPicker(top.id,top.label)}><i class="ph ph-plus"></i>Añadir a esta lista</button>
+      </PhonePlaylist>
+    {:else}
     {#if detailCover?.startsWith('armonia-art-')}<img src={coverArtUrl(detailCover,256)} alt={`Portada de ${top.label}`} width="96" height="96">{/if}
     <div class="flex justify-end mb-2">
       <button on:click={() => openSongPicker(top.id, top.label)}
@@ -248,6 +305,7 @@
     {:else}
       <details class="mb-4"><summary>Reordenar canciones</summary>{#each songs as song,i}<div class="flex items-center gap-3 p-2"><span class="flex-1 truncate">{i+1}. {song.title}</span><button aria-label={`Subir ${song.title}`} disabled={i===0} on:click={()=>moveSong(i,-1)}>↑</button><button aria-label={`Bajar ${song.title}`} disabled={i===songs.length-1} on:click={()=>moveSong(i,1)}>↓</button></div>{/each}</details>
       <TrackList {songs} playlistName={top.label} playlistId={top.id} onRefresh={() => loadPlaylist(top.id)} />
+    {/if}
     {/if}
   {/if}
 </div>
@@ -287,7 +345,7 @@
 </dialog>
 
 <!-- Import playlist: a full screen on a phone, as in the app; a window on wider screens -->
-<dialog bind:this={importDialogEl} on:close={() => { importOpen = false; stopPreview(); }} class="import-dialog" aria-labelledby="import-title">
+{#if !mobile}<dialog bind:this={importDialogEl} on:close={() => { importOpen = false; stopPreview(); }} class="import-dialog" aria-labelledby="import-title">
   <header class="import-bar">
     <button class="import-back" aria-label="Volver; la importacion sigue en segundo plano" title="Volver" on:click={hideImport}><i aria-hidden="true" class="ph ph-arrow-left"></i></button>
     <h2 id="import-title">Importar playlist</h2>
@@ -296,7 +354,7 @@
     <ImportReview visible={importOpen} onRefresh={loadPlaylists} onOpenPending={()=>{hideImport();showView('manual-inbox');}}
       onImportAll={()=>{hideImport();showView('import-all');}} />
   </div>
-</dialog>
+</dialog>{/if}
 
 <!-- New mixed list (web only: lists with external songs are made here) -->
 <dialog bind:this={mixedDialogEl}

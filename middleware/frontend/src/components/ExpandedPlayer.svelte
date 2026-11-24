@@ -1,8 +1,9 @@
 <script>
+  import {mobile} from '../lib/native.js';
   import {
     currentTrack, playing, shuffleOn, repeatMode, playbackProgress,
-    next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction,
-    trackArtUrl, isPreview, playbackState,
+    swipeTrack, next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction,
+    trackArtUrl, isPreview, playbackState, sleepTimer,
   } from '../lib/stores/playerStore.js';
   import { expandedPlayerOpen, queuePanelOpen } from '../lib/stores/uiStore.js';
   import { songMenu } from '../lib/trackActions.js';
@@ -11,19 +12,35 @@
   import { deleteTrack } from '../lib/api.js';
   import { fmtTime } from '../lib/util.js';
   import Marquee from './Marquee.svelte';
+  import {openLibraryArtist} from '../lib/stores/viewStore.js';
+  import DownloadDialog from './DownloadDialog.svelte';
+  import {searchSource} from '../lib/searchSource.js';
+  import {trackJob} from '../lib/jobs.js';
+  let downloadTrack=null;
   import SaveButton from './SaveButton.svelte';
   // A sideways swipe on the cover changes song, as in the app.
-  let swipe = null;
+  let swipe = null, pull = null;
+  function pullStart(e) {
+    if (mobile && !e.target.closest('button,input,[role=slider]')) {
+      const t=e.touches[0];pull={x:t.clientX,y:t.clientY};
+    }
+  }
+  function pullEnd(e) {
+    if (!pull) return;
+    const t=e.changedTouches[0],dy=t.clientY-pull.y,dx=t.clientX-pull.x;
+    pull=null;
+    if(dy>=88 && dy>1.5*Math.abs(dx)) expandedPlayerOpen.set(false);
+  }
   function swipeStart(e) { swipe = {x: e.clientX, y: e.clientY}; }
   function swipeEnd(e) {
     if (!swipe) return;
     const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y; swipe = null;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) dx < 0 ? next() : prev();
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) swipeTrack(dx < 0 ? 1 : -1);
   }
 
   $: track = $currentTrack;
   $: preview = track ? isPreview(track) : false;
-  $: artUrl = track ? trackArtUrl(track, 512) : '';
+  $: artUrl = track && (!mobile || $expandedPlayerOpen) ? trackArtUrl(track, mobile ? 1024 : 512) : '';
   $: progress = $playbackProgress.duration
     ? ($playbackProgress.currentTime / $playbackProgress.duration) * 100
     : 0;
@@ -33,12 +50,19 @@
     seekFraction((e.clientX - rect.left) / rect.width);
   }
 
-  let dotsBtn;
+  let dotsBtn, timerDialog;
+  async function setTimer(minutes) {
+    try { const result=await mobile.command({action:'sleep', minutes}); sleepTimer.set(result.sleep); timerDialog.close(); }
+    catch(e) { showToast(e.message,'error'); }
+  }
   function openDots() {
     if (!track) return;
     const selected = track;
     void songMenu(dotsBtn, selected, {extra: [
       { label: 'Ver la cola', icon: 'ph ph-list', action: () => queuePanelOpen.set(true) },
+      ...(mobile && !preview && selected.artistId ? [{label:'Ver artista',icon:'ph ph-user',action:()=>{expandedPlayerOpen.set(false);openLibraryArtist(selected.artistId,selected.artist);}}] : []),
+      ...(mobile && selected._musicTrack?.source==='youtube' ? [{label:'Descargar a la biblioteca',icon:'ph ph-download',action:()=>downloadTrack=selected}] : []),
+      ...(mobile ? [{label:'Temporizador de apagado'+($sleepTimer.atEnd || $sleepTimer.endsAt?' (activo)':''),icon:'ph ph-timer',action:()=>timerDialog.showModal()}] : []),
       ...(preview ? [] : [null, {
         label: 'Eliminar archivo de la biblioteca', icon: 'ph ph-trash', danger: true,
         action: async () => {
@@ -52,8 +76,23 @@
   const repeatLabels = {off: 'Repeticion desactivada', all: 'Repetir la cola', one: 'Repetir esta cancion'};
 </script>
 
+{#if downloadTrack}
+  <DownloadDialog open={true} videoId={downloadTrack._musicTrack.source_id} artist={downloadTrack.artist} title={downloadTrack.title} album={downloadTrack.album || ''} source={searchSource()} on:close={()=>downloadTrack=null} on:download={e=>trackJob(e.detail.jobId,e.detail.artist,e.detail.title)} />
+{/if}
+{#if mobile}
+  <dialog bind:this={timerDialog} class="bg-armonia-surface text-armonia-text rounded-2xl p-5 w-72 backdrop:bg-black/70" aria-label="Temporizador de apagado">
+    <h2 class="font-semibold">Temporizador de apagado</h2>
+    <p class="text-sm text-armonia-muted my-2">{$sleepTimer.atEnd?'Se detendrá al terminar esta canción.':$sleepTimer.endsAt?'Se detendrá a las '+new Date($sleepTimer.endsAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'Detener la reproducción tras'}</p>
+    {#each [15,30,45,60] as minutes}<button class="block p-2" on:click={()=>setTimer(minutes)}>{minutes} minutos</button>{/each}
+    <button class="block p-2" on:click={()=>setTimer(null)}>Al terminar esta canción</button>
+    {#if $sleepTimer.atEnd || $sleepTimer.endsAt}<button class="block p-2" on:click={()=>setTimer(0)}>Desactivar</button>{/if}
+    <button class="block p-2" on:click={()=>timerDialog.close()}>Cerrar</button>
+  </dialog>
+{/if}
+
 <div
-  class="fixed inset-0 z-150 flex flex-col pointer-events-none transition-transform duration-300 ease-in-out overflow-hidden"
+  on:touchstart={pullStart} on:touchend={pullEnd} on:touchcancel={()=>pull=null}
+  class="expanded-player fixed inset-0 z-150 flex flex-col pointer-events-none transition-transform duration-300 ease-in-out overflow-hidden"
   style:transform={$expandedPlayerOpen ? 'translateY(0)' : 'translateY(100%)'}
   style:pointer-events={$expandedPlayerOpen ? 'auto' : 'none'}
   style:isolation="isolate"
@@ -94,9 +133,13 @@
     </div>
 
     <!-- Album art -->
-    <div class="flex-1 flex items-center justify-center py-4 min-h-0 touch-pan-y" on:pointerdown={swipeStart} on:pointerup={swipeEnd} on:pointercancel={() => swipe = null}>
+    <div class="player-cover flex-1 flex items-center justify-center py-4 min-h-0 touch-pan-y" on:pointerdown={swipeStart} on:pointerup={swipeEnd} on:pointercancel={() => swipe = null}>
       {#if track}
+        {#if mobile}
+          <div class="cover-frame">{#if artUrl}{#key artUrl}<img draggable="false" src={artUrl} alt="" class="object-cover" on:error={e=>e.currentTarget.hidden=true}>{/key}{/if}</div>
+        {:else}
         <img draggable="false" src={artUrl} alt="" class="w-full max-w-sm aspect-square rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] object-cover">
+        {/if}
       {/if}
     </div>
 

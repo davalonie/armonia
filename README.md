@@ -100,3 +100,7 @@ La importacion desde CSV admite las listas de Spotify exportadas con Exportify, 
 ## Licencia
 
 Armonia se distribuye bajo GPL-3.0. [Texto de la licencia](LICENSE).
+
+## Authentik y APK Capacitor
+
+Puedes añadir el acceso con Authentik y probar **Armonia Capacitor** junto al cliente Kotlin. La guía incluye el grupo y los retornos OIDC, la vinculación de cuentas existentes, los comandos de compilación y la prueba de reproducción sin conexión. [Configurar Authentik y probar las dos APK](docs/AUTHENTIK_Y_ANDROID.md)

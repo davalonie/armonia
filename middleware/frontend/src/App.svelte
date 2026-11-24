@@ -1,9 +1,31 @@
 <script>
+  import { mobile } from './lib/native.js';
+  import {SEARCH_SOURCE_KEY} from './lib/searchSource.js';
   import { onMount,tick } from 'svelte';
   import { getSession, setSession, me } from './lib/api.js';
   import { currentView, showView } from './lib/stores/viewStore.js';
   import { initAudio, loadPlaybackSettings } from './lib/stores/playerStore.js';
-  import { currentTrack } from './lib/stores/playerStore.js';
+  import { currentTrack,previewState } from './lib/stores/playerStore.js';
+
+  import {expandedPlayerOpen,queuePanelOpen} from './lib/stores/uiStore.js';
+  import {contextMenuState,closeContextMenu} from './lib/stores/contextMenuStore.js';
+  import {saveSheet} from './lib/saveSong.js';
+  import {playlistPickerState,closePlaylistPicker} from './lib/stores/playlistPickerStore.js';
+  function phoneBack(event){
+    const dialog=document.querySelector('dialog[open]');
+    const pane=mainEl?.querySelector(':scope > div:not([hidden])');
+    const back=pane?.querySelector('[data-phone-back], button[aria-label="Volver"]');
+    if(dialog)dialog.close();
+    else if($contextMenuState.visible)closeContextMenu();
+    else if($saveSheet)saveSheet.set(null);
+    else if($playlistPickerState.open)closePlaylistPicker();
+    else if($queuePanelOpen)queuePanelOpen.set(false);
+    else if($expandedPlayerOpen)expandedPlayerOpen.set(false);
+    else if(back)back.click();
+    else if($currentView!=='home')showView('home');
+    else return;
+    event.preventDefault();
+  }
 
   import Login from './auth/Login.svelte';
   import Sidebar from './components/Sidebar.svelte';
@@ -19,6 +41,7 @@
   import Home from './views/Home.svelte';
   import Collection from './views/Collection.svelte';
   import ManualInbox from './views/ManualInbox.svelte';
+  import PhoneImport from './views/PhoneImport.svelte';
   import ImportAll from './views/ImportAll.svelte';
   import {hasPendingLogin} from './lib/spotifyLogin.js';
   import More from './views/More.svelte';
@@ -35,6 +58,7 @@
     home: Home, more: More, search: Search, library: Collection, liked: Liked, artists: Artists,
     playlists: Playlists, jobs: Downloads, settings: Settings,
     mixed: MixedPlaylists, listening: Listening,
+    ...(mobile?{'import-review':PhoneImport}:{}),
     'manual-inbox': ManualInbox, 'import-all': ImportAll,
   };
 
@@ -56,8 +80,25 @@
   async function checkSession() {
     checking=true;
     checkError='';
+    if (mobile) {
+      try {
+        const identity=await mobile.identity();
+        setSession(identity);
+        // Probe the stored session without delaying offline startup. A 401 reaches the native interceptor.
+        void mobile.request({path:'/api/me',method:'GET'}).catch(()=>{});
+        localStorage.setItem(SEARCH_SOURCE_KEY,identity.searchSource);
+        authed = true;
+      } catch { checkError = 'No se pudo abrir la cuenta del dispositivo.'; }
+      checking = false;
+      return;
+    }
+    const returning = new URLSearchParams(location.search).get('oidc') === 'done';
+    if (returning) {
+      history.replaceState(null, '', location.pathname);
+      setSession(null);
+    }
     const session = getSession();
-    if (!session) { checking = false; return; }
+    if (!session && !returning) { checking = false; return; }
     try {
       setSession(await me());
       authed = true;
@@ -74,13 +115,14 @@
     if(hasPendingLogin()&&/[?&](code|error)=/.test(location.search))showView('import-all');
     // The Android app links here; the marker is dropped so a reload keeps whatever view is current.
     if(new URLSearchParams(location.search).get('abrir')==='importar-todo'){showView('import-all');history.replaceState(null,'',location.pathname);}
+    if(mobile)window.addEventListener('armonia-back',phoneBack);
     void checkSession();
-    return ()=>window.removeEventListener('storage',changed);
+    return ()=>{window.removeEventListener('storage',changed);window.removeEventListener('armonia-back',phoneBack);};
   });
 
   function onLoginSuccess() { authed = true; }
 
-  $: if (authed && audioEl && !audioInitialized) {
+  $: if (authed && (mobile || audioEl) && !audioInitialized) {
     audioInitialized = true;
     initAudio(audioEl);
     void loadPlaybackSettings();
@@ -88,7 +130,7 @@
 
   // Toggle body class so CSS can adjust view padding when player is visible
   $: if (typeof document !== 'undefined') {
-    document.body.classList.toggle('player-visible', !!$currentTrack);
+    document.body.classList.toggle('player-visible', !!$currentTrack && (!mobile || !$previewState));
   }
 </script>
 
@@ -112,7 +154,7 @@
     </div>
 
     <MobileNav />
-    <MiniPlayer />
+    {#if !mobile || !$previewState}<MiniPlayer />{/if}
     <ExpandedPlayer />
     <QueuePanel />
 
@@ -124,7 +166,7 @@
       <Toasts />
     </div>
 
-    <audio bind:this={audioEl} preload="metadata" id="audio"></audio>
+    {#if !mobile}<audio bind:this={audioEl} preload="metadata" id="audio"></audio>{/if}
   </div>
 {/if}
 

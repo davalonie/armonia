@@ -1,5 +1,7 @@
 <script>
-  import {searchFor} from '../lib/stores/viewStore.js';
+  import {pullRefresh} from '../lib/pullRefresh.js';
+  import {mobile} from '../lib/native.js';
+  import {showView,searchFor,externalArtist} from '../lib/stores/viewStore.js';
   // Buscar: one field over the user's library (songs, albums, artists, playlists) and the permitted
   // external catalogue. Results are music rows with artwork; everything plays through the shared queue.
   import {onDestroy,onMount} from 'svelte';
@@ -8,11 +10,12 @@
   import {searchSource} from '../lib/searchSource.js';
   import {songMenu} from '../lib/trackActions.js';
   import {search as searchApi,library,coverArtUrl,getSession} from '../lib/api.js';
-  import {playQueue,playNext,undoPlayNext,prepareTrack,currentTrack,playing} from '../lib/stores/playerStore.js';
+  import {playQueue,playNext,addToQueue,undoPlayNext,prepareTrack,currentTrack,playing} from '../lib/stores/playerStore.js';
   import {accountKey,api,toQueueTrack} from '../lib/homelab.js';
   import {loaders,context,count,albumEntry,playlistEntry} from '../lib/lists.js';
   import {showToast} from '../lib/stores/toastStore.js';
-  import {trackJob} from '../lib/jobs.js';
+  import {serverDownloads} from '../lib/stores/playerStore.js';
+  import {trackJob,downloadRow} from '../lib/jobs.js';
   import Cover from '../components/Cover.svelte';
   import PlaylistDetail from '../components/PlaylistDetail.svelte';
   import DownloadDialog from '../components/DownloadDialog.svelte';
@@ -21,6 +24,7 @@
 
   const HISTORY_KEY=`armonia:search-history:${accountKey()}`;
   const FILTERS=[['todo','Todo'],['canciones','Canciones'],['artistas','Artistas'],['albumes','Albumes'],['playlists','Playlists']];
+  let resultSource='youtube_music';
   let query='',filter='todo',inputEl,timer=null,controller=null,run=0;
   let searched='',loading=false,error='',externalError=false;
   let local={songs:[],albums:[],artists:[]},external={songs:[],artists:[]},playlists=[];
@@ -30,8 +34,30 @@
   let dl={open:false,videoId:'',artist:'',title:'',album:''};
 
   function readHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');}catch{return [];}}
-  function remember(q){history=[q,...readHistory().filter(x=>x!==q)].slice(0,12);localStorage.setItem(HISTORY_KEY,JSON.stringify(history));}
-  function forget(q){history=readHistory().filter(x=>x!==q);localStorage.setItem(HISTORY_KEY,JSON.stringify(history));}
+  let historyWork=Promise.resolve();
+  function syncHistory(action,query) {
+    const run=async()=>{
+      const result=await mobile.searchHistory({action,query});
+      history=result.history;
+    };
+    historyWork=historyWork.then(run).catch(()=>showToast('No se pudo actualizar el historial del teléfono.','error'));
+    return historyWork;
+  }
+  onMount(()=>{
+    if(!mobile)return;
+    const old=readHistory();
+    historyWork=(async()=>{
+      const result=await mobile.searchHistory({});
+      history=result.history;
+      if(!history.length && Array.isArray(old)) {
+        for(const q of old.slice(0,20).reverse())if(typeof q==='string')history=(await mobile.searchHistory({action:'record',query:q})).history;
+      }
+      localStorage.removeItem(HISTORY_KEY);
+    })().catch(()=>{});
+  });
+  function remember(q){if(mobile)return syncHistory('record',q);history=[q,...readHistory().filter(x=>x!==q)].slice(0,12);localStorage.setItem(HISTORY_KEY,JSON.stringify(history));}
+  function forget(q){if(mobile)return syncHistory('remove',q);history=readHistory().filter(x=>x!==q);localStorage.setItem(HISTORY_KEY,JSON.stringify(history));}
+  function clearHistory(){if(mobile)return syncHistory('clear');history=[];localStorage.removeItem(HISTORY_KEY);}
 
   const externalSong=r=>toQueueTrack({source:'youtube',source_id:r.videoId,title:r.title||'Sin titulo',artist:r.channel||'Desconocido',album:r.album||'',duration:r.duration||null},r.thumbnail||null);
   const fold=s=>s.normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase();
@@ -50,35 +76,41 @@
   function schedule(){
     clearTimeout(timer);
     const q=query.trim();
-    if(q.length<2){cancel();searched='';error='';loading=false;return;}
-    timer=setTimeout(()=>go(false),350);
+    if(q.length<(mobile?1:2)){cancel();searched='';error='';loading=false;return;}
+    timer=setTimeout(()=>go(false),mobile?700:350);
   }
   function cancel(){run++;controller?.abort();controller=null;}
   // Another screen asked to search something (statistics → an artist).
   onMount(()=>searchFor.subscribe(text=>{if(!text)return;searchFor.set('');query=text;void go();}));
+  onMount(()=>externalArtist.subscribe(id=>{
+    if(!id)return;
+    externalArtist.set('');
+    stack=[{kind:'ytartist',id,returnTo:'listening'}];
+  }));
   async function go(save=true){
     clearTimeout(timer);
     const q=query.trim();
-    if(q.length<2)return;
+    if(q.length<(mobile?1:2))return;
     if(save)remember(q);
-    if(q===searched&&!error&&!externalError&&!loading)return;
+    if(q===searched&&resultSource===searchSource()&&!error&&!externalError&&!loading&&!(mobile&&save&&q.length<3))return;
     cancel();
     const mine=run;controller=new AbortController();const signal=controller.signal;
     loading=true;error='';externalError=false;stack=[];
-    searched=q;local={songs:[],albums:[],artists:[]};external={songs:[],artists:[]};playlists=[];
+    searched=q;local={songs:localSongs(q),albums:[],artists:[]};external={songs:[],artists:[]};playlists=[];
     const source=searchSource();
+    resultSource=source;
     const [lib,ext,artists]=await Promise.allSettled([
       library('search3',{query:q,songCount:12,albumCount:8,artistCount:6},{signal}).then(r=>{
         if(mine!==run)return;
         const found=r.searchResult3||{};
-        local={songs:found.song||[],albums:found.album||[],artists:found.artist||[]};
+        local={songs:localSongs(q,found.song||[]),albums:found.album||[],artists:found.artist||[]};
       }),
-      searchApi(q,15,source,signal,"songs").then(r=>{
+      (!mobile||q.length>=3||save) && searchApi(q,15,source,signal,"songs").then(r=>{
         if(mine!==run)return;
         external={...external,songs:r.songs||[]};
         if(external.songs[0])prepareTrack(externalSong(external.songs[0]));
       }),
-      source==="youtube_music" && searchApi(q,15,source,signal,"artists").then(r=>{
+      (!mobile||q.length>=3||save) && source==="youtube_music" && searchApi(q,15,source,signal,"artists").then(r=>{
         if(mine===run)external={...external,artists:r.artists||[]};
       }),
       loadOwnPlaylists(signal).then(rows=>{
@@ -87,19 +119,47 @@
     if(mine!==run)return;
     loading=false;
     externalError=[ext,artists].some(r=>r.status==='rejected'&&r.reason?.status!==403);
-    if(lib.status==='rejected'&&ext.status==='rejected')error=lib.reason?.message||'No se pudo buscar. Vuelve a intentarlo.';
+    if(!local.songs.length&&lib.status==='rejected'&&ext.status==='rejected')error=lib.reason?.message||'No se pudo buscar. Vuelve a intentarlo.';
   }
   onDestroy(()=>{clearTimeout(timer);cancel();});
   // «Añadidas recientemente»: the 20 newest songs of the library, as in the app. Read again each time Buscar opens.
-  let recent=[];
-  async function loadRecent(){try{recent=recentlyAdded(await librarySongs());}catch{/* the section just stays hidden */}}
+  let recent=[],knownSongs=[],savingStar={};
+  function updateStar(song){
+    const update=s=>s.id===song.id?{...s,starred:song.starred}:s;
+    recent=recent.map(update);
+    local={...local,songs:local.songs.map(update)};
+  }
+  async function star(song){
+    if(savingStar[song.id])return;
+    const next=!song.starred;
+    savingStar={...savingStar,[song.id]:true};
+    try{
+      await library(next?'star':'unstar',{id:song.id});
+      song.starred=next?new Date().toISOString():null;
+      updateStar(song);
+      window.dispatchEvent(new Event('music-preferences'));
+    }catch{showToast('No se pudo actualizar el favorito.','error');}
+    finally{savingStar={...savingStar,[song.id]:false};}
+  }
+  function localSongs(q,serverSongs=[]) {
+    if(!mobile)return serverSongs;
+    const term=fold(q);
+    const matches=knownSongs.filter(s=>fold(s.title||'').includes(term)||fold(s.artist||'').includes(term));
+    return [...new Map([...matches,...serverSongs].map(s=>[s.id,s])).values()];
+  }
+  async function loadRecent(refresh=false){
+    try {knownSongs=await librarySongs(refresh?0:60000);}
+    catch {if(mobile && !knownSongs.length)knownSongs=(await mobile.librarySongs({cached:true}).catch(()=>({songs:[]}))).songs;}
+    recent=recentlyAdded(knownSongs);
+    if(searched && mobile)local={...local,songs:localSongs(searched,local.songs)};
+  }
   onMount(()=>currentView.subscribe(view=>{if(view==='search')void loadRecent();}));
   function playRecent(i){playQueue(recent.map(s=>({...s,_from:'Añadidas recientemente'})),i);}
 
   $: shown={
     songs:filter==='todo'||filter==='canciones',artists:filter==='todo'||filter==='artistas',
     albums:filter==='todo'||filter==='albumes',playlists:filter==='todo'||filter==='playlists'};
-  $: limit=filter==='todo'?4:50;
+  $: limit=mobile?(filter==='todo'?5:undefined):(filter==='todo'?4:50);
   $: empty=searched&&!loading&&!error&&!(local.songs.length+local.albums.length+local.artists.length+external.songs.length+external.artists.length+playlists.length);
   $: emptyFilter=searched&&!loading&&!empty&&!error&&(
     (filter==='canciones'&&!local.songs.length&&!external.songs.length)||(filter==='artistas'&&!local.artists.length&&!external.artists.length)||
@@ -108,8 +168,10 @@
   // --- actions ---
   function playLocal(i){playQueue([{...local.songs[i],_from:`Busqueda: ${searched}`}]);}
   function playExternal(i){playQueue([{...externalSong(external.songs[i]),_from:`Busqueda: ${searched}`}]);}
-  function enqueue(song){const token=playNext(song);showToast('Se reproducira a continuacion','info',()=>undoPlayNext(token));}
-  function externalActions(r){return [{label:'Descargar a la biblioteca',icon:'ph ph-download-simple',action:()=>dl={open:true,videoId:r.videoId,artist:r.channel||'',title:r.title||'',album:r.album||''}}];}
+  function enqueue(song){const token=mobile?addToQueue(song):playNext(song);showToast(mobile?'Añadida a la cola':'Se reproducira a continuacion','info',()=>undoPlayNext(token));}
+  function externalActions(r){
+    const row=downloadRow($serverDownloads[r.videoId]);
+    return [{label:mobile&&row.label!=='Descargar'?row.label:'Descargar a la biblioteca',icon:'ph '+row.icon,disabled:mobile&&row.disabled,action:()=>dl={open:true,videoId:r.videoId,artist:r.channel||'',title:r.title||'',album:r.album||'',source:resultSource}}];}
 
   // Dragging a song row to the right queues it right after the current song, without interrupting it.
   let drag=null,suppressClickUntil=0;
@@ -146,7 +208,7 @@
       if(mine===token)stack=stack.map(p=>p.artist===artist?{...p,albums:data.artist?.album||[],loading:false}:p);
     }catch(e){if(mine===token)stack=stack.map(p=>p.artist===artist?{...p,loading:false,notice:e.message}:p);}
   }
-  const back=()=>{token++;stack=stack.slice(0,-1);};
+  const back=()=>{const page=stack.at(-1);token++;stack=stack.slice(0,-1);if(page?.returnTo)showView(page.returnTo);};
 </script>
 
 {#if stack.length}
@@ -178,14 +240,17 @@
     <div class="search subpage"><AlbumPage browseId={top.id} source="youtube_music" on:back={back} /></div>
   {/if}
 {:else}
-<div class="search">
-  <h1>Buscar</h1>
+<div use:pullRefresh={()=>query.trim()?go(false):loadRecent(true)} class="search">
+  {#if !mobile}<h1>Buscar</h1>{/if}
+  <div class="search-bar">
+    {#if mobile}<button class="phone-back" data-phone-back aria-label="Volver a la biblioteca" on:click={()=>{query='';schedule();showView('library');}}><i class="ph ph-arrow-left"></i></button>{/if}
   <form class="field" role="search" on:submit|preventDefault={()=>{inputEl?.blur();void go();}}>
     <i aria-hidden="true" class="ph-bold ph-magnifying-glass"></i>
     <input bind:this={inputEl} bind:value={query} type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false"
       aria-label="Buscar canciones, artistas, albumes y playlists" placeholder="¿Que quieres escuchar?" on:input={schedule}>
     {#if query}<button type="button" class="clear" aria-label="Borrar busqueda" on:click={()=>{query='';schedule();inputEl?.focus();}}><i aria-hidden="true" class="ph ph-x"></i></button>{/if}
   </form>
+  </div>
 
   {#if searched||loading}
     <div class="chips" role="group" aria-label="Filtrar resultados">
@@ -201,7 +266,7 @@
     {#if history.length||recent.length}
     {#if history.length}
       <section>
-        <header class="section-head"><h2>Busquedas recientes</h2><button class="link" on:click={()=>{history=[];localStorage.removeItem(HISTORY_KEY);}}>Borrar todo</button></header>
+        <header class="section-head"><h2>Busquedas recientes</h2><button class="link" on:click={clearHistory}>Borrar todo</button></header>
         <ul class="rows">{#each history as h (h)}
           <li class="history"><button class="row" on:click={()=>{query=h;void go();}}><span class="art round"><i aria-hidden="true" class="ph ph-clock-counter-clockwise"></i></span><span class="text"><b>{h}</b></span></button>
             <button class="icon" aria-label={`Quitar ${h} de las busquedas recientes`} on:click={()=>forget(h)}><i aria-hidden="true" class="ph ph-x"></i></button></li>
@@ -216,7 +281,8 @@
           <li class="recent"><button class="row" aria-label={`Reproducir ${s.title}`} on:click={()=>playRecent(i)}>
               <span class="art"><Cover covers={s.coverArt?[coverArtUrl(s.coverArt,96)]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
               <span class="text"><b class:playing={active}>{s.title}</b><small>{s.artist}</small></span></button>
-            <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button></li>
+            {#if mobile}<button class="icon" disabled={savingStar[s.id]} aria-pressed={!!s.starred} aria-label={(!!s.starred?'Quitar de favoritos: ':'Añadir a favoritos: ')+s.title} on:click={()=>star(s)}><i class={!!s.starred?'ph-fill ph-heart text-armonia-accent':'ph ph-heart'}></i></button>{/if}
+            <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s,{onChange:()=>updateStar(s)})}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button></li>
         {/each}</ul>
       </section>
     {/if}
@@ -234,14 +300,15 @@
         <ul class="rows">{#each local.songs.slice(0,limit) as s,i (s.id)}
           {@const active=$currentTrack?.id===s.id}
           <li class="swipe" class:dragging={drag?.key==='l'+s.id}>
-            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i> A continuacion</span>
+            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i>{mobile?' Añadir a la cola':' A continuacion'}</span>
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <div class="row-wrap" style:transform={drag?.key==='l'+s.id?`translateX(${drag.dx}px)`:''}
               on:pointerdown={e=>dragStart(e,'l'+s.id)} on:pointermove={dragMove} on:pointerup={()=>dragEnd(s)} on:pointercancel={()=>drag=null} on:dragstart|preventDefault>
               <button class="row" aria-label={`Reproducir ${s.title}`} on:click={guarded(()=>playLocal(i))}>
                 <span class="art"><Cover covers={s.coverArt?[coverArtUrl(s.coverArt,96)]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
                 <span class="text"><b class:playing={active}>{s.title}</b><small>Cancion · {s.artist}</small></span></button>
-              <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
+              {#if mobile}<button class="icon" disabled={savingStar[s.id]} aria-pressed={!!s.starred} aria-label={(!!s.starred?'Quitar de favoritos: ':'Añadir a favoritos: ')+s.title} on:click={()=>star(s)}><i class={!!s.starred?'ph-fill ph-heart text-armonia-accent':'ph ph-heart'}></i></button>{/if}
+              <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s,{onChange:()=>updateStar(s)})}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
             </div></li>
         {/each}</ul>
       </section>
@@ -287,15 +354,16 @@
       <section><h2>{local.songs.length?'Mas canciones':'Canciones'}</h2>
         <ul class="rows">{#each external.songs.slice(0,filter==='todo'?8:50) as r,i (r.videoId)}
           {@const song=externalSong(r)}
-          {@const active=$currentTrack?.id===song.id}
+          {@const downloadState=downloadRow($serverDownloads[r.videoId])}
+          {@const active=$currentTrack?.id===song.id || ($currentTrack?._musicTrack?.source==='youtube' && $currentTrack._musicTrack.source_id===r.videoId)}
           <li class="swipe" class:dragging={drag?.key==='e'+r.videoId}>
-            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i> A continuacion</span>
+            <span class="swipe-hint" aria-hidden="true"><i class="ph ph-queue"></i>{mobile?' Añadir a la cola':' A continuacion'}</span>
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <div class="row-wrap" style:transform={drag?.key==='e'+r.videoId?`translateX(${drag.dx}px)`:''}
               on:pointerdown={e=>dragStart(e,'e'+r.videoId)} on:pointermove={dragMove} on:pointerup={()=>dragEnd(song)} on:pointercancel={()=>drag=null} on:dragstart|preventDefault>
               <button class="row" aria-label={`Reproducir ${r.title}`} on:click={guarded(()=>playExternal(i))}>
                 <span class="art"><Cover covers={r.thumbnail?[r.thumbnail]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
-                <span class="text"><b class:playing={active}>{r.title||'Sin titulo'}</b><small>Cancion · {r.channel||'Desconocido'}</small></span></button>
+                <span class="text"><b class:playing={active}>{r.title||'Sin titulo'}</b><small>{#if mobile && $serverDownloads[r.videoId]}{downloadState.label} · {/if}Cancion · {r.channel||'Desconocido'}</small></span></button>
               <button class="icon" aria-label={`Opciones de ${r.title}`} on:click={e=>songMenu(e.currentTarget,song,{extra:externalActions(r)})}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
             </div></li>
         {/each}</ul>
@@ -308,10 +376,11 @@
 </div>
 {/if}
 
-<DownloadDialog bind:open={dl.open} videoId={dl.videoId} bind:artist={dl.artist} bind:title={dl.title} bind:album={dl.album} source="youtube_music"
+<DownloadDialog bind:open={dl.open} videoId={dl.videoId} bind:artist={dl.artist} bind:title={dl.title} bind:album={dl.album} source={dl.source||resultSource}
   on:download={e=>trackJob(e.detail.jobId,e.detail.artist,e.detail.title)} />
 
 <style>
+  .search-bar{display:contents}
   .search{width:100%;max-width:1100px;margin:0 auto;padding:16px 16px 32px}
   @media(min-width:768px){.search{padding:28px 32px 40px}}
   h1{font-size:1.9rem;font-weight:800;margin:4px 0 14px}

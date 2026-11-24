@@ -1,5 +1,10 @@
 package com.armonia.app.homelab
 
+import android.content.ContentResolver
+import android.net.Uri
+import android.provider.OpenableColumns
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.armonia.app.data.repository.AuthSnapshot
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Interceptor
@@ -55,6 +60,20 @@ class ManualInboxUploadTimeout : Interceptor {
         val upload = request.method == "POST" && Regex("/api/manual-inbox/[^/]+/upload").matches(request.url.encodedPath)
         return (if (upload) chain.withReadTimeout(150, TimeUnit.SECONDS) else chain).proceed(request)
     }
+}
+
+suspend fun pickedMp3Body(resolver: ContentResolver, uri: Uri, authorized: () -> Boolean): BoundedMp3Body {
+    require(uri.scheme == ContentResolver.SCHEME_CONTENT && authorized())
+    val size = withContext(Dispatchers.IO) {
+        resolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0).takeIf { it >= 0 } else null
+        }
+    }
+    return BoundedMp3Body(
+        open = { resolver.openInputStream(uri) ?: throw ManualInboxFailure("No se pudo abrir el archivo seleccionado.") },
+        stillAuthorized = authorized,
+        declaredSize = size,
+    )
 }
 
 /** SAF streams can omit or misreport their size. Enforce the limit on bytes read too.

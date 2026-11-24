@@ -1,4 +1,7 @@
 <script>
+  import {swipeRow} from '../lib/swipeRow.js';
+  import {addToQueue,undoPlayNext,songDownloads} from '../lib/stores/playerStore.js';
+  import {mobile} from '../lib/native.js';
   import FastScroll from './FastScroll.svelte';
   import {songLabels} from '../lib/fastScroll.js';
   import ShuffleToggle from './ShuffleToggle.svelte';
@@ -28,7 +31,8 @@
   let listEl;
   $: labels = sort !== 'original' ? songLabels(rows.map(r => r.song), sort)
     : scrollLabels && rows.length === songs.length ? scrollLabels : rows.map(r => String(r.i + 1));
-  let toolsOpen=false, filter='', sort='original', touchStart=null;
+  export let toolsOpen=false;
+  let filter='', sort='original', touchStart=null;
   $: rows=songs.map((song,i)=>({song,i})).filter(({song})=>`${song.title} ${song.artist}`.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
   $: if(sort!=='original') rows=[...rows].sort((a,b)=>String(a.song[sort]||'').localeCompare(String(b.song[sort]||'')));
   function reveal(e){if(touchStart!==null && e.changedTouches[0].clientY-touchStart>55)toolsOpen=true;touchStart=null;}
@@ -56,7 +60,7 @@
   }
 
   // With shuffle on, Play starts from a random song of the list (as in the app); in order otherwise.
-  function playFromHeader() {
+  export function playFromHeader() {
     const i = $shuffleOn ? firstShuffled(songs.length) : 0;
     handleRowClick({}, songs[i], i);
   }
@@ -105,6 +109,10 @@
   async function bulkRemoveFromPlaylist(){await removePositions(selected);}
 
   let downloadOpen=false;
+  function queueSong(song) {
+    const added=addToQueue(song);
+    showToast('Añadida a la cola','info',()=>undoPlayNext(added));
+  }
   function openDots(e, song, i) {
     e.stopPropagation();
     void songMenu(e.currentTarget, {...song, starred: isStarred(song) ? (song.starred || true) : undefined}, {
@@ -128,12 +136,14 @@
 
 </script>
 
-{#if tools}<div role="group" aria-label="Controles de playlist" class="playlist-tools" on:touchstart={e=>touchStart=e.touches[0].clientY} on:touchend={reveal}>
+{#if tools || toolsOpen}<div role="group" aria-label="Controles de playlist" class="playlist-tools" on:touchstart={e=>touchStart=e.touches[0].clientY} on:touchend={reveal}>
   {#if toolsOpen}<div class="actions"><input aria-label="Buscar en la lista" placeholder="Buscar en la lista" bind:value={filter}><label>Ordenar <select bind:value={sort}><option value="original">Orden de la playlist</option><option value="title">Titulo</option><option value="artist">Artista</option></select></label></div>{/if}
+  {#if tools}
   {#if playlistName}<h2 class="text-3xl font-semibold my-4">{playlistName}</h2>{/if}
   <div class="actions"><span>{songs.length} canciones</span><button aria-expanded={toolsOpen} on:click={()=>toolsOpen=!toolsOpen}>Buscar y ordenar</button>
   <button class="playlist-play" disabled={!songs.length} on:click={playFromHeader}>▶ Reproducir</button>
-  <ShuffleToggle size="sm" /><button disabled={!songs.length} aria-expanded={downloadOpen} on:click={()=>downloadOpen=!downloadOpen}>↓ Descargar</button></div>
+  <ShuffleToggle size="sm" />{#if !mobile}<button disabled={!songs.length} aria-expanded={downloadOpen} on:click={()=>downloadOpen=!downloadOpen}>↓ Descargar</button>{/if}</div>
+  {/if}
   {#if downloadOpen}<section aria-label="Descargar canciones" class="music-card max-h-56 overflow-auto"><p>Descarga los archivos que quieras al dispositivo. Para conservar toda la playlist offline, usa Android.</p>{#each songs as song,i}<a class="block p-3" href={streamUrl(song.id)} download={song.title}>{i+1}. Descargar {song.title}</a>{/each}</section>{/if}
 </div>{/if}
 
@@ -178,7 +188,8 @@
     {@const starred = song.id in starredOverrides ? starredOverrides[song.id] : (allStarred || !!song.starred)}
     <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
     <div
-      class="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+      class="track-row group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+      use:swipeRow={{enabled:mobile && !selectMode,commit:()=>queueSong(song)}} style:touch-action={mobile?'pan-y':null}
       on:click={e => handleRowClick(e, song, i)}
       role="button" tabindex="0" aria-label={`Reproducir ${song.title}`}
       on:keydown={e=>{if(e.target===e.currentTarget && ['Enter',' '].includes(e.key)){e.preventDefault();handleRowClick(e,song,i);}}}
@@ -197,7 +208,7 @@
       {/if}
 
       <!-- Art / now-playing indicator -->
-      <div class="relative w-12 h-12 rounded-md overflow-hidden shrink-0 bg-armonia-surface">
+      <div class="track-cover relative w-12 h-12 rounded-md overflow-hidden shrink-0 bg-armonia-surface">
         <span aria-hidden="true" class="absolute inset-0 grid place-items-center text-armonia-accent text-2xl">♫</span>{#if song.coverArt}<img src={coverArtUrl(song.coverArt, 64)} alt="" loading="lazy" class="relative w-full h-full object-cover" on:error={e=>e.currentTarget.style.visibility='hidden'}>{/if}
         <!-- Hover play/pause overlay -->
         <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity {isActive ? 'opacity-100' : ''}">
@@ -215,8 +226,9 @@
 
       <!-- Title / artist -->
       <div class="flex-1 min-w-0 pr-2">
+        {#if mobile && $songDownloads[song.id]}<i class="ph ph-download-simple float-right text-armonia-accent" role="img" aria-label={$songDownloads[song.id]==='DOWNLOADING'?'Descargando':'Guardada en el teléfono'}></i>{/if}
         <Marquee text={song.title ?? '—'} cls="font-medium" />
-        <Marquee text="{song.artist ?? '—'} · {fmtDuration(song.duration)}" cls="text-sm text-armonia-muted" />
+        <Marquee text={mobile?(song.artist??'—'):(song.artist??'—')+' · '+fmtDuration(song.duration)} cls="text-sm text-armonia-muted" />
       </div>
 
       <!-- Star button -->

@@ -1,4 +1,5 @@
 <script>
+  import {pullRefresh} from '../lib/pullRefresh.js';
   import { onMount } from 'svelte';
   import { activeJobs, trackJob } from '../lib/jobs.js';
   import { listDownloads, deleteDownload, cancelJob, retryDownload } from '../lib/api.js';
@@ -85,7 +86,7 @@
   }
 </script>
 
-<div class="w-full max-w-3xl mx-auto p-4 md:p-8">
+<div use:pullRefresh={loadDb} class="w-full max-w-3xl mx-auto p-4 md:p-8">
   <h2 class="font-london text-3xl mb-8 pl-2">Descargas</h2>
 
   {#if loading && !all.length}

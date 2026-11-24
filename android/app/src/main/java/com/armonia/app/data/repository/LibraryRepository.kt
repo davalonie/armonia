@@ -162,6 +162,9 @@ class LibraryRepository @Inject constructor(
     /** Errors from background library work, for the app-wide snackbar. */
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
+    // songId -> when it was deleted. Hidden from listings for RECENTLY_DELETED_MS.
+    private val recentlyDeleted = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
     init {
         scope.launch { prefs.authState.collect { invalidateCaches(); recentlyDeleted.clear() } }
         // The copies of the account in use, read again when the account or session changes (logging out clears them).
@@ -337,9 +340,6 @@ class LibraryRepository @Inject constructor(
                 .asJsonObject.get("detail")?.asString
         }.getOrNull()
 
-    // songId -> when it was deleted. Hidden from listings for RECENTLY_DELETED_MS.
-    private val recentlyDeleted = java.util.concurrent.ConcurrentHashMap<String, Long>()
-
     private fun <T> List<T>.withoutRecentlyDeleted(id: (T) -> String): List<T> {
         if (recentlyDeleted.isEmpty()) return this
         val now = System.currentTimeMillis()
@@ -482,8 +482,7 @@ class LibraryRepository @Inject constructor(
         // Pass full URLs through unchanged (e.g. a YouTube thumbnail on a preview
         // track); only wrap bare Subsonic cover-art ids. Always the size asked for: one name per cover and
         // size, so the phone keeps it and never fetches it again (see CoverSizes).
-        if (id.startsWith("http")) id
-        else "${cachedServerUrl.trimEnd('/')}/api/library/getCoverArt?id=${android.net.Uri.encode(id)}&size=$size&account=${prefs.accountNamespace}"
+        prefs.cachedAuth.coverArtUrl(id, size)
 
     fun getStreamUrl(trackId: String): String = when {
         trackId.startsWith("preview|") -> previewUrl(trackId.removePrefix("preview|"))

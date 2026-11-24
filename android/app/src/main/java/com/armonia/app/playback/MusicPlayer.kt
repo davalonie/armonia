@@ -58,6 +58,7 @@ class MusicPlayer @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var controller: MediaController? = null
     private var progressJob: Job? = null
+    val playingPlaylistKind: String? get() = playlistContext?.kind
     private var playlistContext: com.armonia.app.homelab.PlaylistContext? = null
     private var auditionSnapshot: SavedQueue? = null
     private var auditionAccount: String? = null
@@ -296,6 +297,7 @@ class MusicPlayer @Inject constructor(
             prefs.authState.collect { auth ->
                 if (auth.sessionId.isBlank() || auth.namespace != previous) {
                     // Drop private snapshots before a late screen disposal can restore them.
+                    cancelSleepTimer()
                     auditionSnapshot = null
                     auditionAccount = null
                     _auditionId.value = null
@@ -342,7 +344,14 @@ class MusicPlayer @Inject constructor(
                 _buffering.value = playbackState == Player.STATE_BUFFERING
                 // A finished preview hands the player back to what was there before it.
                 if (playbackState == Player.STATE_ENDED) {
-                    if (auditionSnapshot != null) stopAudition() else maybeContinue(atEnd = true)
+                    when {
+                        auditionSnapshot != null -> stopAudition()
+                        _sleepTimer.value.atTrackEnd -> {
+                            controller?.pause()
+                            cancelSleepTimer()
+                        }
+                        else -> maybeContinue(atEnd = true)
+                    }
                 }
             }
 
@@ -600,41 +609,43 @@ class MusicPlayer @Inject constructor(
      * Takes back one insertion: the entry carrying its mark (HandPicked), wherever it is now.
      * Nothing once it has started playing (that one is the user's to skip) or is gone.
      */
-    fun undoQueued(queued: Queued) {
+    fun undoQueued(queued: Queued) = undoQueued(queued.token)
+
+    fun undoQueued(token: String) {
         val c = controller ?: return
-        val index = (0 until c.mediaItemCount).firstOrNull { c.getMediaItemAt(it).queuedToken() == queued.token }
+        val index = (0 until c.mediaItemCount).firstOrNull { c.getMediaItemAt(it).queuedToken() == token }
             ?: return
         if (index == c.currentMediaItemIndex) return
         removeFromQueue(index)
     }
 
     /** First among the songs queued by hand: right after the one playing. */
-    fun playNext(song: Song) {
+    fun playNext(song: Song): String? {
         stopAudition()
-        queueByHand(song, next = true)
+        return queueByHand(song, next = true)
     }
 
     /**
      * As in Spotify: after the song playing and the songs already queued by hand, ahead of the
      * rest of the list (and of suggestions still waiting). An empty queue just plays it.
      */
-    fun addToQueue(song: Song) {
+    fun addToQueue(song: Song): String? {
         stopAudition()
         if (_queue.value.isEmpty() || _currentIndex.value < 0) {
             playQueue(listOf(song), 0)
-            return
+            return null
         }
-        queueByHand(song, next = false)
+        return queueByHand(song, next = false)
     }
 
     /** «Añadir al final de la cola»: after the whole list, ahead of suggestions still waiting. */
-    fun addToEnd(song: Song) {
+    fun addToEnd(song: Song): String? {
         stopAudition()
         if (_queue.value.isEmpty() || _currentIndex.value < 0) {
             playQueue(listOf(song), 0)
-            return
+            return null
         }
-        val c = controller ?: return
+        val c = controller ?: return null
         val queue = _queue.value
         val auto = _autoSongs.value
         val at = ((c.currentMediaItemIndex + 1).coerceAtLeast(0) until queue.size)
@@ -644,17 +655,20 @@ class MusicPlayer @Inject constructor(
             androidx.media3.session.SessionCommand(LibrarySessionCallback.CMD_ADD_TO_END, android.os.Bundle.EMPTY),
             android.os.Bundle().apply { putString("song", gson.toJson(song)); putString("token", token); putInt("at", at) })
         _queued.tryEmit(Queued(song, next = false, token = token, atEnd = true))
+        return token
     }
 
     /** The service places it (LibrarySessionCallback.queueByHand): it knows the shuffle order. */
-    private fun queueByHand(song: Song, next: Boolean) {
-        val c = controller ?: return
+    private fun queueByHand(song: Song, next: Boolean): String? {
+        val c = controller ?: return null
         val token = java.util.UUID.randomUUID().toString()
         c.sendCustomCommand(
             androidx.media3.session.SessionCommand(
                 if (next) "armonia.PLAY_NEXT" else LibrarySessionCallback.CMD_ADD_TO_QUEUE, android.os.Bundle.EMPTY),
             android.os.Bundle().apply { putString("song", gson.toJson(song)); putString("token", token) })
-        if (_queue.value.isNotEmpty()) _queued.tryEmit(Queued(song, next, token))
+        if (_queue.value.isEmpty()) return null
+        _queued.tryEmit(Queued(song, next, token))
+        return token
     }
 
     fun removeFromQueue(index: Int) {
@@ -828,6 +842,7 @@ class MusicPlayer @Inject constructor(
     }
 
     fun closePlayer() {
+        cancelSleepTimer()
         resetContinuation(forget = true)
         auditionAccount = null
         auditionSnapshot = null

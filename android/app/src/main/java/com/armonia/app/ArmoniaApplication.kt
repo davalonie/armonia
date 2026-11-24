@@ -34,9 +34,9 @@ class ArmoniaApplication : Application(), ImageLoaderFactory {
                 val r = chain.request()
                 val b = r.newBuilder().removeHeader("X-Session-Id")
                 val account = prefs.cachedAuth
-                val releaseCover = r.url.encodedPath.matches(Regex("/api/home/releases/[0-9a-f-]{36}/cover")) &&
-                    r.url.queryParameter("account") == account.namespace
+                val releaseCover = r.url.encodedPath.matches(Regex("/api/home/releases/[0-9a-f-]{36}/cover"))
                 if (AccountScope.sameOrigin(r.url.toString(), account.serverUrl) &&
+                    r.url.queryParameter("account") == account.namespace &&
                     (r.url.encodedPath == "/api/library/getCoverArt" || releaseCover) && account.sessionId.isNotBlank()) {
                     b.header("X-Session-Id", account.sessionId)
                     if (releaseCover) b.header("X-Music-Owner", account.userId)

@@ -1,10 +1,11 @@
 <script>
   // «Historial y estadisticas», as in the app (ListeningScreen): period, the summary card with its chart, your
   // number-one artist, the Top 5 and the rest of the ranking by artists, songs or albums, and what you heard lately.
-  import {library, call, coverArtUrl} from '../lib/api.js';
+  import {mobile} from '../lib/native.js';
+  import {search, library, call, coverArtUrl} from '../lib/api.js';
   import {api, artUrl, toQueueTrack} from '../lib/homelab.js';
-  import {currentView, openSearch} from '../lib/stores/viewStore.js';
-  import {playQueue} from '../lib/stores/playerStore.js';
+  import {currentView, openSearch,openLibraryArtist,openExternalArtist} from '../lib/stores/viewStore.js';
+  import {playQueue,listenProblem} from '../lib/stores/playerStore.js';
   import {rejectedListens} from '../lib/listenDelivery.js';
   import {listenTime, chartDate, whenHeard} from '../lib/listening.js';
   import {onMount} from 'svelte';
@@ -28,6 +29,22 @@
     } catch { /* Without it the number one uses its song's cover. */ }
     try { delivery = (await api.delivery()).delivery || {}; } catch { delivery = {}; }
   }
+  let artistError='';
+  let artistRequest=0;
+  async function openArtist(name) {
+    if(!mobile)return openSearch(name);
+    const request=++artistRequest;
+    artistError='';
+    const local=directory.get(name.toLowerCase());
+    if(local)return openLibraryArtist(local.id,local.name);
+    try {
+      const result=await search(name,10,'youtube_music',undefined,'artists');
+      if(request!==artistRequest || $currentView!=='listening')return;
+      const matches=(result.artists||[]).filter(a=>a.name.toLowerCase()===name.toLowerCase());
+      if(matches.length===1){openExternalArtist(matches[0].channelId);return;}
+    }catch { if(request!==artistRequest || $currentView!=='listening')return; }
+    artistError='No se ha encontrado la página de '+name;
+  }
   function choose(id) { if (id !== period) { period = id; void load(); } }
   onMount(() => currentView.subscribe(view => { if (view === 'listening') { void load(); void loadSide(); } }));
 
@@ -48,6 +65,8 @@
 
 <section class="stats">
   <h1>Historial y estadisticas</h1>
+  {#if artistError}<p role="status">{artistError}</p>{/if}
+  {#if mobile && $listenProblem}<p role="alert">{$listenProblem}</p>{/if}
   {#if pending || delivery.blocked}
     <p class="note" role="status">{pending ? `${pending} ${pending === 1 ? 'escucha pendiente' : 'escuchas pendientes'} de sincronizar.` : ''}
       {delivery.blocked ? `${delivery.blocked} necesitan revision.` : ''}
@@ -72,7 +91,7 @@
     </div>
 
     {#if lead}
-      <button class="lead" on:click={() => openSearch(lead.name)}>
+      <button class="lead" on:click={() => openArtist(lead.name)}>
         {#if leadImage}<img src={leadImage} alt="" loading="lazy" on:error={e => e.currentTarget.style.visibility = 'hidden'}>{:else}<span class="ph-img"></span>{/if}
         <b>Artista n.º 1 · {lead.name}</b>
       </button>
@@ -86,7 +105,7 @@
       {#if i === 0}<h2>Top 5</h2>{/if}
       {#if i === 5}<h2>Resto del ranking</h2>{/if}
       <button class="rank" class:top={i < 5} disabled={kind === 'albums'}
-        on:click={() => kind === 'songs' ? play(row.track) : openSearch(row.name)}>
+        on:click={() => kind === 'songs' ? play(row.track) : openArtist(row.name)}>
         <img src={artUrl(row.track, 128)} alt="" loading="lazy" on:error={e => e.currentTarget.style.visibility = 'hidden'}>
         <span class="col"><b>{i + 1}. {row.name}</b><small>{listenTime(row.seconds)} · {row.count} escuchas</small>
           <span class="meter"><span style:width="{ranking[0].seconds ? row.seconds / ranking[0].seconds * 100 : 0}%"></span></span></span>

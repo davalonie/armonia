@@ -11,3 +11,6 @@ cryptography==50.0.2
 # Unpinned by design; rebuild the image periodically to pick up the latest.
 yt-dlp
 ytmusicapi
+
+Authlib==1.9.10
+httpx2>=2.16,<3

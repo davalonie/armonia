@@ -209,7 +209,7 @@ interface ArmoniaApi {
     suspend fun getYtAlbum(@Path("browseId") browseId: String): Response<YtAlbum>
 
     @GET("/api/status/{jobId}")
-    suspend fun jobStatus(@Path("jobId") jobId: String): Response<JobStatusResponse>
+    suspend fun jobStatus(@Path("jobId") jobId: String, @Tag auth: com.armonia.app.data.repository.AuthSnapshot? = null): Response<JobStatusResponse>
 
     @POST("/api/jobs/{jobId}/cancel")
     suspend fun cancelJob(@Path("jobId") jobId: String): Response<OkResponse>

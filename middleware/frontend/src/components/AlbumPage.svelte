@@ -1,7 +1,10 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
-  import { getAlbum, previewUrl, download as downloadApi } from '../lib/api.js';
-  import { playPreviewTrack } from '../lib/stores/playerStore.js';
+  import { getAlbum, download as downloadApi } from '../lib/api.js';
+  import {toQueueTrack} from '../lib/homelab.js';
+  import {mobile} from '../lib/native.js';
+  import {downloadRow} from '../lib/jobs.js';
+  import { serverDownloads, playPreviewTrack } from '../lib/stores/playerStore.js';
   import { fmtDuration } from '../lib/util.js';
   import { trackJob } from '../lib/jobs.js';
   import { showToast } from '../lib/stores/toastStore.js';
@@ -16,6 +19,7 @@
   let loading = true;
   let error = '';
   let downloadingAll = false;
+  let duplicates = new Set();
 
   let dlOpen = false;
   let dlVideoId = '';
@@ -42,15 +46,8 @@
   }
 
   function playPreview(track) {
-    playPreviewTrack({
-      id: null,
-      title: track.title,
-      artist: track.artist,
-      coverArt: null,
-      _previewUrl: previewUrl(track.videoId),
-      _previewThumb: album?.thumbnail || '',
-      duration: track.duration || 0,
-    });
+    playPreviewTrack(toQueueTrack({source:'youtube',source_id:track.videoId,title:track.title,
+      artist:track.artist || album?.artist || 'Desconocido',album:album?.title || '',duration:track.duration || null}, album?.thumbnail));
   }
 
   async function downloadAlbum() {
@@ -59,10 +56,14 @@
     showToast(`Downloading album '${album.title}' (${album.tracks.length} tracks)…`, 'info');
     try {
       for (const t of album.tracks) {
+        if(mobile && downloadRow($serverDownloads[t.videoId],duplicates.has(t.videoId)).disabled)continue;
         try {
           const { jobId } = await downloadApi(t.videoId, t.artist, t.title, source, album.title);
           trackJob(jobId, t.artist, t.title);
         } catch (e) {
+          if(mobile && e.status===409 && e.detail==='already in library'){
+            duplicates=new Set([...duplicates,t.videoId]);continue;
+          }
           showToast(`Failed '${t.title}': ${e.message}`, 'error');
         }
       }
@@ -75,6 +76,7 @@
 <div class="w-full animate-slide-up">
   <!-- Back -->
   <button
+    data-phone-back aria-label="Volver"
     on:click={() => dispatch('back')}
     class="flex items-center gap-2 text-armonia-muted hover:text-armonia-text transition-colors mb-6 group"
   >
@@ -146,11 +148,13 @@
             <span class="text-xs text-armonia-muted tabular-nums shrink-0">{fmtDuration(track.duration)}</span>
           {/if}
           <button
-            class="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-armonia-muted hover:text-white shrink-0"
-            title="Download"
+            class="w-8 h-8 rounded-full flex items-center justify-center {mobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} hover:bg-white/10 transition-all text-armonia-muted hover:text-white shrink-0"
+            disabled={mobile && downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).disabled}
+                title={mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).label : 'Download'}
+                aria-label={mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).label+' '+track.title : 'Download '+track.title}
             on:click|stopPropagation={() => openDownload(track)}
           >
-            <i class="ph ph-download-simple text-base pointer-events-none"></i>
+            <i class="ph {mobile ? downloadRow($serverDownloads[track.videoId],duplicates.has(track.videoId)).icon : 'ph-download-simple'} text-base pointer-events-none"></i>
           </button>
         </div>
       {/each}

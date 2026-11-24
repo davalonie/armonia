@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import com.armonia.app.data.repository.PreferencesRepository
 import com.armonia.app.ui.login.LoginScreen
 import com.armonia.app.ui.main.MainScreen
@@ -52,7 +53,13 @@ class MainActivity : ComponentActivity() {
                             // Navigation to main content will happen via sessionId state change
                         })
                     } else {
-                        MainScreen()
+                        if (BuildConfig.BUNDLED_WEB) {
+                            androidx.compose.runtime.LaunchedEffect(sessionId) {
+                                val screen = android.content.Intent().setClassName(packageName, "com.armonia.app.web.LibraryActivity")
+                                startActivity(screen.putExtra("account", prefs.authState.first().namespace))
+                                finish()
+                            }
+                        } else MainScreen()
                     }
                 }
             }

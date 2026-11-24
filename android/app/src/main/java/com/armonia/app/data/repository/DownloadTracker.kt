@@ -36,6 +36,7 @@ sealed interface DownloadEvent {
 class DownloadTracker @Inject constructor(
     private val api: ArmoniaApi,
     private val library: LibraryRepository,
+    private val prefs: PreferencesRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -47,13 +48,25 @@ class DownloadTracker @Inject constructor(
     /** One-off "added" / "failed" notices for the app-wide snackbar. */
     val events: SharedFlow<DownloadEvent> = _events.asSharedFlow()
 
-    fun track(videoId: String, jobId: String, title: String) {
+    init {
+        scope.launch {
+            var previous = prefs.cachedAuth
+            prefs.authState.collect { account ->
+                if (previous != account) _downloads.value = emptyMap()
+                previous = account
+            }
+        }
+    }
+
+    fun track(videoId: String, jobId: String, title: String, account: AuthSnapshot = prefs.cachedAuth) {
+        if (account.sessionId.isBlank() || account != prefs.cachedAuth) return
         if (_downloads.value[videoId]?.jobId == jobId) return
         _downloads.update { it + (videoId to TrackedDownload(jobId, title, "pending")) }
         scope.launch {
             val outcome = followJob(
                 fetch = {
-                    val resp = api.jobStatus(jobId)
+                    if (account != prefs.cachedAuth) return@followJob "cancelled" to null
+                    val resp = api.jobStatus(jobId, account)
                     when {
                         resp.isSuccessful -> resp.body()?.let { it.status to it.error }
                         resp.code() == 404 -> "error" to "El servidor ha perdido el rastro de esta descarga"
@@ -61,11 +74,12 @@ class DownloadTracker @Inject constructor(
                     }
                 },
                 onStatus = { status ->
-                    _downloads.update { m -> m[videoId]?.let { m + (videoId to it.copy(status = status)) } ?: m }
+                    if (account == prefs.cachedAuth) _downloads.update { m -> m[videoId]?.takeIf { it.jobId == jobId }?.let { m + (videoId to it.copy(status = status)) } ?: m }
                 },
                 sleep = { delay(it) },
             )
-            _downloads.update { m -> m[videoId]?.let { m + (videoId to it.copy(status = outcome.status)) } ?: m }
+            if (account != prefs.cachedAuth || _downloads.value[videoId]?.jobId != jobId) return@launch
+            _downloads.update { m -> m[videoId]?.takeIf { it.jobId == jobId }?.let { m + (videoId to it.copy(status = outcome.status)) } ?: m }
             if (outcome.succeeded) {
                 library.notifyLibraryChanged()
                 _events.tryEmit(DownloadEvent.Added(title))

@@ -1,4 +1,5 @@
 <script>
+  import {mobile} from '../lib/native.js';
   import PreviewControls from './PreviewControls.svelte';
   import {onMount,tick} from 'svelte';
   import {call, library, importStatus, getSession} from '../lib/api.js';
@@ -137,7 +138,7 @@
         <label class="field"><span>Enlace de la playlist de Spotify</span>
           <input aria-label="Playlist publica de Spotify" bind:value={url} required={!file} disabled={!!file} inputmode="url" autocomplete="off" placeholder="https://open.spotify.com/playlist/…"></label>
         <p class="hint">Tiene que ser publica. El enlace publico puede mostrar solo las primeras 100 canciones.</p>
-        <details class="file" open={!!file}><summary>¿Es mas larga? Sube el archivo exportado</summary>
+        <details class="file" open={!!file}><summary aria-label="Subir el archivo exportado">{#if mobile}<i aria-hidden="true" class="ph ph-file-arrow-up"></i>{/if}<span>¿Es mas larga? Sube el archivo exportado</span></summary>
           <p class="hint">Exporta la lista completa a CSV con <a href="https://github.com/watsonbox/exportify" target="_blank" rel="noopener noreferrer">Exportify</a> (inicias sesion en Spotify en su pagina, no aqui). Tambien vale un texto con una linea «Artista - Titulo» por cancion.</p>
           <input class="pick" type="file" aria-label="Archivo exportado de la playlist" accept=".csv,.txt,text/csv,text/plain" bind:this={fileInput} on:change={pick}>
           {#if file}<label class="field"><span>Nombre de la playlist</span><input aria-label="Nombre de la playlist importada" bind:value={fileName} maxlength="150" required></label>{/if}
@@ -153,7 +154,7 @@
         <hr>
         <p>¿Quieres traer todas tus playlists de una vez?</p>
         <button class="outlined wide" on:click={onImportAll}>Importar todo Spotify</button>
-        <p class="hint">Elige el archivo de Exportify o conecta con Spotify. El progreso aparece despues aqui, en Importaciones pendientes.</p>
+        <p class="hint">{mobile?'Se abre en el navegador. Elige el archivo de Exportify o conecta con Spotify.':'Elige el archivo de Exportify o conecta con Spotify.'} El progreso aparece despues aqui, en Importaciones pendientes.</p>
       {/if}
     </section>
   {:else}

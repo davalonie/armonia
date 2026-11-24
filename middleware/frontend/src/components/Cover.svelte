@@ -14,7 +14,7 @@
   {#if variant==='liked'}
     <i aria-hidden="true" class="ph-fill ph-heart"></i>
   {:else}
-    <i aria-hidden="true" class="ph {variant==='artist'?'ph-user':'ph-music-notes'} placeholder"></i>
+    <i aria-hidden="true" class="ph {variant==='artist'?'ph-user':variant==='album'?'ph-disc':'ph-music-notes'} placeholder"></i>
     {#each tiles as url (url)}<img src={url} alt="" loading="lazy" referrerpolicy="no-referrer" on:error={e=>e.currentTarget.style.visibility='hidden'}>{/each}
     {#if variant==='weekly'||variant==='mix'}
       <span class="tint" aria-hidden="true"></span>

@@ -14,8 +14,6 @@ import com.armonia.app.data.repository.LibraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import javax.inject.Inject
 
@@ -79,22 +77,10 @@ class PlaylistsViewModel @Inject constructor(
     fun uploadCover(kind: String, id: String, owner: String, open: () -> java.io.InputStream?) {
         viewModelScope.launch {
             try {
-                check(owner == prefs.cachedUserId)
-                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val limit = 8 * 1024 * 1024
-                    requireNotNull(open()).use { input ->
-                        val out = java.io.ByteArrayOutputStream()
-                        val buffer = ByteArray(16 * 1024)
-                        while (true) {
-                            val n = input.read(buffer)
-                            if (n < 0) break
-                            require(out.size() + n <= limit) { "La imagen debe ocupar como maximo 8 MiB" }
-                            out.write(buffer, 0, n)
-                        }
-                        out.toByteArray()
-                    }
-                }
-                val response = music.uploadCover(kind, id, owner, bytes.toRequestBody("application/octet-stream".toMediaType()))
+                val account = prefs.cachedAuth
+                check(owner == account.userId)
+                val body = com.armonia.app.homelab.playlistCoverBody(open)
+                val response = music.uploadCover(kind, id, owner, body, account)
                 check(response.isSuccessful) { "El servidor rechazo la portada (${response.code()})" }
                 if (owner == prefs.cachedUserId) load()
             } catch (e: Exception) {

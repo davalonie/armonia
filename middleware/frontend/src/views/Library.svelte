@@ -1,4 +1,7 @@
 <script>
+  import {pullRefresh} from '../lib/pullRefresh.js';
+  import PhoneSongControls from '../components/PhoneSongControls.svelte';
+  import {mobile} from '../lib/native.js';
   import {songLabels} from '../lib/fastScroll.js';
   import { library as libApi } from '../lib/api.js';
   import { playList } from '../lib/stores/playerStore.js';
@@ -41,15 +44,16 @@
     return s;
   }
 
-  async function load() {
+  async function load(refresh=false) {
     loading = true;
     error = '';
-    try { allSongs = await fetchAll(); }
+    try { allSongs = await fetchAll(refresh === true); }
     catch (e) { error = e.message; }
     finally { loading = false; }
   }
 
-  async function fetchAll() {
+  async function fetchAll(refresh) {
+    if (mobile) return (await mobile.librarySongs({refresh})).songs;
     const all = [];
     const pageSize = 500;
     let offset = 0;
@@ -71,8 +75,11 @@
     sortKey = idx === -1 ? keys[0] : keys[(idx + 1) % keys.length];
   }
 </script>
+<svelte:window on:armonia-library-changed={load}/>
 
-<div class="w-full max-w-5xl mx-auto p-4 md:p-8">
+<div use:pullRefresh={()=>load(true)} class="phone-tracks songs-pane w-full max-w-5xl mx-auto p-4 md:p-8">
+  {#if mobile}<PhoneSongControls bind:filterQuery bind:sortKey songs={sorted} placeholder="Buscar en tus canciones…"/>
+  {:else}
 
   <div class="flex items-center gap-2 mb-3">
     <div class="relative flex-1 min-w-0">
@@ -114,6 +121,7 @@
     {/each}
   </div>
 
+  {/if}
   {#if loading}
     <div class="flex items-center justify-center py-20 opacity-50">
       <i class="ph ph-circle-notch text-4xl animate-spin-slow"></i>

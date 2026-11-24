@@ -1,4 +1,6 @@
 <script>
+  import {mobile} from '../lib/native.js';
+  import PhoneDownloads from '../components/PhoneDownloads.svelte';
   import ShuffleToggle from './ShuffleToggle.svelte';
   // Read-and-play view of an ordered list of songs: generated lists, library
   // playlists, favourites and albums opened from Inicio. Playback always goes
@@ -51,6 +53,7 @@
     </div>
   </header>
 
+    {#if mobile}{#if context?.kind === "local"}<PhoneDownloads id={context.id} {title} {tracks} />{/if}{/if}
   <div class="controls">
     {#if onSave}<button class="ghost" disabled={busy||!rows.length} on:click={onSave} aria-label="Guardar una copia en tu biblioteca" title="Guardar una copia en tu biblioteca"><i aria-hidden="true" class="ph ph-plus-circle"></i></button>{/if}
     {#if onRefresh}<button class="ghost" class:spinning={busy} disabled={busy} on:click={onRefresh} aria-label="Actualizar esta lista" title="Actualizar esta lista"><i aria-hidden="true" class="ph ph-arrows-clockwise"></i></button>{/if}

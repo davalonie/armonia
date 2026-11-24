@@ -1,5 +1,6 @@
 // The whole library as a song list, shared by Canciones and Buscar («Añadidas recientemente»).
 // It is one paginated pass over the library, so a recent answer is reused instead of repeating it.
+import {mobile} from './native.js';
 import {library} from './api.js';
 
 const PAGE = 500;
@@ -9,6 +10,7 @@ export async function librarySongs(maxAge = 60000) {
   if (cache && Date.now() - at < maxAge) return cache;
   if (pending) return pending;
   pending = (async () => {
+    if (mobile) { const {songs} = await mobile.librarySongs({refresh:maxAge===0}); cache=songs; at=Date.now(); return songs; }
     const all = [];
     for (let offset = 0; ; offset += PAGE) {
       const r = await library('search3', {query: ' ', songCount: PAGE, songOffset: offset, artistCount: 0, albumCount: 0});

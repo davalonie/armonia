@@ -2,7 +2,6 @@ package com.armonia.app.ui.playlists
 
 import android.content.Context
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -88,18 +87,8 @@ class ManualInboxViewModel @Inject constructor(
         if (uri.scheme != "content") throw ManualInboxFailure("Selecciona el archivo con el selector de documentos.")
         if (entries.none { it.id == item.id && it.revision == item.revision && it.status == "pending" })
             throw ManualInboxFailure("El pendiente ha cambiado. Actualiza antes de aportar el archivo.")
-        val resolver = context.contentResolver
-        val knownSize = withContext(Dispatchers.IO) {
-            resolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
-                if (!cursor.moveToFirst() || cursor.isNull(0)) null else cursor.getLong(0).takeIf { it >= 0 }
-            }
-        }
+        val body = pickedMp3Body(context.contentResolver, uri, ::currentAccount)
         requireAccount()
-        val body = BoundedMp3Body(
-            open = { resolver.openInputStream(uri) ?: throw ManualInboxFailure("No se pudo abrir el archivo seleccionado.") },
-            stillAuthorized = ::currentAccount,
-            declaredSize = knownSize,
-        )
         uploadBody = body
         // Receiving can take 180 s, decoding 120 s and library indexing 8 s.
         withTimeout(330_000) { api.uploadManualInbox(item.id, item.revision, body, account).checkedInbox() }

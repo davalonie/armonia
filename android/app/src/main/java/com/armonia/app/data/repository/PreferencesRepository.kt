@@ -23,6 +23,10 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 
 data class AuthSnapshot(val serverUrl:String="",val username:String="",val userId:String="",val sessionId:String="") {
     val namespace:String get()=AccountScope.namespace(serverUrl,userId)
+
+    fun coverArtUrl(id: String, size: Int): String =
+        if (id.startsWith("https://") || id.startsWith("http://")) id
+        else "${serverUrl.trimEnd('/')}/api/library/getCoverArt?id=${android.net.Uri.encode(id)}&size=$size&account=$namespace"
 }
 
 @Singleton
@@ -33,6 +37,7 @@ class PreferencesRepository @Inject constructor(
 
     private object Keys {
         val SERVER_URL = stringPreferencesKey("server_url")
+        val OIDC_TRANSACTION = stringPreferencesKey("oidc_transaction")
         val USER_ID = stringPreferencesKey("native_user_id")
         val SESSION_ID = stringPreferencesKey("session_id")
         val LAST_TRACK_JSON = stringPreferencesKey("last_track_json")
@@ -77,6 +82,33 @@ class PreferencesRepository @Inject constructor(
     val accountNamespace:String get()=cachedAuth.namespace
     init { scope.launch { authState.collect { cachedAuth=it } } }
 
+    suspend fun storeBrowserTransaction(transaction: String) {
+        context.dataStore.edit { it[Keys.OIDC_TRANSACTION] = SessionVault.encrypt(transaction) }
+    }
+
+    suspend fun browserTransaction(): String? = context.dataStore.data.first()[Keys.OIDC_TRANSACTION]
+
+    suspend fun saveLogin(server: String, username: String, userId: String, sessionId: String, transaction: String? = null) {
+        require(userId.isNotBlank() && sessionId.isNotBlank())
+        val encrypted = SessionVault.encrypt(sessionId)
+        context.dataStore.edit {
+            if (transaction != null) {
+                check(it[Keys.OIDC_TRANSACTION] == transaction && it[Keys.SESSION_ID].isNullOrBlank())
+            }
+            it.remove(Keys.OIDC_TRANSACTION)
+            if (it[Keys.SERVER_URL]?.trimEnd('/') != server.trimEnd('/') || it[Keys.USER_ID] != userId) {
+                it.remove(Keys.LAST_TRACK_JSON)
+                it.remove(Keys.SEARCH_HISTORY)
+                it.remove(Keys.PREVIEW_COPIES)
+            }
+            it[Keys.SERVER_URL] = server
+            it[Keys.LAST_USERNAME] = username
+            it[Keys.USER_ID] = userId
+            it[Keys.SESSION_ID] = encrypted
+        }
+        cachedAuth = AuthSnapshot(server, username, userId, sessionId)
+    }
+
     suspend fun saveServerUrl(url: String) {
         if (cachedServerUrl != url) clearSession()
         context.dataStore.edit { it[Keys.SERVER_URL] = url }
@@ -113,6 +145,7 @@ class PreferencesRepository @Inject constructor(
         cachedAuth = cachedAuth.copy(sessionId="")
         context.dataStore.edit {
             it.remove(Keys.SESSION_ID)
+            it.remove(Keys.OIDC_TRANSACTION)
             it.remove(Keys.LAST_TRACK_JSON)
             it.remove(Keys.SEARCH_HISTORY)
             it.remove(Keys.PREVIEW_COPIES)

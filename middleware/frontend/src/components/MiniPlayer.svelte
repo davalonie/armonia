@@ -1,7 +1,7 @@
 <script>
   import {
     currentTrack, playing, shuffleOn, repeatMode, playbackProgress,
-    next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction, closePlayer,
+    swipeTrack, next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction, closePlayer,
     trackArtUrl,
   } from '../lib/stores/playerStore.js';
   import { expandedPlayerOpen, queuePanelOpen } from '../lib/stores/uiStore.js';
@@ -15,7 +15,7 @@
   function swipeEnd(e) {
     if (!swipe) return;
     const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y; swipe = null;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = true; dx < 0 ? next() : prev(); }
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = true; swipeTrack(dx < 0 ? 1 : -1); }
   }
   function openExpanded() { if (swiped) { swiped = false; return; } expandedPlayerOpen.set(true); }
 

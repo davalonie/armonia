@@ -1,7 +1,9 @@
 <script>
   import {coverArtUrl} from '../lib/api.js';
   import ShuffleToggle from '../components/ShuffleToggle.svelte';
-  import {externalMenu} from '../lib/trackActions.js';
+  import {externalMenu,songMenu} from '../lib/trackActions.js';
+  import {mobile} from '../lib/native.js';
+  import PhoneDownloads from '../components/PhoneDownloads.svelte';
   import {library as libApi,streamUrl} from '../lib/api.js';
   import {showContextMenu} from '../lib/stores/contextMenuStore.js';
   import {showPlaylistPicker} from '../lib/stores/playlistPickerStore.js';
@@ -15,6 +17,7 @@
   export let initialId=null;
   let playlists=[], selected=null, name='', error='', busy=false,filter='',sort='original',toolsOpen=false,touchStart=0;
   $: rows=(selected?.items||[]).map((item,i)=>({item,i})).filter(({item})=>`${item.track.title} ${item.track.artist}`.toLowerCase().includes(filter.toLowerCase())).sort((a,b)=>sort==='original'?a.i-b.i:a.item.track[sort].localeCompare(b.item.track[sort]));
+  $: tracks=(selected?.items||[]).map(({track})=>({...toQueueTrack(track),_playlist:{kind:'mixed',id:selected.id},_from:selected.name}));
   async function load(){playlists=(await api.playlists()).playlists;}
   async function act(fn){busy=true;error='';try{await fn();}catch(e){error=e.message;}finally{busy=false;}}
   onMount(()=>act(async()=>{await load();if(initialId)selected=await api.playlist(initialId);}));
@@ -23,6 +26,7 @@
   async function addTracks(tracks){const result=uniqueAdditions(selected.items.map(i=>i.track),tracks,t=>`${t.source}:${t.source_id}`);if(result.added.length)await save({...selected,items:[...selected.items,...result.added.map(track=>({id:crypto.randomUUID(),track}))]});showToast(`${result.added.length} añadidas · ${result.duplicates} ya estaban`);}
   function menu(e,t,i){
     const extra=[...(i>0?[{label:'Subir en la playlist',action:()=>move(i,-1)}]:[]),...(i<selected.items.length-1?[{label:'Bajar en la playlist',action:()=>move(i,1)}]:[]),{label:'Quitar de esta playlist',action:()=>act(()=>save({...selected,items:selected.items.filter((_,n)=>n!==i)}))}];
+    if(mobile)return songMenu(e.currentTarget,tracks[i],{extra});
     if(t.source!=='navidrome')return externalMenu(e.currentTarget,t,extra);
     showContextMenu(e.currentTarget,[{label:'Añadir a favoritos',icon:'ph ph-heart',action:()=>libApi('star',{id:t.source_id}).catch(e=>showToast(e.message,'error'))},
     {label:'Reproducir a continuacion',icon:'ph ph-queue',action:()=>playNext(toQueueTrack(t))},
@@ -57,11 +61,12 @@
       </div>
       {#key selected.id}<PlaylistSearch onAdd={addTracks} />{/key}
       </details>
-      <div class="actions">        <button disabled={!selected.items.length} on:click={()=>playList(selected.items.map(i=>({...toQueueTrack(i.track),_playlist:{kind:'mixed',id:selected.id}})))}>Reproducir</button>
+      <div class="actions"><button disabled={!tracks.length} on:click={()=>playList(tracks)}>Reproducir</button>
         <ShuffleToggle />
-</div>
+        {#if mobile}<PhoneDownloads kind="mixed" id={selected.id} title={selected.name} {tracks} />{/if}
+      </div>
       {#each rows as {item,i} (item.id)}
-        <div class="music-row"><button on:click={()=>playQueue(selected.items.map(x=>({...toQueueTrack(x.track),_playlist:{kind:'mixed',id:selected.id}})),i)}>{i+1}. {item.track.title}<small>{item.track.artist}</small></button>
+        <div class="music-row"><button on:click={()=>playQueue(tracks,i)}>{i+1}. {item.track.title}<small>{item.track.artist}</small></button>
           <div class="actions">
             <button aria-label={`Opciones de ${item.track.title}`} on:click={e=>menu(e,item.track,i)}>⋮</button>
           </div>

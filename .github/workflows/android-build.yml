@@ -2,9 +2,9 @@ name: Android validation
 on:
   push:
     branches: [main]
-    paths: ["android/**", ".github/workflows/android-build.yml"]
+    paths: ["android/**", "android-capacitor/**", "middleware/frontend/**", ".github/workflows/android-build.yml"]
   pull_request:
-    paths: ["android/**", ".github/workflows/android-build.yml"]
+    paths: ["android/**", "android-capacitor/**", "middleware/frontend/**", ".github/workflows/android-build.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,14 +16,25 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with: {distribution: temurin, java-version: "25"}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v5
+        with: {node-version: "24"}
+      - name: Install bundled web dependencies
+        working-directory: middleware/frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Build debug and run tests without publishing or release secrets
         working-directory: android
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
           printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
           bash gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon
+          bash gradlew -p ../android-capacitor :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: armonia-debug-${{ github.sha }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: armonia-capacitor-debug-${{ github.sha }}
+          path: android-capacitor/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7

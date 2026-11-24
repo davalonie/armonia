@@ -1,3 +1,5 @@
+import { mobile } from '../native.js';
+import { command, observeNativePlayer } from './nativePlayback.js';
 import { writable, derived, get } from 'svelte/store';
 import { call, streamUrl, coverArtUrl, library as libApi } from '../api.js';
 import { ListenClock } from '../listenClock.js';
@@ -12,6 +14,12 @@ const lastTrackKey = () => `music:last-track:${accountKey()}`;
 let listen=null;
 
 export const previewState = writable(null);
+export const songDownloads = writable({});
+export const serverDownloads = writable({});
+export const offlineProblem = writable(null);
+export const listenProblem = writable(null);
+export const sleepTimer = writable({});
+export const nativeQueueOrder = writable({});
 export const playbackTiming = writable(null);
 // 'loading' from the press until audio flows, 'error' when the source failed; '' otherwise.
 export const playbackState = writable('');
@@ -86,6 +94,7 @@ export function _setRecoveryDelaysForTest(delays){RECOVERY_DELAYS=delays;}
 const sourceUrl=track=>isPreview(track)?track._previewUrl:streamUrl(track.id);
 
 export function initAudio(audioEl) {
+  if (mobile) return observeNativePlayer({queue, currentIndex, playing, playbackProgress, shuffleOn, repeatMode, continueSimilar, playbackState, previewState, sleepTimer, nativeQueueOrder, songDownloads, serverDownloads, offlineProblem, listenProblem});
   preparation.reset();
   sourceCleanup(); clearTimeout(previewTimer); previewState.set(null); previewSnapshot=null;
   _audio = audioEl;
@@ -246,6 +255,7 @@ export async function loadPlaybackSettings(){
   continuation.invalidate();
 }
 export async function saveContinueSimilar(on){
+  if (mobile) return command('similar', {enabled:on});
   const before=get(continueSimilar);
   setContinueSimilar(on);
   try{await call('/api/home/settings',{method:'PUT',body:JSON.stringify({continue_similar:!!on})});}
@@ -253,6 +263,11 @@ export async function saveContinueSimilar(on){
 }
 
 export function prepareTrack(track){
+  if (mobile) {
+    const videoId = externalId(track);
+    if (videoId) void mobile.command({action:'prepare',videoId}).catch(()=>{});
+    return;
+  }
   // Browsing another list must not displace preparation of the playing queue.
   if(get(previewState)||(_audio&&!_audio.paused))return;
   preparation.prepare(accountKey(),externalId(track));
@@ -274,7 +289,21 @@ function _load(autoplay=true) {
   saveLastTrack();
 }
 
-export function playQueue(tracks, startIndex = 0) {
+export async function beginPlayRequest() {
+  return mobile ? (await mobile.command({action:'beginPlay'})).epoch : undefined;
+}
+
+export function swipeTrack(direction) {
+  if (mobile) return command('step',{direction});
+  return direction > 0 ? next() : prev();
+}
+
+export function playQueue(tracks, startIndex = 0, epoch = undefined) {
+  if (mobile) {
+    if (tracks.length) void command('play', {tracks, index:startIndex, epoch, playlistId:tracks[startIndex]?._playlist?.id,
+      kind:tracks[startIndex]?._playlist?.kind, from:tracks[startIndex]?._from});
+    return;
+  }
   if (!tracks.length || !Number.isInteger(startIndex) || startIndex < 0 || startIndex >= tracks.length) return;
   stopPreview(false);
   continuation.invalidate();
@@ -289,7 +318,12 @@ export function playPreviewTrack(track) {
   if (track) playQueue([track]);
 }
 
-export function audition(track) {
+export function audition(track, resumeAfter = false) {
+  if (mobile) {
+    const current = get(previewState)?.track;
+    if (current && (current.id === track.id || (current._musicTrack && current._musicTrack.source === track._musicTrack?.source && current._musicTrack.source_id === track._musicTrack?.source_id))) return stopPreview();
+    return command('audition', {track, resumeAfter});
+  }
   if(!track || !_audio) return;
   if(get(previewState)?.track?._previewUrl===track._previewUrl && get(previewState)?.track?.id===track.id){
     if(!_audio.paused || get(previewState)?.status==='loading') {pausePreview();return;}
@@ -314,6 +348,7 @@ export function audition(track) {
 }
 
 export function pausePreview(){
+  if (mobile) return get(playing) && get(previewState) ? command('toggle') : undefined;
   if(!get(previewState))return;
   if(get(previewState)?.status==='loading'){sourceCleanup();generation++;}
   clearTimeout(previewTimer); _audio?.pause();
@@ -321,6 +356,7 @@ export function pausePreview(){
 }
 
 export function stopPreview(restore=true){
+  if (mobile) return command('stopAudition', {resume:restore});
   if(!previewSnapshot)return;
   sourceCleanup(); sourceCleanup=()=>{}; clearTimeout(previewTimer); const epoch=++generation;
   _audio?.pause();
@@ -337,6 +373,7 @@ export function stopPreview(restore=true){
 }
 
 export function playNext(track){
+  if (mobile) return command('playNext', {track});
   if(!track)return null;
   const token=crypto.randomUUID(), entry={...track,_queueEntry:token};
   const index=Math.max(0,get(currentIndex)+1);
@@ -350,19 +387,21 @@ export function playNext(track){
   return token;
 }
 export function undoPlayNext(token){
+  if (mobile) return Promise.resolve(token).then(entry => entry?.token && command('undo', {token:entry.token}));
   const index=get(queue).findIndex(t=>t._queueEntry===token);
   if(index>=0)removeFromQueue(index);
 }
 
 /** Play from a list header, as in the app: in order, or, with shuffle on, from a random song of the list. */
-export function playList(tracks) {
+export function playList(tracks, epoch = undefined) {
   if (!tracks.length) return;
-  playQueue(tracks, get(shuffleOn) ? firstShuffled(tracks.length) : 0);
+  playQueue(tracks, get(shuffleOn) ? firstShuffled(tracks.length) : 0, epoch);
 }
 
 export const firstShuffled = (length, random = Math.random) => Math.min(length - 1, Math.floor(random() * length));
 
 export function next() {
+  if (mobile) return command('next');
   stopPreview();
   const leaving=get(currentTrack);
   // Skipping a suggestion early means "not this one": it is not offered again in this session.
@@ -391,6 +430,7 @@ export function next() {
 }
 
 export function prev() {
+  if (mobile) return command('previous');
   stopPreview();
   if (_audio && _audio.currentTime > 3) {
     _audio.currentTime = 0;
@@ -412,6 +452,7 @@ export function prev() {
 }
 
 export function togglePlayPause() {
+  if (mobile) return command('toggle');
   if (!_audio) return;
   if(get(previewState)){if(_audio.paused)audition(get(previewState).track);else pausePreview();return;}
   if(!_audio.src && get(currentTrack)){_load();return;}
@@ -419,12 +460,14 @@ export function togglePlayPause() {
 }
 
 export function seekFraction(fraction) {
+  if (mobile) return command('seek', {fraction});
   if (_audio && _audio.duration) {
     _audio.currentTime = fraction * _audio.duration;
   }
 }
 
 export function toggleRepeat() {
+  if (mobile) return command('repeat');
   const modes = ['off', 'one', 'all'];
   const cur = get(repeatMode);
   repeatMode.set(modes[(modes.indexOf(cur) + 1) % modes.length]);
@@ -432,6 +475,7 @@ export function toggleRepeat() {
 }
 
 export function toggleShuffle() {
+  if (mobile) return command('shuffle');
   const on = !get(shuffleOn);
   shuffleOn.set(on);
   if (on) {
@@ -442,6 +486,7 @@ export function toggleShuffle() {
 }
 
 export function toggleLike() {
+  if (mobile) return command('like');
   return toggleTrackLike(get(currentTrack));
 }
 
@@ -465,7 +510,8 @@ export async function toggleTrackLike(track) {
   }
 }
 
-export function addToQueue(track) {
+export function addToQueue(track, atEnd = false) {
+  if (mobile) return command(atEnd ? 'end' : 'add', {track});
   if (!track) return;
   const $q = get(queue);
   if ($q.length === 0 || get(currentIndex) === -1) {
@@ -478,6 +524,7 @@ export function addToQueue(track) {
 }
 
 export function removeFromQueue(qIdx) {
+  if (mobile) return command('remove', {index:qIdx});
   const $index = get(currentIndex);
   if (!Number.isInteger(qIdx) || qIdx < 0 || qIdx >= get(queue).length || qIdx === $index) return;
   queue.update(q => {
@@ -492,6 +539,7 @@ export function removeFromQueue(qIdx) {
 }
 
 export function reorderQueue(fromIdx, toIdx) {
+  if (mobile) return command('move', {index:fromIdx, to:toIdx});
   const old = get(queue), active = get(currentIndex);
   if (![fromIdx,toIdx].every(Number.isInteger) || fromIdx < 0 || fromIdx >= old.length || toIdx < 0 || toIdx > old.length) return;
   const order = old.map((_, i) => i);
@@ -504,6 +552,7 @@ export function reorderQueue(fromIdx, toIdx) {
 }
 
 export function clearUpcoming() {
+  if (mobile) return command('clear');
   queue.update($q => $q.slice(0, get(currentIndex) + 1));
   _shuffledQueue = _shuffledQueue.filter(i => i < get(queue).length);
   _shufflePos = _shuffledQueue.indexOf(get(currentIndex));
@@ -511,6 +560,7 @@ export function clearUpcoming() {
 }
 
 export function saveLastTrack() {
+  if (mobile) return;
   if(get(previewState))return;
   const track = get(currentTrack);
   if (!track || isPreview(track)) {
@@ -526,6 +576,7 @@ export function saveLastTrack() {
 }
 
 export function closePlayer() {
+  if (mobile) return command('close');
   preparation.reset();
   stopPreview(false); sourceCleanup(); generation++; clearTimeout(previewTimer);
   continuation.invalidate(); heard.length=0; dismissed.length=0;

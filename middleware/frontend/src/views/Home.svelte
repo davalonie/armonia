@@ -1,4 +1,7 @@
 <script>
+  import {mobile} from '../lib/native.js';
+  import PhonePlaylist from '../components/PhonePlaylist.svelte';
+  import PhoneDownloads from '../components/PhoneDownloads.svelte';
   import {albumList} from '../lib/albums.js';
   import {calendar,releaseEntry,releaseLine,releaseRows,releaseDay} from '../lib/releases.js';
   import {onMount} from 'svelte';
@@ -7,13 +10,14 @@
   import {coverArtUrl} from '../lib/api.js';
   import {api} from '../lib/homelab.js';
   import {loaders,context,count,likedEntry,albumEntry} from '../lib/lists.js';
-  import {playQueue} from '../lib/stores/playerStore.js';
+  import {playList,beginPlayRequest,playQueue} from '../lib/stores/playerStore.js';
   import {showToast} from '../lib/stores/toastStore.js';
   import Cover from '../components/Cover.svelte';
   import PlaylistDetail from '../components/PlaylistDetail.svelte';
   import ArtistPage from '../components/ArtistPage.svelte';
   import AlbumPage from '../components/AlbumPage.svelte';
 
+  let phone=null;
   let recent=[],generated=[],status={},artists=[],frequent=[],newest=[];
   let loaded=false,homeError='',detail=null,pages=[],busy=false,poll=null,token=0;
 
@@ -60,7 +64,7 @@
   onMount(()=>{
     const stopView=currentView.subscribe(view=>{if(view==='home'){void loadHome();void loadAlbums();releaseTries=0;void loadReleases();}else{clearTimeout(poll);clearTimeout(releasePoll);}});
     let first=true;
-    const stopRoot=homeRoot.subscribe(()=>{if(first){first=false;return;}detail=null;pages=[];});
+    const stopRoot=homeRoot.subscribe(()=>{if(first){first=false;return;}detail=null;pages=[];phone=null;});
     return()=>{stopView();stopRoot();clearTimeout(poll);clearTimeout(releasePoll);};
   });
 
@@ -85,10 +89,12 @@
   function open(entry){detail={...entry,rows:[],loading:true,notice:''};pages=[];void fill(entry);}
   async function play(entry){
     try{
+      const epoch=await beginPlayRequest();
       const {rows}=await loaders[entry.type](entry);
       if(!rows.length){open(entry);return;}
       const playlist=context(entry);
-      playQueue(rows.map(r=>({...r.queue,...(playlist?{_playlist:playlist}:{}),_from:entry.title})));
+      const tracks=rows.map(r=>({...r.queue,...(playlist?{_playlist:playlist}:{}),_from:entry.title}));
+      if(mobile)playList(tracks,epoch);else playQueue(tracks);
     }catch(e){showToast(e.message,'error');}
   }
   async function act(work,done){
@@ -102,7 +108,9 @@
   const activate=()=>act(()=>api.activateWeekly(),()=>'Lista semanal activada. Las primeras canciones pueden tardar unos minutos.');
 </script>
 
-{#if pages.length}
+{#if phone}
+  <PhonePlaylist title={phone.row.title} songs={phone.songs} playlistId={phone.row.key.startsWith('playlist:')?phone.row.id:null} offline={true} on:back={()=>phone=null} />
+{:else if pages.length}
   {@const top=pages[pages.length-1]}
   <div class="home subpage">
     {#if top.type==='artist'}
@@ -151,6 +159,7 @@
       {#if loaded&&!recent.length}<p class="hint">Las playlists que escuches apareceran aqui.</p>{/if}
     </section>
 
+    {#if mobile}<PhoneDownloads on:collection={e=>phone=e.detail} />{/if}
     <section>
       <header class="shelf-head"><h2>Hecho para ti</h2>
         {#if status.updating}<span class="updating" role="status"><i aria-hidden="true" class="ph ph-arrows-clockwise"></i> Actualizando…</span>{/if}

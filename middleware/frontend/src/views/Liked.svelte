@@ -1,4 +1,11 @@
 <script>
+  import {pullRefresh} from '../lib/pullRefresh.js';
+  import PhoneSongControls from '../components/PhoneSongControls.svelte';
+  import {mobile} from '../lib/native.js';
+  import {createEventDispatcher} from 'svelte';
+  const dispatch=createEventDispatcher();
+  let searching=false;
+  function leave(){if(searching){searching=false;filterQuery='';}else dispatch('back');}
   import {songLabels} from '../lib/fastScroll.js';
   import { library as libApi } from '../lib/api.js';
   import { playList } from '../lib/stores/playerStore.js';
@@ -63,7 +70,11 @@
   load();
 </script>
 
-<div class="w-full max-w-5xl mx-auto p-4 md:p-8">
+<div use:pullRefresh={load} class="phone-tracks likes-pane w-full max-w-5xl mx-auto p-4 md:p-8">
+  {#if mobile}
+    <header class="phone-toolbar"><button class="phone-back" data-phone-back aria-label="Volver" on:click={leave}><img src="/armonia.svg" width="32" height="32" alt=""></button><h1>Favoritos</h1><button class="phone-back" aria-label="Buscar en favoritos" on:click={()=>searching=!searching}><i class="ph ph-magnifying-glass"></i></button></header>
+    {#if songs.length || searching}<PhoneSongControls bind:filterQuery bind:sortKey songs={sorted} placeholder="Buscar en favoritos…" search={searching}/>{/if}
+  {:else}
   <h2 class="font-london text-3xl pl-1 mb-4">Favoritos</h2>
 
   {#if songs.length || loading}
@@ -108,6 +119,7 @@
     </div>
   {/if}
 
+  {/if}
   {#if loading}
     <div class="flex items-center justify-center py-20 opacity-50">
       <i class="ph ph-circle-notch text-4xl animate-spin-slow"></i>
@@ -117,6 +129,8 @@
       <i class="ph ph-warning-circle text-5xl mb-4"></i>
       <p>{error}</p>
     </div>
+  {:else if !songs.length && mobile}
+    <p class="phone-empty">Todavia no tienes favoritos</p>
   {:else if !songs.length}
     <div class="flex flex-col items-center justify-center py-20 opacity-50">
       <i class="ph ph-heart text-6xl mb-4"></i>

@@ -1,10 +1,17 @@
 package com.armonia.app.playback
 
+import android.app.ActivityManager
+import android.app.ForegroundServiceStartNotAllowedException
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.media.AudioManager
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
@@ -15,6 +22,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingSimpleBasePlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -26,6 +34,8 @@ import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.armonia.app.MainActivity
 import com.armonia.app.R
 import com.armonia.app.data.repository.LibraryRepository
@@ -121,7 +131,15 @@ class PlaybackService : MediaLibraryService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        mediaSession = MediaLibrarySession.Builder(this, player, callback)
+        // On Android 15 a cold service must be in the foreground before ExoPlayer
+        // requests audio focus. A car or Bluetooth controller can play with no activity.
+        val sessionPlayer = if (Build.VERSION.SDK_INT >= 35) object : ForwardingSimpleBasePlayer(player) {
+            override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+                if (playWhenReady && !prepareBackgroundPlayback()) return Futures.immediateVoidFuture()
+                return super.handleSetPlayWhenReady(playWhenReady)
+            }
+        } else player
+        mediaSession = MediaLibrarySession.Builder(this, sessionPlayer, callback)
             .setSessionActivity(sessionActivity)
             .setBitmapLoader(CoilBitmapLoader(this))
             .build()
@@ -376,7 +394,41 @@ class PlaybackService : MediaLibraryService() {
         player.setShuffleOrder(ShuffleOrder.DefaultShuffleOrder(order, Random.nextLong()))
     }
 
+    @androidx.annotation.RequiresApi(35)
+    private fun prepareBackgroundPlayback(): Boolean {
+        val session = mediaSession ?: return false
+        if (session.player.mediaItemCount == 0 || foregroundServiceType != ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) return true
+        val process = ActivityManager.RunningAppProcessInfo()
+        ActivityManager.getMyMemoryState(process)
+        if (process.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) return true
+
+        // Media3 takes over this same notification as soon as playback starts.
+        val channelId = DefaultMediaNotificationProvider.DEFAULT_CHANNEL_ID
+        val channelName = getString(DefaultMediaNotificationProvider.DEFAULT_CHANNEL_NAME_RESOURCE_ID)
+        getSystemService(NotificationManager::class.java)
+            .createNotificationChannel(NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW))
+        val notification = Notification.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_armonia_notification)
+            .setContentTitle(session.player.mediaMetadata.title ?: getString(R.string.app_name))
+            .setContentIntent(session.sessionActivity)
+            .setStyle(Notification.MediaStyle().setMediaSession(session.platformToken))
+            .build()
+        return try {
+            startForeground(DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID, notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            true
+        } catch (_: ForegroundServiceStartNotAllowedException) {
+            notices.post("Android no ha autorizado la reproducción en segundo plano.")
+            false
+        }
+    }
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        // Media3 binds the platform MediaBrowser before it knows the caller's UID.
+        // LibrarySessionCallback.onConnect then authorizes the actual controller.
+        if (controllerInfo.uid < 0 && controllerInfo.packageName == MediaSession.ControllerInfo.LEGACY_CONTROLLER_PACKAGE_NAME) {
+            return mediaSession
+        }
         return if (com.armonia.app.security.AccountScope.controllerAllowed(
             controllerInfo.uid, android.os.Process.myUid(), controllerInfo.isTrusted)) mediaSession else null
     }

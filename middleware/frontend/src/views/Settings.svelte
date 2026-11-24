@@ -1,6 +1,8 @@
 <script>
   // Ajustes y cuenta, in the same order as the app: Reproduccion, Servidor, Buscar, Biblioteca, Cuenta. The phone-only
   // sections of the app (cache, data saving, music on the phone, Android Auto) have nothing to set in a browser.
+  import DeviceSettings from '../components/DeviceSettings.svelte';
+  import {mobile} from '../lib/native.js';
   import {onMount} from 'svelte';
   import {getSession,setSession,logout,rescan as requestRescan,library as libApi,getStats} from '../lib/api.js';
   import {api} from '../lib/homelab.js';
@@ -9,7 +11,10 @@
   import {APP_NAME} from '../lib/brand.js';
   const session=getSession();
   let source=readSource();
-  function setSource(s){source=s;localStorage.setItem(SEARCH_SOURCE_KEY,s);}
+  async function setSource(s){
+    try { if(mobile) await mobile.changeDeviceSetting({setting:'searchSource',value:s}); source=s;localStorage.setItem(SEARCH_SOURCE_KEY,s); }
+    catch { similarError='No se pudo guardar la fuente de búsqueda.'; }
+  }
 
   let savingSimilar=false,similarError='';
   async function toggleSimilar(){
@@ -80,8 +85,8 @@
 
   <h2>Servidor</h2>
   <div class="card pad">
-    <p class="status"><span class="dot" class:ok={serverStatus==='ok'} class:bad={serverStatus==='error'}></span>
-      <span><b>Navidrome</b><small>{serverStatus==='loading'?'Comprobando…':serverStatus==='ok'?`Conectado · v${serverVersion}`:'Sin conexion'}</small></span></p>
+    {#if !mobile}<p class="status"><span class="dot" class:ok={serverStatus==='ok'} class:bad={serverStatus==='error'}></span>
+      <span><b>Navidrome</b><small>{serverStatus==='loading'?'Comprobando…':serverStatus==='ok'?`Conectado · v${serverVersion}`:'Sin conexion'}</small></span></p>{/if}
     {#if statsLoading}<p class="muted" role="status">Cargando…</p>
     {:else if statsError}<p class="error" role="alert">No se pudieron leer los datos del servidor: {statsError}</p>
     {:else if stats}
@@ -111,6 +116,7 @@
     {#if rescanMsg}<p class:ok={rescanOk} class:error={!rescanOk} role="status">{rescanMsg}</p>{/if}
   </div>
 
+  {#if mobile}<DeviceSettings {fmtBytes} />{/if}
   <h2>Cuenta</h2>
   <div class="card pad">
     <p class="status"><i aria-hidden="true" class="ph-fill ph-user-circle user"></i><span><b>{session?.username??'—'}</b><small>Cuenta de Navidrome</small></span></p>

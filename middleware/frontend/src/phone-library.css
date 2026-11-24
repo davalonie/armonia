@@ -1,0 +1,139 @@
+/* The Android app shares Compose's type sizes and layout grid. */
+.capacitor .phone-toolbar{height:64px;display:flex;align-items:center;gap:4px}
+.capacitor .phone-toolbar h1,.capacitor .stats h1,.capacitor .settings h1,.capacitor .inbox h1{font-size:24px;line-height:30px;font-weight:700;letter-spacing:0;margin:0}
+.capacitor .phone-toolbar h1{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.capacitor .phone-toolbar .phone-back{margin-left:4px}
+.capacitor .phone-play{flex:none;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:#c4a3ff;color:#121015;font-size:14px;font-weight:600;padding:8px 16px}
+.capacitor .phone-play:disabled{opacity:.45}
+.capacitor .collection.body{padding:0 16px 16px}
+.capacitor .collection.body .toolbar{display:grid;gap:6px;margin:0 0 16px}
+.capacitor .collection.body .filter,.capacitor .artist-browser input[type=search]{height:56px;width:100%;border:0;background:#242424;color:#eee;border-radius:28px;font-size:16px}
+.capacitor .collection.body .filter{gap:16px;padding:0 16px}
+.capacitor .collection.body .filter i{font-size:24px}
+.capacitor .collection.body .filter input{font-size:16px}
+.capacitor .collection.body input::placeholder,.capacitor .artist-browser input::placeholder,.capacitor .phone-song-filter input::placeholder{color:#eee}
+.capacitor .phone-chips,.capacitor .artist-filters,.capacitor .stats .chips{display:flex;align-items:center;gap:8px;min-height:48px}
+.capacitor .phone-chips button,.capacitor .artist-filters button,.capacitor .stats .chip{min-height:32px;height:32px;background:transparent;color:#eee;border:1px solid #2e2e2e;border-radius:8px;padding:0 16px;font-size:14px;font-weight:500;line-height:20px}
+.capacitor .phone-chips [aria-pressed=true],.capacitor .artist-filters [aria-pressed=true],.capacitor .stats .chip.on{background:#1e1e1e;border-color:#1e1e1e;color:#eee}
+.capacitor .collection .total,.capacitor .artist-filters [role=status]{font-size:12px;line-height:16px;color:#aaa}
+.capacitor .collection .grid{grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:16px 14px}
+.capacitor .collection .album{padding:0;gap:2px}
+.capacitor .collection .album .cover{background:#2e2e2e;border-radius:10px;box-shadow:none}
+.capacitor .collection .album .placeholder{font-size:40px}
+.capacitor .collection .album b{font-size:14px;line-height:20px;margin-top:6px}
+.capacitor .collection .album small{font-size:12px}
+.capacitor .artist-browser{padding:0 16px 16px}
+.capacitor .artist-browser:has(.phone-toolbar){padding:0}
+.capacitor .artist-filters{flex-wrap:wrap;padding:6px 0 0;margin-bottom:4px}
+.capacitor .artist-filters [role=status]{order:1;width:100%;margin:4px 0 0}
+.capacitor .artist-browser .group[role=button]{padding:8px 0;gap:12px;min-height:72px}
+.capacitor .artist-browser .artist-avatar,.capacitor .artist-browser .group img{height:56px;width:56px}
+.capacitor .artist-avatar{font-size:22px;color:white}
+.capacitor .artist-tracks button,.capacitor .artist-album{width:100%;display:block;text-align:left;padding:12px 16px}
+.capacitor .artist-tracks button{background:#211c29}
+.capacitor .artist-tracks b,.capacitor .artist-album b{font-size:16px;font-weight:500}
+.capacitor .artist-tracks small,.capacitor .artist-album small{display:block;font-size:12px;color:#aaa}
+.capacitor .artist-album{display:flex;align-items:center;gap:12px;padding:8px 16px}
+.capacitor .artist-album>span{width:64px;height:64px;background:#1e1e1e;border-radius:6px;overflow:hidden}
+.capacitor .artist-album img,.capacitor .album-info img{width:100%;height:100%;object-fit:cover}
+.capacitor .songs-pane,.capacitor .likes-pane{padding:0 16px 16px}
+.capacitor .likes-pane .phone-toolbar{margin:0 -12px 0 -16px}
+.capacitor .phone-song-filter{height:56px;display:flex;align-items:center;gap:16px;padding:0 14px;margin:4px 0;border:1px solid #444;border-radius:4px;color:#eee;font-size:24px}
+.capacitor .phone-song-filter input{font-size:16px;min-width:0;flex:1;outline:none}
+.capacitor .song-actions,.capacitor .album-actions{display:flex;align-items:center;gap:8px;min-height:64px}
+.capacitor .song-actions label{flex:1;font-size:14px;color:#bbb;min-width:0}
+.capacitor .song-actions select{max-width:100%;color:inherit}
+.capacitor .phone-tracks .track-row{min-height:72px;padding:8px 0;border-radius:0}
+.capacitor .phone-tracks .track-cover{width:52px;height:52px;border-radius:8px;background:#2e2e2e}
+.capacitor .phone-tracks .track-cover>span:first-child{display:none}
+.capacitor .phone-tracks .track-row .font-medium{font-size:14px}
+.capacitor .phone-tracks .track-row .text-sm.text-armonia-muted{font-size:12px}
+.capacitor .phone-empty,.capacitor .offline-empty{min-height:calc(100dvh - var(--mob-nav-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 100px);display:grid;place-content:center;text-align:center;color:#aaa}
+.capacitor .offline-empty{min-height:calc(100dvh - var(--mob-nav-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 165px);gap:5px;justify-items:center}
+.capacitor .offline-empty i{font-size:48px;color:#777}
+.capacitor .offline-empty b{font-weight:500;color:#eee}
+.capacitor .offline-empty small{max-width:32ch}
+.capacitor .phone-album{padding:0 16px 16px}
+.capacitor .phone-album .phone-toolbar{margin:0 -16px;color:#c4a3ff}
+.capacitor .phone-album .phone-back{color:#eee}
+.capacitor .album-info{text-align:center;margin:16px 0 4px}
+.capacitor .album-info .sleeve{width:min(240px,100%);aspect-ratio:1;margin:0 auto 12px;overflow:hidden;border-radius:8px;background:#1e1e1e}
+.capacitor .album-info h2{font-size:20px;font-weight:700}
+.capacitor .album-info p{font-size:14px;color:#ccc}
+.capacitor .album-info small{font-size:12px;color:#999}
+.capacitor .album-actions>.pin{margin-right:auto}
+.capacitor .settings{padding:0 16px 24px;max-width:none}
+.capacitor .settings header{position:sticky;top:0;z-index:1;background:#121015;height:64px;gap:6px;margin:0}
+.capacitor .settings header .logo{border-radius:0}
+.capacitor .settings h2{border-radius:12px 12px 0 0;background:#211c29;color:#c4a3ff;padding:12px 16px;margin:16px 0 0;border-bottom:1px solid #ffffff14;font-size:12px;line-height:16px;letter-spacing:.5px;text-transform:none;font-weight:500}
+.capacitor .settings .card{background:#211c29;border-radius:0 0 12px 12px;color:#eee}
+.capacitor .settings .card.pad{padding:16px;display:grid;gap:12px;font-size:14px;line-height:20px}
+.capacitor .settings .card .muted,.capacitor .settings .card small{display:block;color:#aaa;font-size:12px;line-height:16px}
+.capacitor .settings .row{padding:16px;gap:12px}
+.capacitor .settings .row b{font-size:16px;line-height:24px;font-weight:400}
+.capacitor .settings .switch{width:52px;height:32px;flex:none;border:2px solid #888;border-radius:20px;background:#242424;display:grid;align-items:center;padding:0 6px}
+.capacitor .settings .switch span{display:block;width:16px;height:16px;border-radius:50%;background:#aaa}
+.capacitor .settings .switch.on{background:#c4a3ff;border-color:#c4a3ff}
+.capacitor .settings .switch.on span{width:24px;height:24px;transform:translateX(16px);background:#21112e}
+.capacitor .settings .track{height:4px;background:#ffffff15}
+.capacitor .settings .track div,.capacitor .settings .track div.warn{background:#c4a3ff}
+.capacitor .settings .meter p{margin-bottom:4px}
+.capacitor .settings .meter p span:last-child{font-size:12px;color:#aaa}
+.capacitor .settings .meter:last-child .track{display:none}
+.capacitor .settings .meter:last-child span:last-child{color:#c4a3ff;font-size:14px}
+.capacitor .settings .segmented{display:flex;padding:0;border-radius:24px;background:#1a191d;overflow:hidden}
+.capacitor .settings .segmented button{flex:1;min-height:40px;border:1px solid #37333c;border-radius:0;background:transparent;color:#eee;font-size:12px;font-weight:500}
+.capacitor .settings .segmented button:first-child{border-radius:24px 0 0 24px}
+.capacitor .settings .segmented button:last-child{border-radius:0 24px 24px 0}
+.capacitor .settings .segmented button.on{background:#242424}
+.capacitor .settings .segmented button.on::before{content:'✓';margin-right:8px}
+.capacitor .settings .device-switch{display:flex;text-align:left;align-items:center;justify-content:space-between;gap:12px}
+.capacitor .settings .outline{color:#c4a3ff;border:1px solid #39353e;min-height:40px;border-radius:24px}
+.capacitor .settings .outline:disabled{opacity:.4}
+.capacitor .stats{padding:16px;gap:10px;max-width:none}
+.capacitor .stats .big{font-size:57px;line-height:64px}
+.capacitor .stats .sub,.capacitor .stats .lead b{font-size:20px;line-height:26px;font-weight:700}
+.capacitor .stats .card{border-radius:16px}
+.capacitor .stats .range{font-size:16px;line-height:24px}
+.capacitor .stats .chart span{min-height:0}
+.capacitor .phone-import{padding:0 16px 20px}
+.capacitor .phone-import .phone-toolbar{margin:0 -16px 4px}
+.capacitor .phone-import .import-review>.card{background:#211c29;border-radius:12px;padding:16px}
+.capacitor .phone-import .card h3,.capacitor .phone-import .section{font-size:16px;font-weight:500}
+.capacitor .phone-import .field input,.capacitor .phone-import .field select{height:56px;font-size:16px;border-radius:4px}
+.capacitor .phone-import .filled:disabled{background:#ffffff1a;color:#aaa}
+.capacitor .phone-import .hint{font-size:12px;line-height:16px}
+.capacitor .inbox.music-page{padding:0 16px 16px;max-width:none}
+.capacitor .inbox .back,.capacitor .inbox .refresh{width:max-content;color:#c4a3ff;border:0;background:none;border-radius:0;font-size:14px;font-weight:500;padding:0 12px}
+.capacitor .inbox .heading{margin:0}
+.capacitor .inbox .intro,.capacitor .inbox .empty{font-size:16px;line-height:24px;margin:0;color:#eee;padding:0;text-align:left}
+.capacitor .inbox small{font-size:12px;color:#aaa}
+.capacitor .inbox .refresh{display:block}
+html.capacitor .settings{padding:0 16px 24px}
+html.capacitor .stats{padding:16px}
+.capacitor .settings .segmented button.on{color:#eee}
+.capacitor .settings .card .row>span:first-child{gap:0}
+.capacitor .settings .card .row small{font-size:12px;line-height:16px;font-weight:400}
+.capacitor .phone-import .new{position:relative}
+.capacitor .phone-import .new .file:not([open]){position:absolute;right:12px;top:8px}
+.capacitor .phone-import .new .file:not([open]) summary{font-size:20px;display:grid;place-items:center;width:40px;height:36px}
+.capacitor .phone-import .new .file:not([open]) summary>span{display:none}
+.capacitor .phone-import .new .file[open] summary i{display:none}
+.capacitor .phone-import .new .field{position:relative}
+.capacitor .phone-import .new .field:has(input[placeholder^="https"])>span{position:absolute;top:0;left:12px;transform:translateY(-50%);background:#211c29;padding:0 4px}
+.capacitor .phone-import .new .field:has(input:placeholder-shown:not(:focus))>span{top:50%;font-size:16px;color:#eee}
+.capacitor .phone-import .new .field input:placeholder-shown:not(:focus)::placeholder{color:transparent}
+.capacitor .phone-import .new input{background:transparent;border-color:#39343d}
+.capacitor .phone-import .new .field:has(select)>span{position:absolute;top:5px;left:14px}
+.capacitor .phone-import .new select{padding-top:20px;background:#302e31}
+.capacitor .phone-import .new .filled:disabled{color:#aaa;background:#ffffff1c;opacity:1}
+.capacitor .phone-import .import-review .new h3{padding-right:40px}
+.capacitor .song-actions label{display:flex;align-items:center;gap:4px}
+.capacitor .song-actions select{min-width:0;width:auto;max-width:100%;text-overflow:ellipsis}
+.capacitor .likes-pane:has(+ .music-page) .phone-empty{display:none}
+.capacitor .offline-actions{display:flex;align-items:center;gap:12px;padding:8px 0 16px;border-bottom:1px solid #343037}
+.capacitor .offline-actions .all-songs{margin-left:auto;width:44px;height:44px;color:#bbb;font-size:22px}
+.capacitor .offline-collection{display:flex;align-items:center;width:100%;gap:12px;padding:10px 0;text-align:left}
+.capacitor .offline-collection .cover{background:#2e2e2e;box-shadow:none;border-radius:8px}
+.capacitor .offline-collection b{font-weight:600}
+.capacitor .offline-collection small{display:block;color:#aaa;font-size:12px;line-height:16px}

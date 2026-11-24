@@ -55,6 +55,12 @@ def init_db() -> None:
             conn.execute("ALTER TABLE sessions ADD COLUMN credential_version INTEGER NOT NULL DEFAULT 1")
         if "user_id" not in scols:
             conn.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT")
+        conn.execute("""CREATE TABLE IF NOT EXISTS oidc_links (
+            issuer TEXT NOT NULL, subject TEXT NOT NULL, user_id TEXT NOT NULL UNIQUE,
+            credential TEXT NOT NULL, PRIMARY KEY(issuer,subject))""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS oidc_tickets (
+            key TEXT PRIMARY KEY, kind TEXT NOT NULL, binding TEXT NOT NULL,
+            payload TEXT NOT NULL, expires REAL NOT NULL)""")
         # Hygiene: drop sessions that have already expired (they're filtered on
         # read anyway, this just stops the table accumulating dead rows).
         conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (int(time.time()),))
