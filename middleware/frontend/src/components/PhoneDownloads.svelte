@@ -2,9 +2,10 @@
   import {onMount,createEventDispatcher} from 'svelte';
   import {mobile} from '../lib/native.js';
   import {nativeTrack} from '../lib/nativeTracks.js';
-  import {coverArtUrl} from '../lib/api.js';
+  import {coverArtUrl,artSize} from '../lib/api.js';
   import Cover from './Cover.svelte';
   import ShuffleToggle from './ShuffleToggle.svelte';
+  import PhonePlayButton from './PhonePlayButton.svelte';
   import {playList,beginPlayRequest,offlineProblem} from '../lib/stores/playerStore.js';
   import {showToast} from '../lib/stores/toastStore.js';
 
@@ -66,12 +67,11 @@
     {/if}
     {#if embedded && rows.length}
       <div class="offline-actions">
-        <button class="phone-play" on:click={()=>open(all,true)}><i class="ph-fill ph-play"></i> Reproducir todo</button>
-        <ShuffleToggle/><button class="all-songs" aria-label="Tus canciones sin conexion" title="Tus canciones sin conexion" on:click={()=>open(all)}><i class="ph ph-list"></i></button>
+        <ShuffleToggle/><PhonePlayButton label="Reproducir todo" on:click={()=>open(all,true)} /><button class="all-songs" aria-label="Tus canciones sin conexion" title="Tus canciones sin conexion" on:click={()=>open(all)}><i class="ph ph-list"></i></button>
       </div>
       {#each rows as row (row.key)}
         <div class="flex items-center"><button class="offline-collection flex-1" on:click={()=>open(row,row.key.startsWith('song:'))}>
-          <span class="art"><Cover covers={row.coverArt?[coverArtUrl(row.coverArt,96)]:[]} size={96}/></span>
+          <span class="art"><Cover covers={row.coverArt?[coverArtUrl(row.coverArt,artSize(48,96,300))]:[]} size={96}/></span>
           <span><b>{row.title}</b><small>{row.subtitle}</small><small>{row.failed ? row.failed+' con error' : row.running ? 'Descargando '+row.done+'/'+row.total : row.done+'/'+row.total+' en el teléfono'}</small></span>
         </button><button class="pin" aria-label={`Quitar ${row.title} del teléfono`} disabled={busy} on:click={()=>remove(row)}><i class="ph ph-minus-circle"></i></button></div>
       {/each}
@@ -79,7 +79,7 @@
     {#each [all,...rows] as row (row.key)}
       <div class="tile">
         <button class="open" on:click={()=>open(row)}>
-          <span class="art"><Cover covers={row.coverArt?[coverArtUrl(row.coverArt,96)]:[]} size={96} /></span>
+          <span class="art"><Cover covers={row.coverArt?[coverArtUrl(row.coverArt,artSize(48,96,300))]:[]} size={96} /></span>
           <span>{row.title}{#if embedded && row.total}<small>{row.done}/{row.total} en el teléfono</small>{/if}</span>
         </button>
         <button class="quick-play" aria-label={`Reproducir ${row.title} sin conexión`} on:click={()=>open(row,true)}><i aria-hidden="true" class="ph-fill ph-play"></i></button>

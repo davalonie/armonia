@@ -1,4 +1,5 @@
 <script>
+  import MaterialIcon from '../components/MaterialIcon.svelte';
   import {pullRefresh} from '../lib/pullRefresh.js';
   import {mobile} from '../lib/native.js';
   import PhoneDownloads from '../components/PhoneDownloads.svelte';
@@ -81,7 +82,7 @@
 {:else}
   <section use:pullRefresh={()=>{albums=null;return loadAlbums();}} class="collection body">
     <div class="toolbar">
-      <label class="filter"><i aria-hidden="true" class="ph ph-magnifying-glass"></i>
+      <label class="filter"><MaterialIcon name="search" />
         <input type="search" bind:value={albumFilter} aria-label="Buscar en tus albumes" placeholder="Buscar en tus albumes"></label>
       {#if mobile}
         <div class="phone-chips" role="group" aria-label="Ordenar albumes">{#each [['name','Nombre'],['artist','Artista'],['recent','Mas recientes']] as [id,label]}<button aria-pressed={albumSort===id} on:click={()=>albumSort=id}>{label}</button>{/each}</div>

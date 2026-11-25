@@ -7,6 +7,10 @@ import '@phosphor-icons/web/fill';
 import '@phosphor-icons/web/bold';
 import { mount } from 'svelte';
 import App from './App.svelte';
+import { installRipple } from './lib/ripple.js';
+
+// The app's press feedback on touch screens (the phone app and the web on a phone).
+installRipple();
 
 if (import.meta.env.MODE === 'capacitor') {
   document.documentElement.classList.add('capacitor');

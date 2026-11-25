@@ -1,23 +1,18 @@
 <script>
+  import {artSize} from '../lib/api.js';
   import {
     currentTrack, playing, shuffleOn, repeatMode, playbackProgress,
-    swipeTrack, next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction, closePlayer,
+    next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction, closePlayer,
     trackArtUrl,
   } from '../lib/stores/playerStore.js';
   import { expandedPlayerOpen, queuePanelOpen } from '../lib/stores/uiStore.js';
   import { fmtTime } from '../lib/util.js';
   import Marquee from './Marquee.svelte';
   import SaveButton from './SaveButton.svelte';
+  import {trackSwipe} from '../lib/trackSwipe.js';
   // On a phone, as in the app: cover, title, + / ✓ and play, the progress along the bottom, and a sideways swipe
   // changes song. Wider, the full bar stays (previous, next, shuffle, repeat, queue, time), with + / ✓ for the heart.
-  let swipe = null, swiped = false;
-  function swipeStart(e) { if (e.pointerType !== 'mouse') swipe = {x: e.clientX, y: e.clientY}; swiped = false; }
-  function swipeEnd(e) {
-    if (!swipe) return;
-    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y; swipe = null;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = true; swipeTrack(dx < 0 ? 1 : -1); }
-  }
-  function openExpanded() { if (swiped) { swiped = false; return; } expandedPlayerOpen.set(true); }
+  function openExpanded() { expandedPlayerOpen.set(true); }
 
   $: track = $currentTrack;
   $: visible = !!track;
@@ -32,12 +27,12 @@
 </script>
 
 <div
-  id="mini-player"
+  id="mini-player" use:trackSwipe style:touch-action="pan-y"
   class="fixed bottom-0 w-full h-[64px] md:h-[90px] bg-armonia-surface border-t border-white/5 z-50 items-center px-4 md:px-6 gap-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] user-select-none {visible ? 'flex' : 'hidden'}"
 >
   <!-- Progress bar -->
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="absolute bottom-0 md:bottom-auto md:top-0 left-0 w-full h-[3px] md:h-1 bg-armonia-bg group cursor-pointer" on:click={handleProgressClick}>
+  <div class="mini-progress absolute bottom-0 md:bottom-auto md:top-0 left-0 w-full h-[3px] md:h-1 bg-armonia-bg group cursor-pointer" on:click={handleProgressClick}>
     <div class="h-full bg-armonia-accent group-hover:bg-armonia-accentHover transition-colors relative" style:width="{progress}%">
       <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 shadow-md"></div>
     </div>
@@ -45,7 +40,7 @@
 
   <!-- Vinyl record + tonearm -->
   <button aria-label="Abrir reproductor ampliado" class="md:hidden shrink-0 w-12 h-12 rounded-md overflow-hidden bg-white/5" on:click={() => expandedPlayerOpen.set(true)}>
-    {#if track && trackArtUrl(track,96)}<img src={trackArtUrl(track, 96)} alt="" on:error={e=>e.currentTarget.style.visibility='hidden'} class="w-full h-full object-cover">{/if}
+    {#if track && trackArtUrl(track,96)}<img src={trackArtUrl(track, artSize(48, 96))} alt="" on:error={e=>e.currentTarget.style.visibility='hidden'} class="w-full h-full object-cover">{/if}
   </button>
   <button aria-label="Abrir reproductor ampliado" class="vinyl-wrap shrink-0 relative cursor-pointer hidden md:block" on:click={() => expandedPlayerOpen.set(true)}>
     <!-- Disc -->
@@ -66,7 +61,7 @@
 
   <!-- Track info -->
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="flex-1 min-w-0 cursor-pointer touch-pan-y" on:click={openExpanded} on:pointerdown={swipeStart} on:pointerup={swipeEnd} on:pointercancel={() => swipe = null}>
+  <div class="flex-1 min-w-0 cursor-pointer touch-pan-y" on:click={openExpanded}>
     <Marquee text={track?.title ?? 'Sin reproduccion'} cls="text-sm font-semibold text-white" />
     <Marquee text={track?.artist ?? 'Elige una cancion'} cls="text-xs text-armonia-muted" />
   </div>
@@ -106,6 +101,8 @@
 </div>
 
 <style>
+  /* The whole row follows a sideways swipe, as the app's Row did; the progress bar stays put. */
+  #mini-player > :not(.mini-progress) { translate: var(--track-swipe, 0px) 0; }
   /* ── Vinyl wrap ───────────────────────────────── */
   .vinyl-wrap {
     width: 80px;

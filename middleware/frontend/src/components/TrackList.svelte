@@ -1,4 +1,8 @@
 <script>
+  import {artSize} from '../lib/api.js';
+  import NowPlayingMark from './NowPlayingMark.svelte';
+  /** The smallest cover the Kotlin screen asks for here: 128 in playlists, 300 in Biblioteca. */
+  export let artLeast = 128;
   import {swipeRow} from '../lib/swipeRow.js';
   import {addToQueue,undoPlayNext,songDownloads} from '../lib/stores/playerStore.js';
   import {mobile} from '../lib/native.js';
@@ -17,10 +21,16 @@
   import {replaceLocal} from '../lib/playlistEdits.js';
   import {showToast} from '../lib/stores/toastStore.js';
   import Marquee from './Marquee.svelte';
+  import MaterialIcon from './MaterialIcon.svelte';
+  import {matchesSearch} from '../lib/textSearch.js';
 
   export let songs = [];
   export let allStarred = false;
   export let playlistId = null;
+  /** 'local' (Navidrome) or 'mixed': how the queue remembers where the songs came from. */
+  export let playlistKind = 'local';
+  /** For a mixed list, the entries its rows add to the song menu (move, remove); `null` for the usual ones. */
+  export let rowMenu = null;
   export let onRefresh = null;
 
   export let playlistName = '';
@@ -32,9 +42,12 @@
   $: labels = sort !== 'original' ? songLabels(rows.map(r => r.song), sort)
     : scrollLabels && rows.length === songs.length ? scrollLabels : rows.map(r => String(r.i + 1));
   export let toolsOpen=false;
-  let filter='', sort='original', touchStart=null;
-  $: rows=songs.map((song,i)=>({song,i})).filter(({song})=>`${song.title} ${song.artist}`.toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
-  $: if(sort!=='original') rows=[...rows].sort((a,b)=>String(a.song[sort]||'').localeCompare(String(b.song[sort]||'')));
+  /** The search and order of the list; the phone playlist screen sets them from its own search bar. */
+  export let filter='', sort='original';
+  let touchStart=null;
+  // One statement for search and order, so going back to the list's own order really restores it.
+  $: rows=sortRows(songs.map((song,i)=>({song,i})).filter(({song})=>matchesSearch(filter,song.title,song.artist,song.album)),sort);
+  function sortRows(list,key){return key==='original'?list:[...list].sort((a,b)=>String(a.song[key]||'').localeCompare(String(b.song[key]||'')));}
   function reveal(e){if(touchStart!==null && e.changedTouches[0].clientY-touchStart>55)toolsOpen=true;touchStart=null;}
   let selectMode = false;
   let selected = new Set();
@@ -74,7 +87,7 @@
       togglePlayPause();
       return;
     }
-    playQueue(songs.map(t=>playlistId?{...t,_playlist:{kind:'local',id:playlistId}}:t), i);
+    playQueue(songs.map(t=>playlistId?{...t,_playlist:{kind:playlistKind,id:playlistId},...(playlistKind==='mixed'?{_from:playlistName}:{})}:t), i);
   }
 
   function toggleSelect(i) {
@@ -115,21 +128,22 @@
   }
   function openDots(e, song, i) {
     e.stopPropagation();
+    if (rowMenu) { void songMenu(e.currentTarget, song, {extra: rowMenu(song, i), onChange: () => onRefresh?.()}); return; }
+    const deleteFile = async () => {
+      if (!confirm(`¿Eliminar el archivo de «${song.title}» de la biblioteca? No se puede deshacer.`)) return;
+      try { await apiDeleteTrack(song.id); onRefresh?.(); }
+      catch (err) { showToast(`No se pudo eliminar: ${err.message}`, 'error'); }
+    };
+    // Removing from a list never deletes the file; deleting the file is a separate, confirmed action.
+    const remove = playlistId ? [{ label: 'Quitar de esta playlist', icon: 'ph ph-minus-circle', micon: mobile ? 'remove_circle_outline' : null, action: () => removePositions(new Set([i])) }] : [];
     void songMenu(e.currentTarget, {...song, starred: isStarred(song) ? (song.starred || true) : undefined}, {
       onChange: () => onRefresh?.(),
-      extra: [
+      // On the phone, the entries the app's song rows add, without the desktop's selection.
+      extra: mobile ? [...remove, null, { label: 'Eliminar archivo de la biblioteca', micon: 'delete', danger: true, action: deleteFile }] : [
         { label: 'Seleccionar', icon: 'ph ph-check-square', action: () => enterSelectMode(i) },
-        // Removing from a list never deletes the file; deleting the file is a separate, confirmed action.
-        ...(playlistId ? [{ label: 'Quitar de esta playlist', icon: 'ph ph-minus-circle', action: () => removePositions(new Set([i])) }] : []),
+        ...remove,
         null,
-        {
-          label: 'Eliminar archivo de la biblioteca', icon: 'ph ph-trash', danger: true,
-          action: async () => {
-            if (!confirm(`¿Eliminar el archivo de «${song.title}» de la biblioteca? No se puede deshacer.`)) return;
-            try { await apiDeleteTrack(song.id); onRefresh?.(); }
-            catch (err) { showToast(`No se pudo eliminar: ${err.message}`, 'error'); }
-          },
-        },
+        { label: 'Eliminar archivo de la biblioteca', icon: 'ph ph-trash', danger: true, action: deleteFile },
       ],
     });
   }
@@ -209,7 +223,11 @@
 
       <!-- Art / now-playing indicator -->
       <div class="track-cover relative w-12 h-12 rounded-md overflow-hidden shrink-0 bg-armonia-surface">
-        <span aria-hidden="true" class="absolute inset-0 grid place-items-center text-armonia-accent text-2xl">♫</span>{#if song.coverArt}<img src={coverArtUrl(song.coverArt, 64)} alt="" loading="lazy" class="relative w-full h-full object-cover" on:error={e=>e.currentTarget.style.visibility='hidden'}>{/if}
+        <span aria-hidden="true" class="absolute inset-0 grid place-items-center text-armonia-accent text-2xl">♫</span>{#if trackArtUrl(song, artSize(52, 64, artLeast))}<img src={trackArtUrl(song, artSize(52, 64, artLeast))} alt="" loading="lazy" referrerpolicy="no-referrer" class="relative w-full h-full object-cover" on:error={e=>e.currentTarget.style.visibility='hidden'}>{/if}
+        {#if mobile}
+          <!-- The phone: SongRow's veil with only the bars or GraphicEq, no play/pause. -->
+          {#if isActive}<NowPlayingMark playing={$playing} />{/if}
+        {:else}
         <!-- Hover play/pause overlay -->
         <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity {isActive ? 'opacity-100' : ''}">
           <i aria-hidden="true" class="ph-fill {isActive && $playing ? 'ph-pause' : 'ph-play'} text-white text-lg pointer-events-none"></i>
@@ -221,6 +239,7 @@
             <span class="block w-[3px] bg-armonia-accent rounded-xs origin-bottom {$playing ? 'animate-bar2' : ''}" style="height:12px"></span>
             <span class="block w-[3px] bg-armonia-accent rounded-xs origin-bottom {$playing ? 'animate-bar3' : ''}" style="height:12px"></span>
           </div>
+        {/if}
         {/if}
       </div>
 
@@ -240,7 +259,10 @@
         <i aria-hidden="true" class="{starred ? 'ph-fill ph-heart text-armonia-accent' : 'ph ph-heart text-armonia-muted'} text-lg pointer-events-none"></i>
       </button>
 
-      <!-- Dots menu button -->
+      <!-- Dots menu button: on the phone the app's MoreVert in a 48 dp touch target. -->
+      {#if mobile}
+        <button class="phone-dots" aria-label={`Opciones de ${song.title}`} on:click={e => openDots(e, song, i)}><MaterialIcon name="more_vert" /></button>
+      {:else}
       <button
         class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-all opacity-100 md:opacity-0 group-hover:opacity-100 shrink-0"
         title="Opciones de cancion" aria-label={`Opciones de ${song.title}`}
@@ -248,10 +270,12 @@
       >
         <i aria-hidden="true" class="ph ph-dots-three-vertical text-armonia-muted text-lg pointer-events-none"></i>
       </button>
+      {/if}
     </div>
   {/each}
 </div>
 
 <style>
+.phone-dots{width:48px;height:48px;margin:-4px -8px -4px 0;display:grid;place-items:center;flex:none;border-radius:50%;color:#eeeeee99}
 .playlist-tools{margin:1rem 0 1.25rem}.playlist-tools .actions{display:flex;flex-wrap:wrap;align-items:center;gap:.65rem;margin:.8rem 0}.playlist-tools button{padding:.65rem 1rem;border:1px solid #ffffff30;border-radius:2rem;min-height:44px;background:#ffffff08}.playlist-tools button:hover{background:#ffffff16}.playlist-tools button.playlist-play{background:#c4a3ff;color:#18101f;border-color:#c4a3ff;font-weight:650}.playlist-tools button:disabled{opacity:.45}.playlist-tools input,.playlist-tools select{border:1px solid #ffffff30;border-radius:.6rem;padding:.65rem;background:#211c29;max-width:100%}.playlist-tools label{display:flex;gap:.5rem;align-items:center}.playlist-tools .actions>span{color:#aaa3b3;margin-right:.5rem}.playlist-tools .music-card{padding:1rem;border:1px solid #ffffff20;border-radius:.8rem;margin:1rem 0}
 </style>

@@ -1,4 +1,5 @@
 <script>
+  import MaterialIcon from '../components/MaterialIcon.svelte';
   import {pullRefresh} from '../lib/pullRefresh.js';
   import {libraryArtist} from '../lib/stores/viewStore.js';
   import {mobile} from '../lib/native.js';
@@ -9,7 +10,7 @@
   function avatar(name){let hash=0;for(let i=0;i<name.length;i++)hash=(Math.imul(31,hash)+name.charCodeAt(i))|0;return colors[(hash&0x7fffffff)%colors.length];}
   import FastScroll from '../components/FastScroll.svelte';
   import {scrollInitial} from '../lib/fastScroll.js';
-  import { library as libApi, coverArtUrl } from '../lib/api.js';
+  import { library as libApi, coverArtUrl, artSize } from '../lib/api.js';
   import TrackList from '../components/TrackList.svelte';
   import { playQueue } from '../lib/stores/playerStore.js';
 
@@ -114,7 +115,7 @@
       </div>
     {:else}
       <div class="relative mb-4">
-        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-armonia-muted"></i>
+        <span aria-hidden="true" class="absolute left-4 top-1/2 -translate-y-1/2 text-armonia-muted"><MaterialIcon name="search" size={20} /></span>
         <input type="search" bind:value={artistFilter} placeholder="Buscar en tus artistas" aria-label="Buscar en tus artistas"
           class="w-full bg-armonia-surface text-armonia-text placeholder-armonia-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-hidden focus:ring-2 focus:ring-armonia-accent/50 border border-white/10 text-sm">
       </div>
@@ -139,7 +140,7 @@
             >
               {#if artist.coverArt && !noPicture.has(artist.id)}
                 <img class="w-12 h-12 rounded-full object-cover shrink-0 bg-armonia-surface"
-                     src={coverArtUrl(artist.coverArt, 96)} alt="" loading="lazy"
+                     src={coverArtUrl(artist.coverArt, artSize(56, 96, 300))} alt="" loading="lazy"
                      on:error={() => noPicture = new Set(noPicture).add(artist.id)}>
               {:else}
                 <span style:background={mobile?avatar(artist.name||''):undefined} class="artist-avatar w-12 h-12 rounded-full shrink-0 bg-armonia-surface flex items-center justify-center font-semibold text-armonia-muted" aria-hidden="true">{(artist.name || '?').trim().charAt(0).toUpperCase()}</span>

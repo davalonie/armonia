@@ -1,13 +1,15 @@
 <script>
+  import MaterialIcon from '../components/MaterialIcon.svelte';
   import {pullRefresh} from '../lib/pullRefresh.js';
   import {mobile,mobileImport} from '../lib/native.js';
   import PhonePlaylist from '../components/PhonePlaylist.svelte';
+  import LibraryPlaylist from '../components/LibraryPlaylist.svelte';
   import {onMount} from 'svelte';
   import {currentView,showView} from '../lib/stores/viewStore.js';
   import {stopPreview} from '../lib/stores/playerStore.js';
   import {api} from '../lib/homelab.js';
   import MixedPlaylists from './MixedPlaylists.svelte';
-  import { call, getSession, library as libApi, coverArtUrl } from '../lib/api.js';
+  import { call, getSession, library as libApi, coverArtUrl, artSize } from '../lib/api.js';
   import Cover from '../components/Cover.svelte';
   import {createEventDispatcher} from 'svelte';
   const dispatch=createEventDispatcher();
@@ -60,8 +62,9 @@
   $: filteredPlaylists = playlistFilter
     ? playlists.filter(p => p.name.toLowerCase().includes(playlistFilter.toLowerCase()))
     : playlists;
-  let playlistSort='recent';
-  $: sortedPlaylists=[...filteredPlaylists].sort((a,b)=>(a.kind==='mixed')-(b.kind==='mixed')||(playlistSort==='name'?a.name.localeCompare(b.name,'es'):playlistSort==='size'?(b.songCount||0)-(a.songCount||0):String(b.changed||b.updated||'').localeCompare(String(a.changed||a.updated||''))));
+  // On the phone, as in the app: the server's order, mixed lists last, and no sort menu.
+  let playlistSort=mobile?'server':'recent';
+  $: sortedPlaylists=[...filteredPlaylists].sort((a,b)=>(a.kind==='mixed')-(b.kind==='mixed')||(playlistSort==='name'?a.name.localeCompare(b.name,'es'):playlistSort==='size'?(b.songCount||0)-(a.songCount||0):playlistSort==='server'?0:String(b.changed||b.updated||'').localeCompare(String(a.changed||a.updated||''))));
   $: top, loadCurrent();
 
   async function loadCurrent() {
@@ -141,25 +144,28 @@
     if(p.kind==='mixed'){
       showContextMenu(e.currentTarget,[{label:'Cambiar portada',icon:'ph ph-image',action:()=>chooseCover(p)}]);return;
     }
+    const rename = () => { renameId = p.id; renameCurrentName = p.name; renameName = p.name; renameOpen = true; renameDialogEl?.showModal(); };
+    const remove = async () => {
+      if (!confirm(`¿Eliminar la playlist «${p.name}»? Las canciones siguen en tu biblioteca.`)) return;
+      await libApi('deletePlaylist', { id: p.id });
+      await loadPlaylists();
+    };
+    // On the phone, the app's playlist menu (PlaylistsScreen): cover, rename and, apart, delete.
+    if (mobile) {
+      showContextMenu(e.currentTarget, [
+        ...(p.owner===getSession()?.username?[{label:'Cambiar portada',action:()=>chooseCover(p)}]:[]),
+        {label:'Renombrar',micon:'edit',action:rename},
+        null,
+        {label:'Eliminar',micon:'delete',danger:true,action:remove},
+      ]);
+      return;
+    }
     showContextMenu(e.currentTarget, [
       ...(p.owner===getSession()?.username?[{label:"Cambiar portada",icon:"ph ph-image",action:()=>chooseCover(p)}]:[]),
-      {
-        label: 'Añadir canciones', icon: 'ph ph-plus-circle',
-        action: () => openSongPicker(p.id, p.name),
-      },
-      {
-        label: 'Cambiar nombre', icon: 'ph ph-pencil',
-        action: () => { renameId = p.id; renameCurrentName = p.name; renameName = p.name; renameOpen = true; renameDialogEl?.showModal(); },
-      },
+      { label: 'Añadir canciones', icon: 'ph ph-plus-circle', action: () => openSongPicker(p.id, p.name) },
+      { label: 'Cambiar nombre', icon: 'ph ph-pencil', action: rename },
       null,
-      {
-        label: 'Eliminar playlist', icon: 'ph ph-trash', danger: true,
-        action: async () => {
-          if (!confirm(`¿Eliminar la playlist «${p.name}»? Las canciones siguen en tu biblioteca.`)) return;
-          await libApi('deletePlaylist', { id: p.id });
-          await loadPlaylists();
-        },
-      },
+      { label: 'Eliminar playlist', icon: 'ph ph-trash', danger: true, action: remove },
     ]);
   }
 
@@ -227,8 +233,7 @@
 <div use:pullRefresh={loadCurrent} class="playlist-pane w-full max-w-5xl mx-auto p-4 md:p-8" class:drilled={mobile && stack.length>1}>
 
   <!-- Breadcrumb -->
-  {#if mobile && top.type==='mixed'}<button class="phone-back" data-phone-back aria-label="Volver" on:click={()=>goTo(0)}><i class="ph ph-arrow-left"></i></button>
-  {:else if !mobile && stack.length > 1}
+  {#if !mobile && stack.length > 1}
     <div class="flex items-center gap-2 text-sm text-armonia-muted mb-6 flex-wrap">
       {#each stack as crumb, i}
         {#if i < stack.length - 1}
@@ -253,12 +258,8 @@
     </div>
   {:else if top.type === 'playlists'}
     <div class="toolbar">
-      <label class="filter"><i aria-hidden="true" class="ph ph-magnifying-glass"></i>
+      <label class="filter"><MaterialIcon name="search" />
         <input type="search" bind:value={playlistFilter} aria-label="Buscar en tus playlists" placeholder={mobile?"Buscar en tus playlists…":"Buscar en tus playlists"}></label>
-      {#if mobile}<details class="list-options"><summary aria-label="Opciones de playlists"><i class="ph ph-dots-three-vertical"></i></summary>
-        <div><label>Ordenar playlists <select bind:value={playlistSort}><option value="recent">Recientes</option><option value="name">Nombre</option><option value="size">Numero de canciones</option></select></label>
-        <button on:click={e=>{e.currentTarget.closest('details').open=false;openCreateMixed();}}>Nueva lista con canciones externas</button></div>
-      </details>{/if}
     </div>
     {#if !mobile}    <label class="sort"><i aria-hidden="true" class="ph ph-arrows-down-up"></i><span class="sr-only">Ordenar playlists</span>
       <select bind:value={playlistSort} aria-label="Ordenar playlists">
@@ -275,9 +276,9 @@
       {#each sortedPlaylists as p (p.kind+p.id)}
         <li><button class="list" aria-label={`Abrir ${p.name}`} on:click={() => push({ type: p.kind==='mixed'?'mixed':'playlist', id: p.id, label: p.name })}>
             {#if p.kind==='mixed'&&!p.coverArt}<span class="art mixed"><i aria-hidden="true" class="ph ph-playlist"></i></span>
-            {:else}<span class="art"><Cover covers={p.coverArt?[coverArtUrl(p.coverArt,96)]:(p.covers||[])} size={96} /></span>{/if}
+            {:else}<span class="art"><Cover covers={p.coverArt?[coverArtUrl(p.coverArt,artSize(48,96))]:(p.covers||[])} size={96} /></span>{/if}
             <span class="text"><b>{p.name}</b><small>{p.kind==='mixed'?'con canciones externas · ':mobile?'':'Playlist · '}{p.songCount || 0} {p.songCount === 1 ? 'cancion' : 'canciones'}</small></span></button>
-          <button class="more" aria-label={`Opciones de ${p.name}`} on:click={e => openDots(e, p)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button></li>
+          <button class="more" aria-label={`Opciones de ${p.name}`} on:click={e => openDots(e, p)}><MaterialIcon name="more_vert" /></button></li>
       {/each}
       {#if !mobile && !playlistFilter}
         <li><button class="list" on:click={openCreateMixed}>
@@ -289,11 +290,12 @@
       <p class="none">{playlistFilter?`Ninguna playlist coincide con «${playlistFilter}».`:'Todavia no tienes playlists. Crea una o importa una lista.'}</p>
     {/if}
   {:else if top.type === 'mixed'}
-    {#key top.id}<MixedPlaylists initialId={top.id||null} />{/key}
+    <!-- On the phone a mixed list opens the same screen as any other playlist. -->
+    {#if mobile}{#key top.id}<LibraryPlaylist id={top.id} title={top.label} kind="mixed" on:back={()=>goTo(0)} />{/key}
+    {:else}{#key top.id}<MixedPlaylists initialId={top.id||null} />{/key}{/if}
   {:else if top.type === 'playlist'}
     {#if mobile}
       <PhonePlaylist title={top.label} {songs} playlistId={top.id} cover={detailCover} onRefresh={()=>loadPlaylist(top.id)} on:back={()=>goTo(0)}>
-        <div slot="organize"><details><summary>Reordenar canciones</summary>{#each songs as song,i}<div class="flex items-center gap-3 p-2"><span class="flex-1 truncate">{i+1}. {song.title}</span><button aria-label={`Subir ${song.title}`} disabled={i===0} on:click={()=>moveSong(i,-1)}>↑</button><button aria-label={`Bajar ${song.title}`} disabled={i===songs.length-1} on:click={()=>moveSong(i,1)}>↓</button></div>{/each}</details></div>
         <button class="add-song" on:click={()=>openSongPicker(top.id,top.label)}><i class="ph ph-plus"></i>Añadir a esta lista</button>
       </PhonePlaylist>
     {:else}

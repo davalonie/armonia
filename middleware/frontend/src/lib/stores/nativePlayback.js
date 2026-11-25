@@ -1,6 +1,17 @@
 import {nativeTrack} from '../nativeTracks.js';
 import { mobile } from '../native.js';
 import { showToast } from './toastStore.js';
+import { writable } from 'svelte/store';
+import { phoneOnline } from './connection.js';
+
+// Whether the native player has a song before and after the current one (a swipe that cannot
+// step springs back without asking).
+export const nativeSteps = writable({previous:false, next:false});
+
+// Play/pause shows its new state on the tap, as the Kotlin button did; the next answers of the
+// native player are only believed once they agree, or after a moment if the tap did nothing.
+let heldPlaying = null;
+export function holdPlaying(value) { heldPlaying = {value, until: performance.now() + 1500}; }
 
 export function command(action, args = {}) {
   return mobile.command({action, ...args}).catch(() => showToast('No se pudo actualizar el reproductor.', 'error'));
@@ -13,8 +24,10 @@ export function observeNativePlayer(stores) {
   let pending = false;
   let nativeQueue = [];
   let lastError;
+  let again = false;
   async function refresh() {
-    if (pending || document.hidden) return;
+    if (document.hidden) return;
+    if (pending) { again = true; return; }
     pending = true;
     try {
       const s = await mobile.snapshot({revision,downloadsRevision,serverDownloadRevision});
@@ -40,24 +53,35 @@ export function observeNativePlayer(stores) {
       }
       lastError = s.error;
       stores.currentIndex.set(s.index);
-      stores.playing.set(s.playing);
-      stores.playbackProgress.set({currentTime:s.position/1000, duration:s.duration/1000});
+      if (heldPlaying && (s.playing === heldPlaying.value || performance.now() > heldPlaying.until)) heldPlaying = null;
+      if (!heldPlaying) stores.playing.set(s.playing);
+      nativeSteps.set({previous: !!s.canPrevious, next: !!s.canNext});
+      stores.playbackProgress.set({currentTime:s.position/1000, duration:s.duration/1000, buffered:(s.buffered||0)/1000});
       stores.shuffleOn.set(s.shuffle);
       stores.repeatMode.set(s.repeat);
       stores.continueSimilar.set(s.similar);
+      if (typeof s.online === 'boolean') phoneOnline.set(s.online);
       stores.playbackState.set(s.error ? 'error' : s.buffering ? 'loading' : '');
     } catch { /* The activity handles session expiry and account changes. */ }
-    finally { pending = false; }
+    finally {
+      pending = false;
+      if (again) { again = false; void refresh(); }
+    }
   }
   const notice = mobile.addListener('notice', e => {
     showToast(e.message);
     if (e.libraryChanged) window.dispatchEvent(new Event('armonia-library-changed'));
   });
+  const network = mobile.addListener('network', e => phoneOnline.set(!!e.online));
+  // Announced by the native player on every change of song, play state or queue.
+  const changed = mobile.addListener('changed', () => void refresh());
   void refresh();
   document.addEventListener('visibilitychange', refresh);
   const timer = setInterval(refresh, 650);
   window.addEventListener('pagehide', () => {
     void notice.then(handle=>handle.remove());
+    void changed.then(handle=>handle.remove());
+    void network.then(handle=>handle.remove());
     clearInterval(timer);
     document.removeEventListener('visibilitychange', refresh);
   }, {once:true});

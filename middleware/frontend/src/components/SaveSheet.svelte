@@ -1,8 +1,9 @@
 <script>
+  import MaterialIcon from './MaterialIcon.svelte';
   // «Guardar en una playlist», as in the app: search, «Nueva playlist», order, Tus favoritos and your playlists with
   // a tick where the song already is; Guardar applies only what changed. A bottom sheet on a phone, a dialog wider.
   import {saveSheet, loadSheet, saveChanges, createPlaylist, FAVORITES} from '../lib/saveSong.js';
-  import {coverArtUrl} from '../lib/api.js';
+  import {coverArtUrl, artSize} from '../lib/api.js';
   import Cover from './Cover.svelte';
   let track = null, playlists = [], included = new Set(), selected = new Set(), needsDownload = false;
   let loading = false, busy = false, ready = false, message = '', query = '', byCount = false, creating = false, name = '';
@@ -65,7 +66,7 @@
     <span class="grip" aria-hidden="true"></span>
     <h2 id="save-title">Guardar en una playlist</h2>
     <p class="song">{track.title} · {track.artist}</p>
-    <label class="search"><i aria-hidden="true" class="ph ph-magnifying-glass"></i>
+    <label class="search"><MaterialIcon name="search" />
       <input type="search" bind:value={query} placeholder="Buscar playlist" aria-label="Buscar playlist"></label>
     <div class="row-tools">
       <button class="text" disabled={busy} on:click={() => creating = !creating}><i aria-hidden="true" class="ph ph-plus"></i> Nueva playlist</button>
@@ -90,7 +91,7 @@
       {/if}
       {#each shown as p (p.id)}
         <li><button class="item" role="checkbox" aria-checked={selected.has(p.id)} disabled={!ready || busy} on:click={() => toggle(p.id)}>
-          <span class="art"><Cover covers={p.coverArt ? [coverArtUrl(p.coverArt, 96)] : []} size={96} /></span>
+          <span class="art"><Cover covers={p.coverArt ? [coverArtUrl(p.coverArt, artSize(48, 96, 300))] : []} size={96} /></span>
           <span class="text-col"><b>{p.name}</b>
             <small class:in={included.has(p.id)}>{included.has(p.id) ? 'Ya esta en esta playlist' : p.songCount === 1 ? '1 cancion' : `${p.songCount || 0} canciones`}</small></span>
           <span class="box" class:on={selected.has(p.id)} aria-hidden="true"><i class="ph-bold ph-check"></i></span></button></li>
@@ -106,6 +107,8 @@
 
 <style>
   .scrim{position:fixed;inset:0;background:#000a;z-index:190}
+  /* On the phone the sheet stays above the keyboard (--ime), as ModalBottomSheet does. */
+  :global(.capacitor) .sheet{bottom:var(--ime,0px);max-height:calc(88vh - var(--ime,0px))}
   .sheet{position:fixed;z-index:200;left:0;right:0;bottom:0;max-height:min(640px,88vh);display:flex;flex-direction:column;
     background:#1f1b26;border-radius:22px 22px 0 0;padding:8px 16px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px #0009}
   @media(min-width:768px){.sheet{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:min(520px,92vw);border-radius:22px;padding:20px}}

@@ -1,4 +1,4 @@
-import {toQueueTrack} from './homelab.js';
+import {toQueueTrack,trackRef} from './homelab.js';
 
 // Older MediaSession items can have the native media ID without the structured source reference.
 export function nativeTrack(song, snapshot, automatic) {
@@ -15,7 +15,7 @@ export function nativeTrack(song, snapshot, automatic) {
       if (url.searchParams.has('account') && /^\/api\/home\/releases\/[a-f0-9-]{36}\/cover$/.test(url.pathname)) thumb=url.pathname;
     } catch { /* An invalid thumbnail can still use the normal image fallback. */ }
   }
-  return {...external,...song,_musicTrack:ref,_previewThumb:thumb,
+  return {...external,...song,_musicTrack:ref && trackRef(ref),_previewThumb:thumb,
     _auto:automatic.has(song.id), _from:snapshot.from,
     _playlist:snapshot.playlist?{kind:snapshot.playlistKind||'local',id:snapshot.playlist}:null};
 }

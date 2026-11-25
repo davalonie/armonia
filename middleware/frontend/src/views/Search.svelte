@@ -1,4 +1,6 @@
 <script>
+  import NowPlayingMark from '../components/NowPlayingMark.svelte';
+  import MaterialIcon from '../components/MaterialIcon.svelte';
   import {pullRefresh} from '../lib/pullRefresh.js';
   import {mobile} from '../lib/native.js';
   import {showView,searchFor,externalArtist} from '../lib/stores/viewStore.js';
@@ -9,7 +11,7 @@
   import {librarySongs,recentlyAdded} from '../lib/librarySongs.js';
   import {searchSource} from '../lib/searchSource.js';
   import {songMenu} from '../lib/trackActions.js';
-  import {search as searchApi,library,coverArtUrl,getSession} from '../lib/api.js';
+  import {search as searchApi,library,coverArtUrl,getSession,artSize} from '../lib/api.js';
   import {playQueue,playNext,addToQueue,undoPlayNext,prepareTrack,currentTrack,playing} from '../lib/stores/playerStore.js';
   import {accountKey,api,toQueueTrack} from '../lib/homelab.js';
   import {loaders,context,count,albumEntry,playlistEntry} from '../lib/lists.js';
@@ -171,7 +173,7 @@
   function enqueue(song){const token=mobile?addToQueue(song):playNext(song);showToast(mobile?'Añadida a la cola':'Se reproducira a continuacion','info',()=>undoPlayNext(token));}
   function externalActions(r){
     const row=downloadRow($serverDownloads[r.videoId]);
-    return [{label:mobile&&row.label!=='Descargar'?row.label:'Descargar a la biblioteca',icon:'ph '+row.icon,disabled:mobile&&row.disabled,action:()=>dl={open:true,videoId:r.videoId,artist:r.channel||'',title:r.title||'',album:r.album||'',source:resultSource}}];}
+    return [{label:mobile&&row.label!=='Descargar'?row.label:'Descargar a la biblioteca',icon:'ph '+row.icon,micon:mobile&&row.label==='Descargar'?'download':null,disabled:mobile&&row.disabled,action:()=>dl={open:true,videoId:r.videoId,artist:r.channel||'',title:r.title||'',album:r.album||'',source:resultSource}}];}
 
   // Dragging a song row to the right queues it right after the current song, without interrupting it.
   let drag=null,suppressClickUntil=0;
@@ -228,7 +230,7 @@
       {:else}
         <ul class="rows">{#each top.albums as a (a.id)}
           <li><button class="row" aria-label={`Abrir ${a.name}`} on:click={()=>openList(albumEntry(a))}>
-            <span class="art"><Cover covers={a.coverArt?[coverArtUrl(a.coverArt,96)]:[]} size={96} /></span>
+            <span class="art"><Cover covers={a.coverArt?[coverArtUrl(a.coverArt,artSize(48,96,300))]:[]} size={96} /></span>
             <span class="text"><b>{a.name}</b><small>Album{a.year?` · ${a.year}`:''}{a.songCount?` · ${count(a.songCount)}`:''}</small></span>
             <i aria-hidden="true" class="ph ph-caret-right chevron"></i></button></li>
         {/each}</ul>
@@ -245,7 +247,7 @@
   <div class="search-bar">
     {#if mobile}<button class="phone-back" data-phone-back aria-label="Volver a la biblioteca" on:click={()=>{query='';schedule();showView('library');}}><i class="ph ph-arrow-left"></i></button>{/if}
   <form class="field" role="search" on:submit|preventDefault={()=>{inputEl?.blur();void go();}}>
-    <i aria-hidden="true" class="ph-bold ph-magnifying-glass"></i>
+    <MaterialIcon name="search" />
     <input bind:this={inputEl} bind:value={query} type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false"
       aria-label="Buscar canciones, artistas, albumes y playlists" placeholder="¿Que quieres escuchar?" on:input={schedule}>
     {#if query}<button type="button" class="clear" aria-label="Borrar busqueda" on:click={()=>{query='';schedule();inputEl?.focus();}}><i aria-hidden="true" class="ph ph-x"></i></button>{/if}
@@ -279,10 +281,10 @@
         <ul class="rows">{#each recent as s,i (s.id)}
           {@const active=$currentTrack?.id===s.id}
           <li class="recent"><button class="row" aria-label={`Reproducir ${s.title}`} on:click={()=>playRecent(i)}>
-              <span class="art"><Cover covers={s.coverArt?[coverArtUrl(s.coverArt,96)]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
+              <span class="art"><Cover covers={s.coverArt?[coverArtUrl(s.coverArt,artSize(48,96,300))]:[]} size={96} />{#if active}{#if mobile}<NowPlayingMark playing={$playing} />{:else}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}{/if}</span>
               <span class="text"><b class:playing={active}>{s.title}</b><small>{s.artist}</small></span></button>
             {#if mobile}<button class="icon" disabled={savingStar[s.id]} aria-pressed={!!s.starred} aria-label={(!!s.starred?'Quitar de favoritos: ':'Añadir a favoritos: ')+s.title} on:click={()=>star(s)}><i class={!!s.starred?'ph-fill ph-heart text-armonia-accent':'ph ph-heart'}></i></button>{/if}
-            <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s,{onChange:()=>updateStar(s)})}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button></li>
+            <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s,{onChange:()=>updateStar(s)})}><MaterialIcon name="more_vert" /></button></li>
         {/each}</ul>
       </section>
     {/if}
@@ -305,10 +307,10 @@
             <div class="row-wrap" style:transform={drag?.key==='l'+s.id?`translateX(${drag.dx}px)`:''}
               on:pointerdown={e=>dragStart(e,'l'+s.id)} on:pointermove={dragMove} on:pointerup={()=>dragEnd(s)} on:pointercancel={()=>drag=null} on:dragstart|preventDefault>
               <button class="row" aria-label={`Reproducir ${s.title}`} on:click={guarded(()=>playLocal(i))}>
-                <span class="art"><Cover covers={s.coverArt?[coverArtUrl(s.coverArt,96)]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
+                <span class="art"><Cover covers={s.coverArt?[coverArtUrl(s.coverArt,artSize(48,96,300))]:[]} size={96} />{#if active}{#if mobile}<NowPlayingMark playing={$playing} />{:else}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}{/if}</span>
                 <span class="text"><b class:playing={active}>{s.title}</b><small>Cancion · {s.artist}</small></span></button>
               {#if mobile}<button class="icon" disabled={savingStar[s.id]} aria-pressed={!!s.starred} aria-label={(!!s.starred?'Quitar de favoritos: ':'Añadir a favoritos: ')+s.title} on:click={()=>star(s)}><i class={!!s.starred?'ph-fill ph-heart text-armonia-accent':'ph ph-heart'}></i></button>{/if}
-              <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s,{onChange:()=>updateStar(s)})}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
+              <button class="icon" aria-label={`Opciones de ${s.title}`} on:click={e=>songMenu(e.currentTarget,s,{onChange:()=>updateStar(s)})}><MaterialIcon name="more_vert" /></button>
             </div></li>
         {/each}</ul>
       </section>
@@ -333,7 +335,7 @@
       <section><h2>Albumes</h2>
         <ul class="rows">{#each local.albums.slice(0,limit) as a (a.id)}
           <li><button class="row" aria-label={`Abrir ${a.name}`} on:click={()=>openList(albumEntry(a))}>
-            <span class="art"><Cover covers={a.coverArt?[coverArtUrl(a.coverArt,96)]:[]} size={96} /></span>
+            <span class="art"><Cover covers={a.coverArt?[coverArtUrl(a.coverArt,artSize(48,96,300))]:[]} size={96} /></span>
             <span class="text"><b>{a.name}</b><small>Album · {a.artist}</small></span><i aria-hidden="true" class="ph ph-caret-right chevron"></i></button></li>
         {/each}</ul>
       </section>
@@ -362,9 +364,9 @@
             <div class="row-wrap" style:transform={drag?.key==='e'+r.videoId?`translateX(${drag.dx}px)`:''}
               on:pointerdown={e=>dragStart(e,'e'+r.videoId)} on:pointermove={dragMove} on:pointerup={()=>dragEnd(song)} on:pointercancel={()=>drag=null} on:dragstart|preventDefault>
               <button class="row" aria-label={`Reproducir ${r.title}`} on:click={guarded(()=>playExternal(i))}>
-                <span class="art"><Cover covers={r.thumbnail?[r.thumbnail]:[]} size={96} />{#if active}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}</span>
+                <span class="art"><Cover covers={r.thumbnail?[r.thumbnail]:[]} size={96} />{#if active}{#if mobile}<NowPlayingMark playing={$playing} />{:else}<span class="now" aria-hidden="true"><i class="ph-fill {$playing?'ph-speaker-high':'ph-pause'}"></i></span>{/if}{/if}</span>
                 <span class="text"><b class:playing={active}>{r.title||'Sin titulo'}</b><small>{#if mobile && $serverDownloads[r.videoId]}{downloadState.label} · {/if}Cancion · {r.channel||'Desconocido'}</small></span></button>
-              <button class="icon" aria-label={`Opciones de ${r.title}`} on:click={e=>songMenu(e.currentTarget,song,{extra:externalActions(r)})}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
+              <button class="icon" aria-label={`Opciones de ${r.title}`} on:click={e=>songMenu(e.currentTarget,song,{extra:externalActions(r)})}><MaterialIcon name="more_vert" /></button>
             </div></li>
         {/each}</ul>
       </section>

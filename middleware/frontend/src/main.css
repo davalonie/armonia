@@ -155,6 +155,11 @@
    reports its system bar insets in CSS pixels on the account-local origin. */
 .capacitor{--font-sans:'Armonia Inter',sans-serif;--mob-nav-h:80px;--color-armonia-text:#eee;background:#121015;color-scheme:dark}
 .capacitor #view{margin-top:env(safe-area-inset-top,0px);height:calc(100% - env(safe-area-inset-top,0px));scrollbar-width:none}
+/* The keyboard covers the bottom bar and the mini player, as in the app; only the content makes room for it.
+   --ime is how much of the page the keyboard covers (LibraryActivity). Dialogs and sheets sit above it. */
+.capacitor.ime-open #view{padding-bottom:calc(var(--ime) + 8px)}
+.capacitor dialog:modal{bottom:var(--ime,0px)}
+.capacitor.ime-open dialog:modal{max-height:calc(100% - var(--ime))}
 .capacitor .mobile-nav{border:0;backdrop-filter:none}
 .capacitor .mobile-nav>div{height:80px}
 .capacitor .mobile-nav button{gap:3px}
@@ -184,10 +189,6 @@
 .capacitor .playlist-pane .filter{height:56px;border:1px solid #444;border-radius:4px;background:transparent;padding:0 46px 0 14px;gap:16px}
 .capacitor .playlist-pane .filter i{font-size:24px}
 .capacitor .playlist-pane .filter input{font-size:16px}
-.capacitor .list-options{position:absolute;right:0}
-.capacitor .list-options summary{list-style:none;padding:10px;color:#aaa}
-.capacitor .list-options>div{position:absolute;right:0;top:100%;width:200px;z-index:2;padding:12px;background:#242424;border-radius:8px}
-.capacitor .list-options label,.capacitor .list-options button{display:block;padding:8px;text-align:left}
 .capacitor .playlist-pane .list{padding:8px 0;gap:12px}
 .capacitor .playlist-pane .list .art{width:48px;height:48px}
 .capacitor .playlist-pane .cover{border-radius:8px;box-shadow:none}
@@ -210,14 +211,9 @@
 .capacitor .search .row .cover .placeholder{display:none}
 .capacitor .search .row .text b{font-size:14px}
 .capacitor .search .row .text small{font-size:12px}
-.capacitor .queue-panel{inset:auto 0 0;width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 24px);border:0;border-radius:28px 28px 0 0;padding-bottom:calc(env(safe-area-inset-bottom) + 12px);overflow:auto}
+.capacitor .queue-panel{inset:auto 0 0;width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 24px);border:0;border-radius:28px 28px 0 0;padding-bottom:calc(env(safe-area-inset-bottom) + 12px);overflow:hidden}
 .capacitor .queue-handle{display:grid;place-items:center;width:100%;height:48px;flex:none}
 .capacitor .queue-handle span{background:#eee;border-radius:2px;width:32px;height:4px}
-.capacitor .queue-head{height:64px;padding:8px 16px;border:0}
-.capacitor .queue-head h2{font-size:20px}
-.capacitor .queue-current{padding:0}
-.capacitor .queue-current>p,.capacitor .queue-upcoming{display:none}
-.capacitor .queue-current>div{background:#30251f;border-radius:0;padding:8px 16px;min-height:60px}
 .capacitor .expanded-player>div:nth-child(3){background:linear-gradient(#101013d9,#000) !important}
 .capacitor .expanded-player .player-cover{container-type:size}
 .capacitor .expanded-player .player-cover .cover-frame{width:min(100cqw,100cqh);height:min(100cqw,100cqh);border-radius:14px;background:#171719;box-shadow:none}
@@ -227,3 +223,6 @@
 
 .capacitor .expanded-player .cover-frame img{width:100%;height:100%;border-radius:inherit;box-shadow:none}
 .capacitor .expanded-player .cover-frame{overflow:hidden}
+
+/* The cover follows a sideways swipe that changes song (lib/trackSwipe.js), as in the app. */
+.player-cover>*{translate:var(--track-swipe,0px) 0}

@@ -1,6 +1,6 @@
 <script>
   import {playlistPickerState,closePlaylistPicker} from '../lib/stores/playlistPickerStore.js';
-  import {library,getSession,coverArtUrl} from '../lib/api.js';
+  import {library,getSession,coverArtUrl,artSize} from '../lib/api.js';
   import {api,fromQueueTrack} from '../lib/homelab.js';
   import {appendLocal,uniqueAdditions} from '../lib/playlistEdits.js';
   import {showToast} from '../lib/stores/toastStore.js';
@@ -68,7 +68,7 @@
     <label>Ordenar <select bind:value={sort}><option value="name">Nombre</option><option value="count">Numero de canciones</option></select></label>
     <div class="max-h-72 overflow-auto my-3">
       {#each visible as p (key(p))}<label class="picker-row">
-        {#if p.coverArt}<img src={coverArtUrl(p.coverArt,96)} alt="" loading="lazy">{:else}<span class="cover" aria-hidden="true">♫</span>{/if}
+        {#if p.coverArt}<img src={coverArtUrl(p.coverArt,artSize(48,96))} alt="" loading="lazy">{:else}<span class="cover" aria-hidden="true">♫</span>{/if}
         <span class="name">{p.name}<small>{p.songCount??p.item_count??p.items?.length??0} canciones · {membership[key(p)]==='included'?'Ya incluida':membership[key(p)]==='unknown'?'Se comprobara al guardar':p.kind==='mixed'?'Admite fuentes externas':'Biblioteca'}</small></span>
         <input type="checkbox" checked={selected.has(key(p))||membership[key(p)]==='included'} disabled={busy||membership[key(p)]==='included'||(external&&p.kind==='local')} on:change={()=>toggle(p)} aria-label={`Seleccionar ${p.name}`}>
       </label>{/each}

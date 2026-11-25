@@ -1,4 +1,5 @@
 <script>
+  import MaterialIcon from '../components/MaterialIcon.svelte';
   import {pullRefresh} from '../lib/pullRefresh.js';
   import PhoneSongControls from '../components/PhoneSongControls.svelte';
   import {mobile} from '../lib/native.js';
@@ -73,7 +74,7 @@
 
 <div use:pullRefresh={load} class="phone-tracks likes-pane w-full max-w-5xl mx-auto p-4 md:p-8">
   {#if mobile}
-    <header class="phone-toolbar"><button class="phone-back" data-phone-back aria-label="Volver" on:click={leave}><img src="/armonia.svg" width="32" height="32" alt=""></button><h1>Favoritos</h1><button class="phone-back" aria-label="Buscar en favoritos" on:click={()=>searching=!searching}><i class="ph ph-magnifying-glass"></i></button></header>
+    <header class="phone-toolbar"><button class="phone-back" data-phone-back aria-label="Volver" on:click={leave}><img src="/armonia.svg" width="32" height="32" alt=""></button><h1>Favoritos</h1><button class="phone-back" aria-label="Buscar en favoritos" on:click={()=>searching=!searching}><MaterialIcon name="search" /></button></header>
     {#if songs.length || searching}<PhoneSongControls bind:filterQuery bind:sortKey songs={sorted} placeholder="Buscar en favoritos…" search={searching}/>{/if}
   {:else}
   <h2 class="font-london text-3xl pl-1 mb-4">Favoritos</h2>
@@ -81,7 +82,7 @@
   {#if songs.length || loading}
     <div class="flex items-center gap-2 mb-3">
       <div class="relative flex-1 min-w-0">
-        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-armonia-muted"></i>
+        <span aria-hidden="true" class="absolute left-4 top-1/2 -translate-y-1/2 text-armonia-muted"><MaterialIcon name="search" size={20} /></span>
         <input
           type="text"
           bind:value={filterQuery}
@@ -139,6 +140,6 @@
       <p class="text-sm mt-1">Heart a track in Library to add it here.</p>
     </div>
   {:else}
-    <TrackList songs={sorted} scrollLabels={songLabels(sorted, sortKey)} tools={false} allStarred={true} onRefresh={load} />
+    <TrackList artLeast={300} songs={sorted} scrollLabels={songLabels(sorted, sortKey)} tools={false} allStarred={true} onRefresh={load} />
   {/if}
 </div>

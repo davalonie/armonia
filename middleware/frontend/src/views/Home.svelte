@@ -1,12 +1,14 @@
 <script>
   import {mobile} from '../lib/native.js';
   import PhonePlaylist from '../components/PhonePlaylist.svelte';
+  import LibraryPlaylist from '../components/LibraryPlaylist.svelte';
   import PhoneDownloads from '../components/PhoneDownloads.svelte';
   import {albumList} from '../lib/albums.js';
   import {calendar,releaseEntry,releaseLine,releaseRows,releaseDay} from '../lib/releases.js';
   import {onMount} from 'svelte';
   import {get} from 'svelte/store';
   import {currentView,homeRoot} from '../lib/stores/viewStore.js';
+  import {phoneOnline} from '../lib/stores/connection.js';
   import {coverArtUrl} from '../lib/api.js';
   import {api} from '../lib/homelab.js';
   import {loaders,context,count,likedEntry,albumEntry} from '../lib/lists.js';
@@ -18,8 +20,20 @@
   import AlbumPage from '../components/AlbumPage.svelte';
 
   let phone=null;
+  // On the phone a library playlist opens the same screen as in Biblioteca.
+  let libraryList=null;
   let recent=[],generated=[],status={},artists=[],frequent=[],newest=[];
   let loaded=false,homeError='',detail=null,pages=[],busy=false,poll=null,token=0;
+  // «En el telefono» only without a connection (the user's choice, phone only): no network, or a server
+  // that answers none of Inicio's requests (the same rule as «Copia guardada en el teléfono»).
+  let serverDown=false;
+  $: offline=!$phoneOnline||serverDown;
+  let wasOnline=true;
+  $: networkBack($phoneOnline);
+  function networkBack(online){
+    if(mobile&&online&&!wasOnline&&get(currentView)==='home')void loadHome();
+    wasOnline=online;
+  }
 
   const hour=new Date().getHours();
   const greeting=hour<6?'Buenas noches':hour<13?'Buenos dias':hour<21?'Buenas tardes':'Buenas noches';
@@ -32,6 +46,7 @@
 
   async function loadHome(){
     const [r,g,a]=await Promise.allSettled([api.recent(),api.homePlaylists(),api.homeArtists()]);
+    serverDown=[r,g,a].every(result=>result.status==='rejected');
     if(r.status==='fulfilled')recent=r.value.playlists;
     if(a.status==='fulfilled')artists=a.value.artists;
     if(g.status==='fulfilled'){
@@ -42,6 +57,7 @@
     loaded=true;
     clearTimeout(poll);
     if(status.updating&&get(currentView)==='home')poll=setTimeout(loadHome,4000);
+    else if(mobile&&serverDown&&get(currentView)==='home')poll=setTimeout(loadHome,10000);
   }
   // Novedades para ti: while the server is still looking (preparing), ask again every 5 s for up to 5 minutes.
   let releases=[],releasePoll=null,releaseTries=0;
@@ -64,7 +80,7 @@
   onMount(()=>{
     const stopView=currentView.subscribe(view=>{if(view==='home'){void loadHome();void loadAlbums();releaseTries=0;void loadReleases();}else{clearTimeout(poll);clearTimeout(releasePoll);}});
     let first=true;
-    const stopRoot=homeRoot.subscribe(()=>{if(first){first=false;return;}detail=null;pages=[];phone=null;});
+    const stopRoot=homeRoot.subscribe(()=>{if(first){first=false;return;}detail=null;pages=[];phone=null;libraryList=null;});
     return()=>{stopView();stopRoot();clearTimeout(poll);clearTimeout(releasePoll);};
   });
 
@@ -86,7 +102,7 @@
       if(mine===token&&detail)detail={...detail,loading:false,rows:detail.rows||[],notice:e.message};
     }
   }
-  function open(entry){detail={...entry,rows:[],loading:true,notice:''};pages=[];void fill(entry);}
+  function open(entry){if(mobile&&['local','mixed'].includes(entry.type)){libraryList={id:entry.id,title:entry.title,kind:entry.type};return;}detail={...entry,rows:[],loading:true,notice:''};pages=[];void fill(entry);}
   async function play(entry){
     try{
       const epoch=await beginPlayRequest();
@@ -108,7 +124,9 @@
   const activate=()=>act(()=>api.activateWeekly(),()=>'Lista semanal activada. Las primeras canciones pueden tardar unos minutos.');
 </script>
 
-{#if phone}
+{#if libraryList}
+  {#key libraryList.id}<LibraryPlaylist id={libraryList.id} title={libraryList.title} kind={libraryList.kind} on:back={()=>libraryList=null} />{/key}
+{:else if phone}
   <PhonePlaylist title={phone.row.title} songs={phone.songs} playlistId={phone.row.key.startsWith('playlist:')?phone.row.id:null} offline={true} on:back={()=>phone=null} />
 {:else if pages.length}
   {@const top=pages[pages.length-1]}
@@ -159,7 +177,7 @@
       {#if loaded&&!recent.length}<p class="hint">Las playlists que escuches apareceran aqui.</p>{/if}
     </section>
 
-    {#if mobile}<PhoneDownloads on:collection={e=>phone=e.detail} />{/if}
+    {#if mobile&&offline}<PhoneDownloads on:collection={e=>phone=e.detail} />{/if}
     <section>
       <header class="shelf-head"><h2>Hecho para ti</h2>
         {#if status.updating}<span class="updating" role="status"><i aria-hidden="true" class="ph ph-arrows-clockwise"></i> Actualizando…</span>{/if}

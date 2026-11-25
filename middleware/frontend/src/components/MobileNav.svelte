@@ -3,10 +3,11 @@
   import {mobile} from '../lib/native.js';
   import {currentView, showView, isMoreView} from '../lib/stores/viewStore.js';
   import More from '../views/More.svelte';
+  import {PATHS} from './MaterialIcon.svelte';
 
   const tabs = [
     {view:'home',icon:'ph-house',label:'Inicio',path:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'},
-    {view:'search',icon:'ph-magnifying-glass',label:'Buscar',path:'M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.78l5 4.99L20.49 19zm-5 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9'},
+    {view:'search',icon:'ph-magnifying-glass',label:'Buscar',path:PATHS.search},
     {view:'library',icon:'ph-books',label:'Biblioteca',path:'M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-2 5h-3v5a3 3 0 1 1-2.99-3c.35 0 .68.06.99.17V5h5zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6z'},
     {view:'more',icon:'ph-dots-three',label:'Mas',path:'M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4m6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4'},
   ];
@@ -23,7 +24,7 @@
   }
 </script>
 
-<nav aria-label="Navegación principal" class="mobile-nav md:hidden fixed bottom-0 inset-x-0 z-40 bg-armonia-bg backdrop-blur-md border-t border-white/5 user-select-none" style="padding-bottom:env(safe-area-inset-bottom,0px)">
+<nav aria-label="Navegación principal" data-no-ripple class:phone={mobile} class="mobile-nav md:hidden fixed bottom-0 inset-x-0 z-40 bg-armonia-bg backdrop-blur-md border-t border-white/5 user-select-none" style="padding-bottom:env(safe-area-inset-bottom,0px)">
   <div class="flex items-stretch h-[60px]">
     {#each tabs as tab}
       {@const active = tab.view==='more' ? isMoreView($currentView) : $currentView===tab.view || (tab.view==='library' && $currentView==='import-all')}
@@ -53,5 +54,7 @@
   .nav-icon{display:grid;place-items:center;width:60px;height:36px;border-radius:20px}
   button[aria-current] .nav-icon{background:#242424}
   .nav-icon svg{width:28px;height:28px;fill:currentColor}
+  /* As NavigationBarItem in MainScreen.kt: unselected icon and label in onSurface at 60 %. */
+  .phone button:not([aria-current]){color:#eeeeee99}
   button:last-child .nav-icon svg{width:24px}
 </style>

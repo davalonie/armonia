@@ -1,5 +1,5 @@
 import { mobile } from '../native.js';
-import { command, observeNativePlayer } from './nativePlayback.js';
+import { command, observeNativePlayer, holdPlaying } from './nativePlayback.js';
 import { writable, derived, get } from 'svelte/store';
 import { call, streamUrl, coverArtUrl, library as libApi } from '../api.js';
 import { ListenClock } from '../listenClock.js';
@@ -452,7 +452,11 @@ export function prev() {
 }
 
 export function togglePlayPause() {
-  if (mobile) return command('toggle');
+  if (mobile) {
+    // The icon changes on the tap; the native player confirms it a few tens of milliseconds later.
+    if (get(currentTrack) || get(previewState)) { playing.update(p => !p); holdPlaying(get(playing)); }
+    return command('toggle');
+  }
   if (!_audio) return;
   if(get(previewState)){if(_audio.paused)audition(get(previewState).track);else pausePreview();return;}
   if(!_audio.src && get(currentTrack)){_load();return;}

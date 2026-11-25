@@ -32,8 +32,17 @@ export const api = {
   saveGenerated: key => call(`/api/home/playlists/${encodeURIComponent(key)}/save`, {method:'POST'}),
 };
 
+// The phone's bridge reads this reference into a Kotlin MusicTrack: every field it declares
+// with a default must be present, never undefined (artist_mbids missing closed the app).
+export function trackRef(track) {
+  return {...track, album:track.album || '', duration:track.duration > 0 ? track.duration : null,
+    recording_mbid:track.recording_mbid || null, isrc:track.isrc || null,
+    artist_mbids:Array.isArray(track.artist_mbids) ? track.artist_mbids : []};
+}
+
 // Stable references use the existing queue/audio element, never provider URLs.
 export function toQueueTrack(track, cover=null) {
+  track = trackRef(track);
   return { id: track.source === 'navidrome' ? track.source_id : `${track.source}|${track.source_id}`,
     title:track.title, artist:track.artist, album:track.album, duration:track.duration,
     _musicTrack:track,

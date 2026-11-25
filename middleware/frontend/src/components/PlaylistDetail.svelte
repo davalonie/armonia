@@ -1,4 +1,5 @@
 <script>
+  import MaterialIcon from './MaterialIcon.svelte';
   import {mobile} from '../lib/native.js';
   import PhoneDownloads from '../components/PhoneDownloads.svelte';
   import ShuffleToggle from './ShuffleToggle.svelte';
@@ -80,7 +81,7 @@
             </span>
             <span class="lines"><strong>{row.queue.title}</strong><small>{row.queue.artist}</small></span>
           </button>
-          <button class="dots" aria-label={`Opciones de ${row.queue.title}`} on:click={e=>menu(e,row)}><i aria-hidden="true" class="ph ph-dots-three-vertical"></i></button>
+          <button class="dots" aria-label={`Opciones de ${row.queue.title}`} on:click={e=>menu(e,row)}><MaterialIcon name="more_vert" /></button>
         </li>
       {/each}
     </ol>

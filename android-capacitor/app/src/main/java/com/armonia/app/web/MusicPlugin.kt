@@ -13,9 +13,9 @@ import com.armonia.app.playback.DataUsage
 import com.armonia.app.data.repository.DownloadEvent
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.conflate
 import com.armonia.app.data.api.Song
 import com.armonia.app.data.repository.AuthSnapshot
-import com.armonia.app.homelab.MusicTrack
 import com.armonia.app.homelab.asMusicTrack
 import com.armonia.app.homelab.canKeepOffline
 import com.armonia.app.offline.OfflineSongState
@@ -66,6 +66,18 @@ class MusicPlugin : Plugin() {
                 if (screen.prefs.accountNamespace == screen.account)
                     notifyListeners("notice", JSObject().put("message", message))
             }
+        }
+        // Whether the phone has a network at all (Inicio shows «En el telefono» only without one).
+        screen.lifecycleScope.launch {
+            screen.network.onlineFlow.collect { notifyListeners("network", JSObject().put("online", it)) }
+        }
+        // The page asks for the state every 650 ms; a change the person makes (play, pause, another
+        // song) is announced at once so the screen follows as quickly as the Kotlin one did.
+        screen.lifecycleScope.launch {
+            val player = screen.player
+            merge(player.isPlaying, player.currentIndex, player.queue, player.shuffleOn, player.repeatMode,
+                player.buffering, player.auditionId, player.playbackError, player.playOrder)
+                .conflate().collect { notifyListeners("changed", JSObject()) }
         }
     }
 
@@ -149,7 +161,7 @@ class MusicPlugin : Plugin() {
         val gson = screen.gson
         val ref = json.optJSONObject("_musicTrack")
         if (ref != null && ref.optString("source") != "navidrome") {
-            val external = gson.fromJson(ref.toString(), MusicTrack::class.java).toSong()
+            val external = TrackRefs.musicTrack(ref.toString()).toSong()
             val thumbnail = json.optString("_previewThumb").ifBlank { return external }
             val path = Uri.parse(thumbnail).path
             val session = screen.auth()
@@ -157,7 +169,7 @@ class MusicPlugin : Plugin() {
                 "${session.serverUrl.trimEnd('/')}$path?account=${session.namespace}" else thumbnail
             return external.copy(coverArt = cover)
         }
-        return gson.fromJson(json.toString(), Song::class.java).also {
+        return TrackRefs.song(gson, json.toString()).also {
             require(!it.id.isNullOrBlank() && !it.title.isNullOrBlank())
         }
     }
@@ -179,6 +191,8 @@ class MusicPlugin : Plugin() {
                     playlistKind = call.getString("kind", "local")!!, from = call.getString("from"))
             }
             "toggle" -> player.togglePlayPause()
+            // The tick of SwipeToQueue when a row has been pulled far enough (HapticFeedbackType.LongPress).
+            "haptic" -> screen.window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
             "next" -> player.next()
             "previous" -> player.prev()
             "seek" -> player.seekFraction(call.getDouble("fraction", 0.0)!!.toFloat())
@@ -261,8 +275,8 @@ class MusicPlugin : Plugin() {
         result.put("listenProblem", screen.listenOutbox.persistenceProblem.value)
         val progress = player.progress.value
         result.put("revision", revision).put("index", player.currentIndex.value)
-            .put("position", progress.positionMs).put("duration", progress.durationMs)
-            .put("playing", player.isPlaying.value).put("shuffle", player.shuffleOn.value)
+            .put("position", progress.positionMs).put("duration", progress.durationMs).put("buffered", progress.bufferedMs).put("online", screen.network.online)
+            .put("playing", player.isPlaying.value).put("canPrevious", player.canStep(-1)).put("canNext", player.canStep(1)).put("shuffle", player.shuffleOn.value)
             .put("repeat", player.repeatMode.value.name.lowercase()).put("similar", player.continueSimilar.value)
             .put("playlistKind", player.playingPlaylistKind).put("playlist", player.playingPlaylistId.value).put("from", player.playingFrom.value)
             .put("error", player.playbackError.value)

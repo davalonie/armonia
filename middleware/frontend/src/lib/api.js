@@ -161,6 +161,17 @@ export function previewUrl(videoId) {
   return `/api/preview/${encodeURIComponent(videoId)}`;
 }
 
+// Phone covers: drawn size in device pixels, rounded up to a few fixed sizes so one download serves every
+// screen (the phone keeps each cover URL), and never below what the Kotlin screen asks for there (128 in
+// playlists, the queue and the mini player; 300 in Biblioteca, Buscar and Sin conexion). Desktop: unchanged.
+const PHONE_ART = [128, 192, 300, 512, 1024];
+export function phoneArtSize(cssPx, dpr, least = 128) {
+  const want = Math.max(least, cssPx * (dpr || 1));
+  return PHONE_ART.find(size => size >= want) ?? PHONE_ART[PHONE_ART.length - 1];
+}
+export const artSize = (cssPx, desktop, least = 128) =>
+  mobile ? phoneArtSize(cssPx, globalThis.devicePixelRatio, least) : desktop;
+
 export function coverArtUrl(coverArtId, size = 300) {
   if (!coverArtId) return "";
   if (mobile && /^https?:\/\//i.test(coverArtId)) return coverArtId;

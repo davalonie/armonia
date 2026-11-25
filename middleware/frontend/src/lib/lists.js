@@ -1,10 +1,10 @@
 // Every kind of song list ends in the same row shape and the same queue, wherever it is opened from
 // (Inicio, Buscar, Biblioteca). A row is {queue, art}: a queue-shaped song and its small artwork.
-import {call,library,coverArtUrl} from './api.js';
+import {call,library,coverArtUrl,artSize} from './api.js';
 import {api,toQueueTrack,artUrl} from './homelab.js';
 
-export const localRow=s=>({queue:s,art:s.coverArt?coverArtUrl(s.coverArt,96):''});
-export const refRow=i=>({queue:toQueueTrack(i.track,i.cover),art:artUrl({...i.track,cover:i.cover},96)});
+export const localRow=s=>({queue:s,art:s.coverArt?coverArtUrl(s.coverArt,artSize(48,96)):''});
+export const refRow=i=>({queue:toQueueTrack(i.track,i.cover),art:artUrl({...i.track,cover:i.cover},artSize(48,96))});
 export const count=n=>`${n} ${n===1?'cancion':'canciones'}`;
 
 export const loaders={

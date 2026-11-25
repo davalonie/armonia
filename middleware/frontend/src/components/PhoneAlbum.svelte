@@ -4,6 +4,7 @@
   import {library,coverArtUrl} from '../lib/api.js';
   import TrackList from './TrackList.svelte';
   import ShuffleToggle from './ShuffleToggle.svelte';
+  import PhonePlayButton from './PhonePlayButton.svelte';
   import PhoneDownloads from './PhoneDownloads.svelte';
 
   export let id,title;
@@ -30,7 +31,7 @@
     </div>
     <div class="album-actions">
       <PhoneDownloads {id} title={album.name} tracks={songs} kind="album"/>
-      <ShuffleToggle/><button class="phone-play" disabled={!songs.length} on:click={()=>list.playFromHeader()}>▶ Reproducir</button>
+      <ShuffleToggle/><PhonePlayButton disabled={!songs.length} label="Reproducir el album" on:click={()=>list.playFromHeader()} />
     </div>
     <TrackList bind:this={list} {songs} tools={false} onRefresh={load}/>
   {/if}

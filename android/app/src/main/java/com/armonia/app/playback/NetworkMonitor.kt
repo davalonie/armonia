@@ -7,6 +7,9 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 import java.util.concurrent.ConcurrentHashMap
@@ -18,8 +21,12 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Singleton
 class NetworkMonitor @Inject constructor(@ApplicationContext context: Context) {
+    private val _onlineFlow = MutableStateFlow(true)
+    /** The same value as [online], for whoever has to follow its changes (the Capacitor screens). */
+    val onlineFlow: StateFlow<Boolean> = _onlineFlow.asStateFlow()
+
     @Volatile var online: Boolean = true
-        private set
+        private set(value) { field = value; _onlineFlow.value = value }
 
     // The phone's physical networks. With Tailscale on, the default network is the VPN, which stays the
     // same when the phone moves from Wi-Fi to mobile data; PathRate needs the network underneath.

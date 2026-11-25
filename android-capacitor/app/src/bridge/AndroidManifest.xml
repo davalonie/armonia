@@ -10,7 +10,10 @@
         </activity>
         <activity android:name=".web.LoginActivity" android:exported="false"
             android:theme="@style/AppTheme.NoActionBar" android:windowSoftInputMode="adjustResize" />
+        <!-- adjustNothing: the keyboard covers the bottom bar as in the Kotlin app; LibraryActivity
+             tells the page how much it covers instead of Capacitor shrinking the WebView. -->
         <activity android:name=".web.LibraryActivity" android:exported="false"
-            android:theme="@style/AppTheme.NoActionBar" android:launchMode="singleTop" />
+            android:theme="@style/AppTheme.NoActionBar" android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustNothing" />
     </application>
 </manifest>

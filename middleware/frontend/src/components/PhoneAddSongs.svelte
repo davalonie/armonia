@@ -1,4 +1,5 @@
 <script>
+  import MaterialIcon from './MaterialIcon.svelte';
   // «Añadir canciones» on the phone, as the Kotlin screen was: search the library, tap a cover to
   // listen to ten seconds, + saves that one song at once and the screen stays open to keep adding.
   // Only library songs: a Navidrome playlist cannot hold a song from outside it.
@@ -9,9 +10,12 @@
   import {replaceLocal} from '../lib/playlistEdits.js';
   import {audition,stopPreview,previewState,playbackProgress} from '../lib/stores/playerStore.js';
   import {showToast} from '../lib/stores/toastStore.js';
+  import {matchesSearch} from '../lib/textSearch.js';
 
   export let id;
   export let name='';
+  /** How the list is read and changed; a Navidrome playlist by default. A mixed list passes its own. */
+  export let list=null;
   const dispatch=createEventDispatcher();
   // A second tap of a double tap must not undo what the first one has just added.
   const UNDO_GUARD_MS=700;
@@ -19,16 +23,17 @@
 
   let dialog,query='',songs=[],loading=true,error='',inPlaylist=new Set(),states={},addedAt={},shownCount=PAGE;
 
-  // As the Kotlin search: case and accents ignored (ñ kept), every word somewhere in the fields.
-  const fold=s=>(s||'').replace(/[ñÑ]/g,'\u0001').normalize('NFD').replace(/\p{Mn}+/gu,'').replace(/\u0001/g,'ñ').toLowerCase();
-  function matches(q,song){
-    const words=fold(q).split(' ').filter(Boolean);
-    const text=[song.title,song.artist,song.album].map(fold).join('\n');
-    return words.every(w=>text.includes(w));
-  }
+  const matches=(q,song)=>matchesSearch(q,song.title,song.artist,song.album);
   const byArtistThenTitle=(a,b)=>(a.artist||'').toLowerCase().localeCompare((b.artist||'').toLowerCase())||(a.title||'').toLowerCase().localeCompare((b.title||'').toLowerCase());
 
-  async function currentIds(){return ((await library('getPlaylist',{id})).playlist?.entry||[]).map(s=>s.id);}
+  async function navidromeIds(){return ((await library('getPlaylist',{id})).playlist?.entry||[]).map(s=>s.id);}
+  const navidrome={
+    ids:navidromeIds,
+    append:async song=>{const ids=await navidromeIds();if(!ids.includes(song.id))await replaceLocal(id,ids,[...ids,song.id]);},
+    removeLast:async songId=>{const ids=await navidromeIds(),at=ids.lastIndexOf(songId);if(at>=0)await replaceLocal(id,ids,ids.filter((_,i)=>i!==at));},
+  };
+  $: store=list||navidrome;
+  const currentIds=()=>store.ids();
   async function load(){
     loading=true;error='';
     try{
@@ -50,8 +55,7 @@
     if(before==='sending'||before==='added'||before==='already')return;
     setState(song,'sending');
     try{
-      const ids=await currentIds();
-      if(!ids.includes(song.id))await replaceLocal(id,ids,[...ids,song.id]);
+      await store.append(song);
       addedAt[song.id]=Date.now();
       inPlaylist=new Set([...inPlaylist,song.id]);
       setState(song,'added');
@@ -66,8 +70,7 @@
     if(states[song.id]!=='added'||Date.now()-(addedAt[song.id]||0)<UNDO_GUARD_MS)return;
     setState(song,'sending');
     try{
-      const ids=await currentIds(),at=ids.lastIndexOf(song.id);
-      if(at>=0)await replaceLocal(id,ids,ids.filter((_,i)=>i!==at));
+      await store.removeLast(song.id);
       const rest={...states};delete rest[song.id];states=rest;
       inPlaylist=new Set([...inPlaylist].filter(x=>x!==song.id));
     }catch{
@@ -95,7 +98,7 @@
     <div class="title"><h1 id="add-songs-title">Añadir canciones</h1><p>a «{name}»</p></div>
   </header>
   <form class="field" role="search" on:submit|preventDefault>
-    <i aria-hidden="true" class="ph-bold ph-magnifying-glass"></i>
+    <MaterialIcon name="search" />
     <input bind:value={query} type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Buscar cancion o artista" aria-label="Buscar cancion o artista">
     {#if query}<button type="button" class="clear" aria-label="Borrar la busqueda" on:click={()=>query=''}><i class="ph ph-x"></i></button>{/if}
   </form>
@@ -133,6 +136,8 @@
 <style>
   .add-songs{position:fixed;inset:0;z-index:250;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;background:var(--color-armonia-bg,#121212);color:inherit;display:flex;flex-direction:column}
   .add-songs:not([open]){display:none}
+  /* imePadding, as AddSongsScreen: the list ends where the keyboard starts (--ime from LibraryActivity). */
+  :global(.capacitor.ime-open) .add-songs{padding-bottom:var(--ime)}
   .add-songs::backdrop{background:transparent}
   header{display:flex;align-items:center;gap:4px;height:64px;padding:0 4px;flex:none}
   .title{min-width:0}

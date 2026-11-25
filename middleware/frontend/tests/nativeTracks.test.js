@@ -27,3 +27,16 @@ test('private release artwork from the player goes through the signed-in WebView
   const song={id:'preview|abc',title:'Una pista',artist:'Artista',coverArt:'http://servidor.local'+path+'?account=cuenta'};
   assert.equal(nativeTrack(song,{},new Set())._previewThumb,path);
 });
+
+test('external references always carry the fields the phone bridge reads as non-null',async()=>{
+  const {toQueueTrack}=await import('../src/lib/homelab.js');
+  // Search builds «Paseo» like this: no artist IDs and no album.
+  const ref=toQueueTrack({source:'youtube',source_id:'abc',title:'Paseo',artist:'Estopa',duration:null})._musicTrack;
+  assert.deepEqual(ref.artist_mbids,[]);
+  assert.equal(ref.album,'');
+  assert.equal(ref.duration,null);
+  const old=nativeTrack({id:'preview|abc',title:'Paseo',artist:'Estopa'},{},new Set());
+  assert.deepEqual(old._musicTrack.artist_mbids,[]);
+  const kept=toQueueTrack({source:'youtube',source_id:'abc',title:'T',artist:'A',artist_mbids:['0383dadf-2a4e-4d10-a46a-e9e041da8eb3']});
+  assert.deepEqual(kept._musicTrack.artist_mbids,['0383dadf-2a4e-4d10-a46a-e9e041da8eb3']);
+});

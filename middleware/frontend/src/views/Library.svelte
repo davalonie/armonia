@@ -1,4 +1,5 @@
 <script>
+  import MaterialIcon from '../components/MaterialIcon.svelte';
   import {pullRefresh} from '../lib/pullRefresh.js';
   import PhoneSongControls from '../components/PhoneSongControls.svelte';
   import {mobile} from '../lib/native.js';
@@ -84,7 +85,7 @@
 
   <div class="flex items-center gap-2 mb-3">
     <div class="relative flex-1 min-w-0">
-      <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-armonia-muted"></i>
+      <span aria-hidden="true" class="absolute left-4 top-1/2 -translate-y-1/2 text-armonia-muted"><MaterialIcon name="search" size={20} /></span>
       <input
         type="text"
         bind:value={filterQuery}
@@ -139,6 +140,6 @@
       <p class="text-sm mt-1">Busca una cancion y descargala para empezar.</p>
     </div>
   {:else}
-    <TrackList songs={sorted} scrollLabels={songLabels(sorted, sortKey)} tools={false} onRefresh={load} />
+    <TrackList artLeast={300} songs={sorted} scrollLabels={songLabels(sorted, sortKey)} tools={false} onRefresh={load} />
   {/if}
 </div>

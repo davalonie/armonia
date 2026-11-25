@@ -1,14 +1,15 @@
 <script>
+  import MaterialIcon from './MaterialIcon.svelte';
   import {mobile} from '../lib/native.js';
   import {
     currentTrack, playing, shuffleOn, repeatMode, playbackProgress,
-    swipeTrack, next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction,
+    next, prev, togglePlayPause, toggleShuffle, toggleRepeat, seekFraction,
     trackArtUrl, isPreview, playbackState, sleepTimer,
   } from '../lib/stores/playerStore.js';
   import { expandedPlayerOpen, queuePanelOpen } from '../lib/stores/uiStore.js';
-  import { songMenu } from '../lib/trackActions.js';
+  import { songMenu, phoneDownloadItem, addToPlaylist } from '../lib/trackActions.js';
+  import { showContextMenu } from '../lib/stores/contextMenuStore.js';
   import { showToast } from '../lib/stores/toastStore.js';
-  import { showPlaylistPicker } from '../lib/stores/playlistPickerStore.js';
   import { deleteTrack } from '../lib/api.js';
   import { command } from '../lib/stores/nativePlayback.js';
   import { fmtTime } from '../lib/util.js';
@@ -19,25 +20,15 @@
   import {trackJob} from '../lib/jobs.js';
   let downloadTrack=null;
   import SaveButton from './SaveButton.svelte';
-  // A sideways swipe on the cover changes song, as in the app.
-  let swipe = null, pull = null;
-  function pullStart(e) {
-    if (mobile && !e.target.closest('button,input,[role=slider]')) {
-      const t=e.touches[0];pull={x:t.clientX,y:t.clientY};
-    }
-  }
-  function pullEnd(e) {
-    if (!pull) return;
-    const t=e.changedTouches[0],dy=t.clientY-pull.y,dx=t.clientX-pull.x;
-    pull=null;
-    if(dy>=88 && dy>1.5*Math.abs(dx)) expandedPlayerOpen.set(false);
-  }
-  function swipeStart(e) { swipe = {x: e.clientX, y: e.clientY}; }
-  function swipeEnd(e) {
-    if (!swipe) return;
-    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y; swipe = null;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) swipeTrack(dx < 0 ? 1 : -1);
-  }
+  import {trackSwipe} from '../lib/trackSwipe.js';
+  // A sideways swipe on the cover changes song, as in the app: the cover follows the finger (trackSwipe).
+  // Pulling down follows the finger and closes as PlayerPane does (pullDismiss); only on the phone.
+  import {pullDismiss} from '../lib/pullDismiss.js';
+  let pullY = 0;
+  $: if (!$expandedPlayerOpen) pullY = 0;
+  const closeByPull = () => { pullY = 0; expandedPlayerOpen.set(false); };
+  // Compose's tween(300) eases with FastOutSlowInEasing.
+  const EASE = 'cubic-bezier(.4,0,.2,1)';
 
   $: track = $currentTrack;
   $: preview = track ? isPreview(track) : false;
@@ -45,6 +36,10 @@
   $: progress = $playbackProgress.duration
     ? ($playbackProgress.currentTime / $playbackProgress.duration) * 100
     : 0;
+
+  // As SeekBar in the app: what is already loaded, in a lighter stretch under the position.
+  $: buffered = $playbackProgress.duration
+    ? Math.min(100, Math.max(0, ($playbackProgress.buffered || 0) / $playbackProgress.duration * 100)) : 0;
 
   function handleProgressClick(e) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -59,22 +54,33 @@
   function openDots() {
     if (!track) return;
     const selected = track;
+    const deleteFile = async () => {
+      if (!confirm(`¿Eliminar el archivo de «${selected.title}» de la biblioteca? No se puede deshacer.`)) return;
+      // On the phone the native player is closed first, as the Kotlin app did: it must not keep playing a deleted file.
+      if (mobile) { await command('close'); expandedPlayerOpen.set(false); }
+      try { await deleteTrack(selected.id); expandedPlayerOpen.set(false); }
+      catch (err) { showToast(`No se pudo eliminar: ${err.message}`, 'error'); }
+    };
+    const timer = 'Temporizador de apagado'+($sleepTimer.atEnd || $sleepTimer.endsAt?' (activo)':'');
+    const download = selected._musicTrack?.source==='youtube';
+    if (mobile) return phoneMenu(selected, deleteFile, timer, download);
     void songMenu(dotsBtn, selected, {extra: [
       { label: 'Ver la cola', icon: 'ph ph-list', action: () => queuePanelOpen.set(true) },
-      ...(mobile && !preview && selected.artistId ? [{label:'Ver artista',icon:'ph ph-user',action:()=>{expandedPlayerOpen.set(false);openLibraryArtist(selected.artistId,selected.artist);}}] : []),
-      ...(mobile && selected._musicTrack?.source==='youtube' ? [{label:'Descargar a la biblioteca',icon:'ph ph-download',action:()=>downloadTrack=selected}] : []),
-      ...(mobile ? [{label:'Temporizador de apagado'+($sleepTimer.atEnd || $sleepTimer.endsAt?' (activo)':''),icon:'ph ph-timer',action:()=>timerDialog.showModal()}] : []),
-      ...(preview ? [] : [null, {
-        label: 'Eliminar archivo de la biblioteca', icon: 'ph ph-trash', danger: true,
-        action: async () => {
-          if (!confirm(`¿Eliminar el archivo de «${selected.title}» de la biblioteca? No se puede deshacer.`)) return;
-          // On the phone the native player is closed first, as the Kotlin app did: it must not keep playing a deleted file.
-          if (mobile) { await command('close'); expandedPlayerOpen.set(false); }
-          try { await deleteTrack(selected.id); expandedPlayerOpen.set(false); }
-          catch (err) { showToast(`No se pudo eliminar: ${err.message}`, 'error'); }
-        },
-      }]),
+      ...(preview ? [] : [null, { label: 'Eliminar archivo de la biblioteca', icon: 'ph ph-trash', danger: true, action: deleteFile }]),
     ]});
+  }
+  // The app's player menu (ExpandedPlayerScreen): its own short list, without the song's name or stars.
+  function phoneMenu(selected, deleteFile, timer, download) {
+    const canSave = !String(selected.id).startsWith('external|');
+    showContextMenu(dotsBtn, [
+      {label: 'Ver la cola', micon: 'queue_music', action: () => queuePanelOpen.set(true)},
+      ...(canSave ? [{label: 'Añadir a una playlist', micon: 'playlist_add', action: () => addToPlaylist(selected)}] : []),
+      ...(!preview && selected.artistId ? [{label: 'Ver artista', micon: 'person', action: () => {expandedPlayerOpen.set(false); openLibraryArtist(selected.artistId, selected.artist);}}] : []),
+      ...(download ? [{label: 'Descargar a la biblioteca', micon: 'download', action: () => downloadTrack = selected}] : []),
+      ...(!preview ? [phoneDownloadItem(selected, {DOWNLOADING: 'Descargando en el telefono… (toca para cancelar)'})] : []),
+      {label: timer, micon: 'bedtime', action: () => timerDialog.showModal()},
+      ...(!preview ? [{label: 'Eliminar archivo de la biblioteca', micon: 'delete', action: deleteFile}] : []),
+    ]);
   }
   const repeatLabels = {off: 'Repeticion desactivada', all: 'Repetir la cola', one: 'Repetir esta cancion'};
 </script>
@@ -94,9 +100,11 @@
 {/if}
 
 <div
-  on:touchstart={pullStart} on:touchend={pullEnd} on:touchcancel={()=>pull=null}
+  use:pullDismiss={{enabled: mobile && $expandedPlayerOpen, onPull: y => pullY = y, onDismiss: closeByPull, ignore: 'input,[role=slider],dialog'}}
   class="expanded-player fixed inset-0 z-150 flex flex-col pointer-events-none transition-transform duration-300 ease-in-out overflow-hidden"
-  style:transform={$expandedPlayerOpen ? 'translateY(0)' : 'translateY(100%)'}
+  style:transform={$expandedPlayerOpen ? (pullY ? `translateY(${pullY}px)` : 'translateY(0)') : 'translateY(100%)'}
+  style:transition={mobile ? (pullY ? 'none' : `transform 300ms ${EASE}`) : null}
+  style:touch-action={mobile ? 'none' : null}
   style:pointer-events={$expandedPlayerOpen ? 'auto' : 'none'}
   style:isolation="isolate"
   inert={!$expandedPlayerOpen}
@@ -131,12 +139,12 @@
         on:click={openDots}
         class="w-10 h-10 flex items-center justify-center text-armonia-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
       >
-        <i class="ph ph-dots-three-vertical text-2xl"></i>
+        <MaterialIcon name="more_vert" />
       </button>
     </div>
 
     <!-- Album art -->
-    <div class="player-cover flex-1 flex items-center justify-center py-4 min-h-0 touch-pan-y" on:pointerdown={swipeStart} on:pointerup={swipeEnd} on:pointercancel={() => swipe = null}>
+    <div class="player-cover flex-1 flex items-center justify-center py-4 min-h-0 touch-pan-y" use:trackSwipe>
       {#if track}
         {#if mobile}
           <div class="cover-frame">{#if artUrl}{#key artUrl}<img draggable="false" src={artUrl} alt="" class="object-cover" on:error={e=>e.currentTarget.hidden=true}>{/key}{/if}</div>
@@ -160,6 +168,18 @@
 
     <!-- Progress -->
     <div class="shrink-0 mb-1">
+      {#if mobile}
+        <!-- The app's SeekBar: a 4 dp line in three layers (white 22 %, loaded 38 %, played) and a 12 dp thumb. -->
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <div class="seek" role="slider" tabindex="-1" aria-label="Posicion en la cancion" aria-valuemin="0" aria-valuemax="100"
+          aria-valuenow={Math.round(progress)} on:click={handleProgressClick}>
+          <span class="seek-track">
+            {#if buffered > progress}<span class="seek-loaded" style:width="{buffered}%"></span>{/if}
+            <span class="seek-played" style:width="{progress}%"></span>
+          </span>
+          <span class="seek-thumb" style:left="{progress}%"></span>
+        </div>
+      {:else}
       <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
       <div
         class="w-full h-1.5 bg-white/15 rounded-full cursor-pointer group mb-2"
@@ -172,7 +192,8 @@
           <div class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-4 h-4 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
       </div>
-      <div class="flex justify-between text-xs text-armonia-muted">
+      {/if}
+      <div class="flex justify-between text-xs text-armonia-muted" class:seek-times={mobile}>
         <span>{fmtTime($playbackProgress.currentTime)}</span>
         <span>{fmtTime($playbackProgress.duration)}</span>
       </div>
@@ -217,3 +238,14 @@
     </div>
   </div>
 </div>
+
+<style>
+  /* Phone only (the markup exists only there): PlayerPane's SeekBar. */
+  .seek{position:relative;display:flex;align-items:center;height:44px;cursor:pointer}
+  .seek-track{position:relative;flex:1;height:4px;border-radius:2px;background:#ffffff38;overflow:hidden}
+  .seek-loaded,.seek-played{position:absolute;inset:0 auto 0 0;border-radius:2px}
+  .seek-loaded{background:#ffffff61}
+  .seek-played{background:#fff}
+  .seek-thumb{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fff;pointer-events:none}
+  .seek-times{margin-top:-6px}
+</style>
