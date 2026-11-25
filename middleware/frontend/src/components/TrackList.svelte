@@ -5,6 +5,7 @@
   export let artLeast = 128;
   import {swipeRow} from '../lib/swipeRow.js';
   import {addToQueue,undoPlayNext,songDownloads} from '../lib/stores/playerStore.js';
+  import {queuedNotice} from '../lib/queueNotice.js';
   import {mobile} from '../lib/native.js';
   import FastScroll from './FastScroll.svelte';
   import {songLabels} from '../lib/fastScroll.js';
@@ -122,9 +123,9 @@
   async function bulkRemoveFromPlaylist(){await removePositions(selected);}
 
   let downloadOpen=false;
+  // Only the phone swipes rows to the queue.
   function queueSong(song) {
-    const added=addToQueue(song);
-    showToast('Añadida a la cola','info',()=>undoPlayNext(added));
+    void queuedNotice(addToQueue(song), song);
   }
   function openDots(e, song, i) {
     e.stopPropagation();

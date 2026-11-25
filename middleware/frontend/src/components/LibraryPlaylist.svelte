@@ -120,7 +120,7 @@
 {/if}
 
 <style>
-  .alert{margin:auto;width:min(560px,calc(100vw - 48px));padding:24px;border:0;border-radius:28px;background:#242424;color:#eee}
+  .alert{margin:auto;width:min(560px,calc(var(--page-w,100vw) - 48px));padding:24px;border:0;border-radius:28px;background:#242424;color:#eee}
   .alert::backdrop{background:#00000052}
   h2{font-size:24px;line-height:32px;font-weight:400;margin-bottom:16px}
   .name{position:relative;display:block;margin-bottom:8px}

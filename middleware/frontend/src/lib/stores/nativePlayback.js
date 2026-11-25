@@ -69,7 +69,8 @@ export function observeNativePlayer(stores) {
     }
   }
   const notice = mobile.addListener('notice', e => {
-    showToast(e.message);
+    // Failed downloads, playback notices and library errors stay up for longer (SnackbarDuration.Long).
+    showToast(e.message, 'info', null, {long: !!e.long});
     if (e.libraryChanged) window.dispatchEvent(new Event('armonia-library-changed'));
   });
   const network = mobile.addListener('network', e => phoneOnline.set(!!e.online));

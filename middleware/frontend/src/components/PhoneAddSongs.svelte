@@ -59,10 +59,10 @@
       addedAt[song.id]=Date.now();
       inPlaylist=new Set([...inPlaylist,song.id]);
       setState(song,'added');
-      showToast(`«${song.title}» añadida`,'info',()=>undo(song));
+      showToast(`«${song.title}» añadida`,'info',()=>undo(song),{replace:'add-songs'});
     }catch{
       setState(song,'failed');
-      showToast(`No se pudo añadir «${song.title}». Pulsa + para reintentar.`,'error');
+      showToast(`No se pudo añadir «${song.title}». Pulsa + para reintentar.`,'error',null,{long:false});
     }
   }
   // Only what this screen added can be undone: the last occurrence, if nobody changed the list meanwhile.
@@ -75,7 +75,7 @@
       inPlaylist=new Set([...inPlaylist].filter(x=>x!==song.id));
     }catch{
       setState(song,'added');
-      showToast(`No se pudo deshacer. «${song.title}» sigue en la playlist.`,'error');
+      showToast(`No se pudo deshacer. «${song.title}» sigue en la playlist.`,'error',null,{long:false});
     }
   }
 

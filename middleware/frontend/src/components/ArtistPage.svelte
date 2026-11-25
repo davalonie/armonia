@@ -6,7 +6,9 @@
   import {toQueueTrack} from '../lib/homelab.js';
   import {mobile} from '../lib/native.js';
   import {downloadRow} from '../lib/jobs.js';
-  import { serverDownloads, playPreviewTrack } from '../lib/stores/playerStore.js';
+  import { serverDownloads, playPreviewTrack, addToQueue } from '../lib/stores/playerStore.js';
+  import {swipeRow} from '../lib/swipeRow.js';
+  import {queuedNotice} from '../lib/queueNotice.js';
   import DownloadDialog from './DownloadDialog.svelte';
   import Marquee from './Marquee.svelte';
 
@@ -58,9 +60,14 @@
   }
 
   function playPreview(song) {
-    playPreviewTrack(toQueueTrack({source:'youtube',source_id:song.videoId,title:song.title,
-      artist:song.artist || artist?.name || 'Desconocido',album:song.album || '',duration:song.duration || null}, song.thumbnail));
+    playPreviewTrack(queueTrack(song));
   }
+  function queueTrack(song) {
+    return toQueueTrack({source:'youtube',source_id:song.videoId,title:song.title,
+      artist:song.artist || artist?.name || 'Desconocido',album:song.album || '',duration:song.duration || null}, song.thumbnail);
+  }
+  // On the phone a row slides right to queue the song, as in every list of the app.
+  const queueSong=song=>{const t=queueTrack(song);void queuedNotice(addToQueue(t),t);};
 </script>
 
 <div class="w-full animate-slide-up">
@@ -117,7 +124,8 @@
             <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
             <div
               class="group flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
-              on:click={() => playPreview(song)} tabindex="0" on:keydown={e=>{if(e.target===e.currentTarget && (e.key==='Enter'||e.key===' ')){e.preventDefault();playPreview(song);}}}
+              use:swipeRow={{enabled:!!mobile,commit:()=>queueSong(song)}} style:touch-action={mobile?'pan-y':null}
+          on:click={() => playPreview(song)} tabindex="0" on:keydown={e=>{if(e.target===e.currentTarget && (e.key==='Enter'||e.key===' ')){e.preventDefault();playPreview(song);}}}
               role="button"
             >
               <div class="relative w-10 h-10 rounded-md overflow-hidden shrink-0">

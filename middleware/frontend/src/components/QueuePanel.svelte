@@ -16,8 +16,9 @@
   $: upcoming = order.slice(order.indexOf($currentIndex) + 1);
 
   // Phone: the app's QueueSheet. One list from the current song on, in play order; a row is moved by
-  // its handle (the reorderable list: it follows the finger and the others step aside; not with
-  // shuffle on), removed by a swipe to either side, and the sheet closes when pulled down.
+  // its handle (the reorderable list: it follows the finger and the others step aside; with shuffle on,
+  // unlike the app and as the user asked, it moves in the order they will play in), removed by a swipe
+  // to either side, and the sheet closes when pulled down.
   $: rows = mobile ? visibleQueueRows($queue.map(t => t?.id), order, $currentIndex) : [];
   $: currentPos = rows.findIndex(r => r.index === $currentIndex);
   $: automatic = new Set($nativeQueueOrder.automatic || []);
@@ -28,7 +29,7 @@
 
   let listEl, drag = null, settling = false, scrolling = 0;
   function grab(e, position) {
-    if ($shuffleOn || !e.isPrimary) return;
+    if (!e.isPrimary) return;
     e.preventDefault(); e.stopPropagation();
     e.currentTarget.setPointerCapture?.(e.pointerId);
     const height = e.currentTarget.closest('.q-row').offsetHeight;
@@ -125,7 +126,7 @@
         <h2>Cola</h2>
         <button class="q-clear" disabled={!(currentPos >= 0 && currentPos < rows.length - 1)} on:click={clearUpcoming}>Vaciar</button>
       </div>
-      <p class="q-note">{$shuffleOn?'Aleatorio activado: se muestra el orden real':'Arrastra para reordenar'}</p>
+      <p class="q-note">{$shuffleOn?'Aleatorio activado: se muestra el orden real. Arrastra para reordenar':'Arrastra para reordenar'}</p>
       <hr>
     </div>
     {#if !$queue.length}
@@ -143,13 +144,11 @@
             style:transition={settling || (drag && !drag.dropped && drag.from === position) ? 'none' : null}
             use:swipeRow={{enabled: !drag, both: true, commit: () => removeFromQueue(row.index)}}
             on:click={() => command('jump', {index: row.index})}>
-            {#if !$shuffleOn}
               <span class="q-grip" data-drag-handle role="button" tabindex="-1" aria-label="Arrastra para reordenar"
                 on:pointerdown={e => grab(e, position)} on:pointermove={moveGrab}
                 on:pointerup={dropGrab} on:pointercancel={e => dropGrab(e, true)} on:click|stopPropagation>
                 <MaterialIcon name="drag_handle" size={28} />
               </span>
-            {:else}<span class="q-gap"></span>{/if}
             <span class="q-art">
               <img src={trackArtUrl(track, artSize(44, 128))} alt="" on:error={e=>e.currentTarget.style.opacity=0}>
               {#if isCurrent}<NowPlayingMark playing={$playing} veil={.55} />{/if}
@@ -251,8 +250,8 @@
     touch-action:pan-y;transition:transform 250ms cubic-bezier(.2,.8,.2,1)}
   .q-row.current{background:linear-gradient(#4b2e0059,#4b2e0059),var(--color-armonia-surface)}
   .q-row.lifted{z-index:2}
-  .q-grip{flex:none;display:grid;place-items:center;width:28px;height:28px;margin:0 4px 0 8px;color:#eeeeee73;touch-action:none}
-  .q-gap{flex:none;width:16px}
+  /* As the app's handle: the 28 dp icon and its padding (8 dp before, 4 after) are all the grip. */
+  .q-grip{flex:none;display:grid;place-items:center;box-sizing:content-box;width:28px;height:28px;padding:0 4px 0 8px;color:#eeeeee73;touch-action:none}
   .q-art{position:relative;flex:none;width:44px;height:44px;border-radius:4px;overflow:hidden;background:#1e1e1e}
   .q-art img{width:100%;height:100%;object-fit:cover}
   .q-text{flex:1;min-width:0;margin-left:12px;display:flex;flex-direction:column}

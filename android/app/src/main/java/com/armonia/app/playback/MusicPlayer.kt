@@ -494,9 +494,12 @@ class MusicPlayer @Inject constructor(
 
     private fun snapshotProgress() {
         val c = controller ?: return
+        // Until the player has loaded the song it does not know its length (a queue restored when the
+        // app opens stays so until play): the song's own, so the bar shows where it was left.
+        val known = c.duration.takeIf { it != androidx.media3.common.C.TIME_UNSET && it > 0L }
         _progress.value = PlaybackProgress(
             positionMs = c.currentPosition.coerceAtLeast(0L),
-            durationMs = c.duration.coerceAtLeast(0L),
+            durationMs = known ?: _queue.value.getOrNull(c.currentMediaItemIndex)?.duration?.times(1000L) ?: 0L,
             bufferedMs = c.bufferedPosition.coerceAtLeast(0L),
         )
         maybeContinue()
@@ -692,6 +695,13 @@ class MusicPlayer @Inject constructor(
         val c = controller ?: return
         val list = _queue.value.toMutableList()
         if (from !in list.indices || to !in list.indices || from == to) return
+        // With shuffle on the song moves in the order the songs will play in, not in the queue.
+        if (c.shuffleModeEnabled) {
+            c.sendCustomCommand(
+                androidx.media3.session.SessionCommand(LibrarySessionCallback.CMD_MOVE_IN_ORDER, android.os.Bundle.EMPTY),
+                android.os.Bundle().apply { putInt("item", from); putInt("target", to) })
+            return
+        }
         val item = list.removeAt(from)
         list.add(to, item)
         _queue.value = list

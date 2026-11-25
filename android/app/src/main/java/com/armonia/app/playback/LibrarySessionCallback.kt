@@ -79,6 +79,8 @@ class LibrarySessionCallback @Inject constructor(
         const val CMD_ADD_TO_QUEUE = "armonia.ADD_TO_QUEUE"
         /** From the phone UI only: «Añadir al final de la cola» (arg "at": where the controller wants it). */
         const val CMD_ADD_TO_END = "armonia.ADD_TO_END"
+        /** With shuffle on, moves a song in the play order (see moveInPlayOrder). */
+        const val CMD_MOVE_IN_ORDER = "armonia.MOVE_IN_ORDER"
         /** Above this many songs the "Songs" folder splits into A–Z sub-folders. */
         private const val FLAT_SONG_LIST_MAX = 150
     }
@@ -112,6 +114,7 @@ class LibrarySessionCallback @Inject constructor(
             .add(SessionCommand("armonia.PLAY_NEXT", Bundle.EMPTY))
             .add(SessionCommand(CMD_ADD_TO_QUEUE, Bundle.EMPTY))
             .add(SessionCommand(CMD_ADD_TO_END, Bundle.EMPTY))
+            .add(SessionCommand(CMD_MOVE_IN_ORDER, Bundle.EMPTY))
             .build()
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
             .setAvailableSessionCommands(sessionCommands)
@@ -145,6 +148,15 @@ class LibrarySessionCallback @Inject constructor(
                     queueByHand(player, item, next = customCommand.customAction == "armonia.PLAY_NEXT")
                 }
             }
+            CMD_MOVE_IN_ORDER -> {
+                if (controller.uid != android.os.Process.myUid())
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_PERMISSION_DENIED))
+                if (!player.shuffleModeEnabled) return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
+                val order = moveInPlayOrder(player.currentTimeline.playOrder(true), args.getInt("item", -1), args.getInt("target", -1))
+                    ?: return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_BAD_VALUE))
+                val exo = player.exoPlayer() ?: return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
+                exo.setShuffleOrder(androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder(order, kotlin.random.Random.nextLong()))
+            }
             CMD_SHUFFLE -> player.shuffleModeEnabled = !player.shuffleModeEnabled
             CMD_REPEAT -> player.repeatMode = when (player.repeatMode) {
                 Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
@@ -175,10 +187,8 @@ class LibrarySessionCallback @Inject constructor(
         )
         player.addMediaItem(plan.index, item)
         val order = plan.shuffleOrder
-        if (order != null && player is androidx.media3.exoplayer.ExoPlayer) {
-            player.setShuffleOrder(androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder(
-                order, kotlin.random.Random.nextLong()))
-        }
+        if (order != null) player.exoPlayer()?.setShuffleOrder(
+            androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder(order, kotlin.random.Random.nextLong()))
     }
 
     private fun queueAtEnd(player: Player, item: MediaItem, at: Int) {
@@ -187,10 +197,8 @@ class LibrarySessionCallback @Inject constructor(
             player.mediaItemCount, at, shuffle)
         player.addMediaItem(plan.index, item)
         val order = plan.shuffleOrder
-        if (order != null && player is androidx.media3.exoplayer.ExoPlayer) {
-            player.setShuffleOrder(androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder(
-                order, kotlin.random.Random.nextLong()))
-        }
+        if (order != null) player.exoPlayer()?.setShuffleOrder(
+            androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder(order, kotlin.random.Random.nextLong()))
     }
 
     /** Builds the shuffle + repeat command buttons reflecting the player's current state. */

@@ -15,6 +15,8 @@
   import {showContextMenu} from '../lib/stores/contextMenuStore.js';
   import {showPlaylistPicker} from '../lib/stores/playlistPickerStore.js';
   import {showToast} from '../lib/stores/toastStore.js';
+  import {swipeRow} from '../lib/swipeRow.js';
+  import {queuedNotice} from '../lib/queueNotice.js';
 
   export let title='';
   export let eyebrow='';
@@ -38,6 +40,8 @@
   $: if(rows.length&&!activeHere)prepareTrack(rows[0].queue);
   function playAll(){if(activeHere){togglePlayPause();return;}playList(tracks);}
   function menu(e,row){e.stopPropagation();void songMenu(e.currentTarget,row.queue);}
+  // On the phone a row slides right to queue the song, as in every list of the app.
+  const queueRow=row=>void queuedNotice(addToQueue(row.queue),row.queue);
 </script>
 
 <article class="detail">
@@ -72,8 +76,8 @@
     <ol class="rows">
       {#each rows as row,i (i)}
         {@const active=row.queue.id===$currentTrack?.id}
-        <li class="row" class:active>
-          <button class="main" on:click={()=>playQueue(tracks,i)} aria-label={`Reproducir ${row.queue.title}, de ${row.queue.artist}`}>
+        <li class="row" class:active use:swipeRow={{enabled:!!mobile,commit:()=>queueRow(row)}} style:touch-action={mobile?'pan-y':null}>
+          <button class="main" data-swipe-handle on:click={()=>playQueue(tracks,i)} aria-label={`Reproducir ${row.queue.title}, de ${row.queue.artist}`}>
             <span class="art">
               <i aria-hidden="true" class="ph ph-music-note"></i>
               {#if row.art}<img src={row.art} alt="" loading="lazy" referrerpolicy="no-referrer" on:error={e=>e.currentTarget.style.visibility='hidden'}>{/if}

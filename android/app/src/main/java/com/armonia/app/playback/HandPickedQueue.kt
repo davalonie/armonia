@@ -60,3 +60,16 @@ fun handPickedUpcoming(order: List<Int>, current: Int, handPicked: Set<Int>): Li
 /** [songs] with [carried] put right after [start] (the song that starts the new list). */
 fun <T> withCarriedOver(songs: List<T>, start: Int, carried: List<T>): List<T> =
     songs.take(start + 1) + carried + songs.drop(start + 1)
+
+/**
+ * With shuffle on, the queue sheet shows the order the songs will play in, and moving a song there
+ * moves it in that order (the queue itself stays as it is): the song at queue index [item] taken out
+ * of [order] and put where the song at queue index [target] was, as moving it with shuffle off does.
+ * Null when there is nothing to move.
+ */
+fun moveInPlayOrder(order: List<Int>, item: Int, target: Int): IntArray? {
+    val from = order.indexOf(item)
+    val to = order.indexOf(target)
+    if (from < 0 || to < 0 || from == to) return null
+    return order.toMutableList().apply { removeAt(from); add(to, item) }.toIntArray()
+}

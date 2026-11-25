@@ -143,4 +143,17 @@ class HandPickedQueueTest {
         assertEquals(listOf(4, 1), handPickedUpcoming(listOf(0, 4, 2, 1, 3), 0, setOf(1, 4)))
         assertEquals(emptyList<Int>(), handPickedUpcoming(listOf(0, 1), 1, setOf(0)))
     }
+
+    @Test
+    fun `with shuffle on a song moves in the play order and the queue stays as it is`() {
+        // Queue a b c d e playing in the order c a e b d (queue indices 2 0 4 1 3)
+        val order = listOf(2, 0, 4, 1, 3)
+        // e (index 4), third to play, dragged down to where d (index 3) is: last
+        assertArrayEquals(intArrayOf(2, 0, 1, 3, 4), moveInPlayOrder(order, item = 4, target = 3))
+        // d dragged up to where a is: right after the song playing
+        assertArrayEquals(intArrayOf(2, 3, 0, 4, 1), moveInPlayOrder(order, item = 3, target = 0))
+        // Nothing to move
+        assertNull(moveInPlayOrder(order, item = 1, target = 1))
+        assertNull(moveInPlayOrder(order, item = 7, target = 1))
+    }
 }

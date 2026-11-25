@@ -133,7 +133,8 @@ class PlaybackService : MediaLibraryService() {
 
         // On Android 15 a cold service must be in the foreground before ExoPlayer
         // requests audio focus. A car or Bluetooth controller can play with no activity.
-        val sessionPlayer = if (Build.VERSION.SDK_INT >= 35) object : ForwardingSimpleBasePlayer(player) {
+        val sessionPlayer = if (Build.VERSION.SDK_INT >= 35) object : ForwardingSimpleBasePlayer(player), WrapsExoPlayer {
+            override val exoPlayer = player
             override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
                 if (playWhenReady && !prepareBackgroundPlayback()) return Futures.immediateVoidFuture()
                 return super.handleSetPlayWhenReady(playWhenReady)

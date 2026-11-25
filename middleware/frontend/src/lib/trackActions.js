@@ -10,6 +10,7 @@ export const addToPlaylist=(song,track=fromQueueTrack(song))=>mobile?saveSheet.s
 import {playQueue,playNext,undoPlayNext,addToQueue,isPreview,trackArtUrl,songDownloads} from './stores/playerStore.js';
 import {get} from 'svelte/store';
 import {showToast} from './stores/toastStore.js';
+import {queuedNotice} from './queueNotice.js';
 
 const say=(e)=>showToast(e.message,'error');
 const changed=()=>window.dispatchEvent(new Event('music-preferences'));
@@ -21,7 +22,7 @@ export async function songMenu(anchor,song,{extra=[],onChange=null,download=true
   const external=isPreview(song)||(song._musicTrack&&song._musicTrack.source!=='navidrome');
   const track=fromQueueTrack(song);
   const header={title:song.title||track.title,subtitle:song.artist||track.artist,art:external?artUrl(song._previewThumb||track,artSize(40,96)):trackArtUrl(song,artSize(40,96))};
-  const playSoon=()=>{const token=playNext(song);showToast('Se reproducira a continuacion','info',()=>undoPlayNext(token));};
+  const playSoon=()=>{const token=playNext(song);if(mobile)return void queuedNotice(token,song,'next');showToast('Se reproducira a continuacion','info',()=>undoPlayNext(token));};
   const queue=[
     ...(mobile?[{label:'Reproducir',icon:'ph ph-play',action:()=>playQueue([song])}]:[]),
     {label:'Reproducir a continuacion',icon:'ph ph-queue',action:playSoon},
@@ -31,6 +32,7 @@ export async function songMenu(anchor,song,{extra=[],onChange=null,download=true
   ];
   function queueWithUndo(atEnd) {
     const entry=addToQueue(song,atEnd);
+    if(mobile)return void queuedNotice(entry,song,atEnd?'end':'add');
     showToast(atEnd?'Añadida al final de la cola':'Añadida a la cola','info',mobile?()=>undoPlayNext(entry):null);
   }
   // A song from outside the library: on the desktop the bottom sheet, as SongMenuSheet did in the app; on the

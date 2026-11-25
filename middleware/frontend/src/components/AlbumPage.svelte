@@ -4,7 +4,9 @@
   import {toQueueTrack} from '../lib/homelab.js';
   import {mobile} from '../lib/native.js';
   import {downloadRow} from '../lib/jobs.js';
-  import { serverDownloads, playPreviewTrack } from '../lib/stores/playerStore.js';
+  import { serverDownloads, playPreviewTrack, addToQueue } from '../lib/stores/playerStore.js';
+  import {swipeRow} from '../lib/swipeRow.js';
+  import {queuedNotice} from '../lib/queueNotice.js';
   import { fmtDuration } from '../lib/util.js';
   import { trackJob } from '../lib/jobs.js';
   import { showToast } from '../lib/stores/toastStore.js';
@@ -46,9 +48,14 @@
   }
 
   function playPreview(track) {
-    playPreviewTrack(toQueueTrack({source:'youtube',source_id:track.videoId,title:track.title,
-      artist:track.artist || album?.artist || 'Desconocido',album:album?.title || '',duration:track.duration || null}, album?.thumbnail));
+    playPreviewTrack(queueTrack(track));
   }
+  function queueTrack(track) {
+    return toQueueTrack({source:'youtube',source_id:track.videoId,title:track.title,
+      artist:track.artist || album?.artist || 'Desconocido',album:album?.title || '',duration:track.duration || null}, album?.thumbnail);
+  }
+  // On the phone a row slides right to queue the song, as in every list of the app.
+  const queueSong=track=>{const t=queueTrack(track);void queuedNotice(addToQueue(t),t);};
 
   async function downloadAlbum() {
     if (!album?.tracks?.length || downloadingAll) return;
@@ -131,6 +138,7 @@
         <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
         <div
           class="group flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+          use:swipeRow={{enabled:!!mobile,commit:()=>queueSong(track)}} style:touch-action={mobile?'pan-y':null}
           on:click={() => playPreview(track)} tabindex="0" on:keydown={e=>{if(e.target===e.currentTarget && (e.key==='Enter'||e.key===' ')){e.preventDefault();playPreview(track);}}}
           role="button"
         >

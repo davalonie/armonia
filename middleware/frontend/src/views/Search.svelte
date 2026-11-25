@@ -13,6 +13,7 @@
   import {songMenu} from '../lib/trackActions.js';
   import {search as searchApi,library,coverArtUrl,getSession,artSize} from '../lib/api.js';
   import {playQueue,playNext,addToQueue,undoPlayNext,prepareTrack,currentTrack,playing} from '../lib/stores/playerStore.js';
+  import {queuedNotice} from '../lib/queueNotice.js';
   import {accountKey,api,toQueueTrack} from '../lib/homelab.js';
   import {loaders,context,count,albumEntry,playlistEntry} from '../lib/lists.js';
   import {showToast} from '../lib/stores/toastStore.js';
@@ -170,7 +171,7 @@
   // --- actions ---
   function playLocal(i){playQueue([{...local.songs[i],_from:`Busqueda: ${searched}`}]);}
   function playExternal(i){playQueue([{...externalSong(external.songs[i]),_from:`Busqueda: ${searched}`}]);}
-  function enqueue(song){const token=mobile?addToQueue(song):playNext(song);showToast(mobile?'Añadida a la cola':'Se reproducira a continuacion','info',()=>undoPlayNext(token));}
+  function enqueue(song){if(mobile)return void queuedNotice(addToQueue(song),song);const token=playNext(song);showToast('Se reproducira a continuacion','info',()=>undoPlayNext(token));}
   function externalActions(r){
     const row=downloadRow($serverDownloads[r.videoId]);
     return [{label:mobile&&row.label!=='Descargar'?row.label:'Descargar a la biblioteca',icon:'ph '+row.icon,micon:mobile&&row.label==='Descargar'?'download':null,disabled:mobile&&row.disabled,action:()=>dl={open:true,videoId:r.videoId,artist:r.channel||'',title:r.title||'',album:r.album||'',source:resultSource}}];}

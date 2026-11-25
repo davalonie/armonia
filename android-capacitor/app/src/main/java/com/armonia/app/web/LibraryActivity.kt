@@ -23,6 +23,7 @@ import com.armonia.app.playback.CoverSizes
 import com.getcapacitor.BridgeActivity
 import com.getcapacitor.BridgeWebViewClient
 import com.getcapacitor.CapConfig
+import com.getcapacitor.WebViewListener
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -120,6 +121,29 @@ class LibraryActivity : BridgeActivity() {
         }
     }
 
+    /**
+     * Chromium rounds the WebView's width in CSS px up and lays the page out to that: 720 px at density
+     * 1.625 is 443.08 CSS px, laid out as 444.31 (722 px), and the last 2 px fall off the screen. The page
+     * gets the real width as --page-w and lays itself out to it (main.css), on every load and on every
+     * change of size.
+     */
+    private var pageWidth = ""
+    private fun followWidth() {
+        val web = bridge.webView
+        fun publish(again: Boolean) {
+            if (web.width == 0) return
+            val css = String.format(java.util.Locale.ROOT, "%.4f", web.width / resources.displayMetrics.density)
+            if (css == pageWidth && !again) return
+            pageWidth = css
+            web.evaluateJavascript("document.documentElement.style.setProperty('--page-w','${css}px')", null)
+        }
+        web.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> publish(false) }
+        bridge.addWebViewListener(object : WebViewListener() {
+            override fun onPageCommitVisible(view: WebView, url: String) = publish(true)
+            override fun onPageLoaded(webView: WebView) = publish(true)
+        })
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // A different local origin isolates Web Storage and WebView caches for every server/account.
         val host = "a-${account.take(30)}.armonia.local"
@@ -129,6 +153,7 @@ class LibraryActivity : BridgeActivity() {
         registerPlugin(ImportPlugin::class.java)
         super.onCreate(savedInstanceState)
         followKeyboard()
+        followWidth()
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { warmer.keepWarm() } }
         val fonts = mapOf(
             "/android-font/inter_regular.ttf" to R.font.inter_regular,

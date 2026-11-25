@@ -1,9 +1,9 @@
 // Swipe gestures of song rows. Vertical motion keeps scrolling the list.
 //
 // Rightwards (the default) is the app's SwipeToQueue (ui/components/SwipeToQueue.kt): the row
-// follows the finger up to 132 dp; behind it, the accent shows the queue icon, then «A la cola»
-// after 60 % of the 72 dp threshold, and «Suelta» with a stronger accent and a tick once letting go
-// will queue the song. Letting go springs the row back as Compose's animate() does.
+// follows the finger up to 132 dp; behind it, the accent shows the queue icon, stronger (and a vibration)
+// once letting go will queue the song. Unlike the app, and as the user asked, without the words
+// «A la cola» and «Suelta». Letting go springs the row back as Compose's animate() does.
 //
 // `both` (the queue sheet) is the app's SwipeToDismissBox (material3 1.4.0): the row follows the
 // finger to either side and is removed past 56 dp, or when flung faster than 125 dp/s towards
@@ -42,9 +42,9 @@ function removeLayer() {
 function revealLayer() {
   const layer = document.createElement('span');
   layer.setAttribute('aria-hidden', 'true');
-  layer.style.cssText = 'position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:8px;padding-left:20px;overflow:hidden;white-space:nowrap;pointer-events:none;'
-    + `color:rgb(${ACCENT});font-size:12px;line-height:16px;font-weight:500;letter-spacing:.5px`;
-  layer.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" style="flex:none"><path fill="currentColor" d="${QUEUE_ICON}"/></svg><span></span>`;
+  layer.style.cssText = 'position:absolute;top:0;bottom:0;display:flex;align-items:center;padding-left:20px;overflow:hidden;pointer-events:none;'
+    + `color:rgb(${ACCENT})`;
+  layer.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" style="flex:none"><path fill="currentColor" d="${QUEUE_ICON}"/></svg>`;
   return layer;
 }
 
@@ -88,7 +88,6 @@ export function swipeRow(node, options) {
     }
     node.style.translate = offset + 'px 0';
     Object.assign(layer.style, {left: -offset + 'px', width: offset + 'px', background: `rgba(${ACCENT},${armed ? .30 : .12})`});
-    layer.lastChild.textContent = offset > THRESHOLD * .6 ? (armed ? 'Suelta' : 'A la cola') : '';
   }
   // Compose's default spring (no bounce, medium stiffness): x(t) = x0 (1 + ωt) e^(−ωt).
   function springBack() {

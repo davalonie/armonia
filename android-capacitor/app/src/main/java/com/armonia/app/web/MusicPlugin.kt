@@ -57,14 +57,16 @@ class MusicPlugin : Plugin() {
                         is DownloadEvent.Added -> "«${event.title}» ya está en tu biblioteca"
                         is DownloadEvent.Failed -> "No se pudo descargar «${event.title}»: ${event.reason}"
                     }
-                    notifyListeners("notice", JSObject().put("message", message).put("libraryChanged", event is DownloadEvent.Added))
+                    // As MainScreen: a finished download for a moment (Short), a failed one for longer (Long).
+                    notifyListeners("notice", JSObject().put("message", message).put("libraryChanged", event is DownloadEvent.Added)
+                        .put("long", event !is DownloadEvent.Added))
                 }
             }
         }
         screen.lifecycleScope.launch {
             merge(screen.notices.messages, screen.library.messages).collect { message ->
                 if (screen.prefs.accountNamespace == screen.account)
-                    notifyListeners("notice", JSObject().put("message", message))
+                    notifyListeners("notice", JSObject().put("message", message).put("long", true))
             }
         }
         // Whether the phone has a network at all (Inicio shows «En el telefono» only without one).

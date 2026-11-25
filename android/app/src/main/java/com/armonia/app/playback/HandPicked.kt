@@ -5,6 +5,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.exoplayer.ExoPlayer
 
 /**
  * A song queued by hand carries a mark in its metadata (see HandPickedQueue): the player's own
@@ -46,3 +47,13 @@ fun Timeline.playOrder(shuffle: Boolean): List<Int> {
     }
     return order
 }
+
+/**
+ * The ExoPlayer behind the session's player. On Android 15 and later the session gets a wrapper
+ * (PlaybackService: it starts the service in the foreground before playing), which is not an
+ * ExoPlayer itself; without this a play order planned for a song queued by hand was never set and,
+ * with shuffle on, the song went to a random point of the shuffle.
+ */
+interface WrapsExoPlayer { val exoPlayer: ExoPlayer }
+
+fun Player.exoPlayer(): ExoPlayer? = this as? ExoPlayer ?: (this as? WrapsExoPlayer)?.exoPlayer

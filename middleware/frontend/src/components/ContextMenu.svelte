@@ -4,6 +4,7 @@
   import {cubicOut} from 'svelte/easing';
   import {fade} from 'svelte/transition';
   import MaterialIcon from './MaterialIcon.svelte';
+  import {mobile} from '../lib/native.js';
   let menu;
   // A phone (or a narrow window) shows the app's menus: a DropdownMenu floating by the button,
   // or the bottom sheet when the caller asks for it. A wide window keeps the desktop menu.
@@ -33,7 +34,8 @@
   // the screen, to the left of its end otherwise. It grows from the side nearest the button.
   const MARGIN=48;
   function place(node,rect){
-    const W=innerWidth,H=innerHeight;
+    // On the phone the page may be narrower than the window (main.css, --page-w).
+    const W=mobile?document.body.getBoundingClientRect().width:innerWidth,H=innerHeight;
     node.style.maxHeight=(H-2*MARGIN)+'px';
     const w=node.offsetWidth,h=Math.min(node.offsetHeight,H-2*MARGIN);
     const xs=rect.left<W/2?[rect.left,rect.right-w,W-w]:[rect.right-w,rect.left,0];

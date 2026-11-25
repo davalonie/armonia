@@ -20,6 +20,14 @@
   import AlbumPage from '../components/AlbumPage.svelte';
 
   let phone=null;
+  // The phone's «Tus favoritos»: a playlist like the others (swipe to the queue, search and order), as the
+  // app opens the same Favoritos screen from Inicio and from Biblioteca. Library and external favourites.
+  // Inicio stays in view until its songs arrive.
+  let favourites=null;
+  async function loadFavourites(){
+    try{const {rows}=await loaders.liked();if(favourites)favourites={songs:rows.map(r=>({...r.queue,_from:likedEntry.title}))};}
+    catch(e){if(!favourites?.songs)favourites=null;showToast(e.message,'error');}
+  }
   // On the phone a library playlist opens the same screen as in Biblioteca.
   let libraryList=null;
   let recent=[],generated=[],status={},artists=[],frequent=[],newest=[];
@@ -80,7 +88,7 @@
   onMount(()=>{
     const stopView=currentView.subscribe(view=>{if(view==='home'){void loadHome();void loadAlbums();releaseTries=0;void loadReleases();}else{clearTimeout(poll);clearTimeout(releasePoll);}});
     let first=true;
-    const stopRoot=homeRoot.subscribe(()=>{if(first){first=false;return;}detail=null;pages=[];phone=null;libraryList=null;});
+    const stopRoot=homeRoot.subscribe(()=>{if(first){first=false;return;}detail=null;pages=[];phone=null;libraryList=null;favourites=null;});
     return()=>{stopView();stopRoot();clearTimeout(poll);clearTimeout(releasePoll);};
   });
 
@@ -102,7 +110,8 @@
       if(mine===token&&detail)detail={...detail,loading:false,rows:detail.rows||[],notice:e.message};
     }
   }
-  function open(entry){if(mobile&&['local','mixed'].includes(entry.type)){libraryList={id:entry.id,title:entry.title,kind:entry.type};return;}detail={...entry,rows:[],loading:true,notice:''};pages=[];void fill(entry);}
+  function open(entry){favourites=null;if(mobile&&['local','mixed'].includes(entry.type)){libraryList={id:entry.id,title:entry.title,kind:entry.type};return;}
+    if(mobile&&entry.type==='liked'){favourites={songs:null};void loadFavourites();return;}detail={...entry,rows:[],loading:true,notice:''};pages=[];void fill(entry);}
   async function play(entry){
     try{
       const epoch=await beginPlayRequest();
@@ -126,6 +135,8 @@
 
 {#if libraryList}
   {#key libraryList.id}<LibraryPlaylist id={libraryList.id} title={libraryList.title} kind={libraryList.kind} on:back={()=>libraryList=null} />{/key}
+{:else if favourites?.songs}
+  <PhonePlaylist title={likedEntry.title} songs={favourites.songs} kind="liked" variant="liked" onRefresh={loadFavourites} on:back={()=>favourites=null} />
 {:else if phone}
   <PhonePlaylist title={phone.row.title} songs={phone.songs} playlistId={phone.row.key.startsWith('playlist:')?phone.row.id:null} offline={true} on:back={()=>phone=null} />
 {:else if pages.length}

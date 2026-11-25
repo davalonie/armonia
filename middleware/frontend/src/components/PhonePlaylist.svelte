@@ -14,6 +14,8 @@
   // A mixed list (library and external songs) uses this same screen: its own kind, the entries its
   // rows add to the song menu, and its options behind three dots in the head.
   export let kind='local', rowMenu=null, menu=null;
+  // «Tus favoritos» (kind 'liked'): its own cover and no playlist of its own.
+  export let variant='plain';
   const dispatch=createEventDispatcher();
   let list,caption='';
   // The app's «Buscar y ordenar»: the magnifier turns into a close button over a rounded field and
@@ -26,7 +28,8 @@
   }
   $: found=query.trim()?songs.filter(s=>matchesSearch(query,s.title,s.artist,s.album)).length:songs.length;
   const ORDERS=[['original','Orden de la lista'],['title','Titulo'],['artist','Artista']];
-  $: active = !!playlistId && $currentTrack?._playlist?.kind === kind && $currentTrack?._playlist?.id === playlistId;
+  $: active = playlistId ? $currentTrack?._playlist?.kind === kind && $currentTrack?._playlist?.id === playlistId
+    : kind === 'liked' && $currentTrack?._from === title && songs.some(s => s.id === $currentTrack?.id);
   // The cover of the list as Inicio shows it: its own cover, or a mosaic of its songs' covers.
   $: heroCovers=cover?[coverArtUrl(cover,400)]:[...new Set(songs.map(s=>trackArtUrl(s,200)).filter(Boolean))].slice(0,4);
   $: minutes=Math.ceil(songs.reduce((total,s)=>total+(Number(s.duration)||0),0)/60);
@@ -39,12 +42,12 @@
       {#if songs.length}<button class="hero-btn" class:closing={searchOpen} aria-label={searchOpen?'Cerrar la busqueda':'Buscar y ordenar en esta playlist'} aria-expanded={searchOpen} on:click={toggleSearch}><MaterialIcon name={searchOpen?'close':'search'} /></button>{/if}
       {#if menu}<button class="hero-btn" aria-label="Opciones de la playlist" on:click={e=>menu(e.currentTarget)}><MaterialIcon name="more_vert" /></button>{/if}
     </div>
-    <div class="hero-cover"><Cover covers={heroCovers} variant="plain" label={title} size={400} /></div>
+    <div class="hero-cover"><Cover covers={heroCovers} {variant} label={title} size={400} /></div>
     <p class="eyebrow">Lista</p>
     <h1>{title}</h1>
     <p class="meta">{songs.length} {songs.length===1?'cancion':'canciones'}{minutes?' · '+minutes+' min':''}</p>
   </header>
-  <small>{offline?'En el telefono':(kind==='mixed'?'Con canciones externas · ':'En tu biblioteca · ')+(caption||'No descargada en el telefono')}</small>
+  {#if kind!=='liked'}<small>{offline?'En el telefono':(kind==='mixed'?'Con canciones externas · ':'En tu biblioteca · ')+(caption||'No descargada en el telefono')}</small>{/if}
   <div class="controls">
     {#if !offline && playlistId}<PhoneDownloads id={playlistId} kind={kind==='mixed'?'mixed':'playlist'} {title} tracks={songs} bind:caption />{/if}
     <div class="space"></div><ShuffleToggle />

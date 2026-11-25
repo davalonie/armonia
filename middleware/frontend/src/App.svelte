@@ -35,6 +35,7 @@
   import QueuePanel from './components/QueuePanel.svelte';
   import ContextMenu from './components/ContextMenu.svelte';
   import Toasts from './components/Toasts.svelte';
+  import PhoneSnackbar from './components/PhoneSnackbar.svelte';
   import PlaylistPicker from './components/PlaylistPicker.svelte';
   import SaveSheet from './components/SaveSheet.svelte';
 
@@ -164,9 +165,11 @@
     <PlaylistPicker />
     <SaveSheet />
 
+    {#if mobile}<PhoneSnackbar />{:else}
     <div id="toast-container" class="fixed top-4 right-4 z-300 flex flex-col gap-2 pointer-events-none">
       <Toasts />
     </div>
+    {/if}
 
     {#if !mobile}<audio bind:this={audioEl} preload="metadata" id="audio"></audio>{/if}
   </div>
