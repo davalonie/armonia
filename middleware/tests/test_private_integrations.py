@@ -284,7 +284,7 @@ def test_weekly_uses_private_scheduled_flow_without_downloads(lab, monkeypatch):
             return {'flows': created}
         if path.endswith('/flows'):
             assert body['autoDownload'] is False and body['mix']['trending']==0 and body['mix']['focus']==100
-            assert body['relatedArtists']==['11111111-1111-4111-8111-111111111111'] and 'templateId' not in body
+            assert body['relatedArtists']==['11111111-1111-4111-8111-111111111111', 'Seed'] and 'templateId' not in body
             created.append({'id': 'own-flow', 'name': body['name'], 'ownerUserId': 1, 'autoDownload': False})
             return {'flow': created[0]}
         if path.endswith('/enabled'):
@@ -381,13 +381,15 @@ def test_flow_keeps_recordings_aurral_ties_to_an_identified_seed_and_drops_the_r
                 {'trackName': 'D', 'artistName': 'Vetada', 'reason': 'Similar to ' + seed},
                 {'trackName': 'E', 'artistName': 'Tendencia', 'reason': 'Trending'},
                 {'trackName': 'F', 'artistName': 'Otra', 'reason': 'Similar to 3aa9e7cd-fe96-4fea-b200-19beeea963c7'},
-                {'trackName': 'G', 'artistName': 'Dudosa', 'reason': 'x'}]
+                {'trackName': 'G', 'artistName': 'Dudosa', 'reason': 'x'},
+                {'trackName': 'H', 'artistName': 'Cercana', 'reason': 'Similar to Semilla'}]
     monkeypatch.setattr(discovery_profile, 'recommendations', personal)
     monkeypatch.setattr(integrations, 'aurral_request', upstream)
     client, _ = lab
     result = client.get('/api/discover/flows/own').json()
-    assert [t['title'] for t in result['tracks']] == ['A', 'B', 'C']
-    assert result['proposed'] == 7 and result['excludedBy'] == {'not_personal': 3, 'blocked': 1, 'invalid': 0}
+    # Aurral names the seed as it was given: its MBID or its name.
+    assert [t['title'] for t in result['tracks']] == ['A', 'B', 'C', 'H']
+    assert result['proposed'] == 8 and result['excludedBy'] == {'not_personal': 3, 'blocked': 1, 'invalid': 0}
     # Unknown exclusions: only the vetted artists remain.
     blocked['value'] = None
     assert [t['title'] for t in client.get('/api/discover/flows/own').json()['tracks']] == ['A', 'B']

@@ -33,7 +33,8 @@ async def activate_weekly(sess=Depends(get_current_session)):
     await discover.weekly(sess)
     user = owner(sess)
     generated._last_manual.pop(user, None)
-    generated.refresh(user, sess, force=True)
+    # Enabling the flow already queued its first run in Aurral.
+    generated.refresh(user, sess, force=True, again=False)
     return {"status": generated.status(user)}
 
 

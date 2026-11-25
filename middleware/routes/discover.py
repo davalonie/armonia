@@ -87,14 +87,22 @@ def generated_size():
     return generated_playlists.size()
 
 
-async def weekly_config(user):
-    result = await discovery_profile.recommendations(user)
-    seeds = [s for s in result["seeds"] if s["status"] == "identified"]
+def weekly_settings(personal):
+    seeds = [s for s in personal["seeds"] if s["status"] == "identified"]
     if not seeds:
         raise HTTPException(409, "Todavia no hay artistas identificados para tu lista semanal. Revisa las semillas en Descubrir.")
+    # Aurral asks Last.fm for the artists similar to each seed by its MBID alone, and Last.fm does not
+    # know every MusicBrainz id: for one it answers «artist could not be found», Aurral drops the error
+    # and the weekly list comes out empty while the seed's mix (asked by MBID and name) is full. The
+    # name goes along as a seed of its own; Aurral merges the artists both bring.
+    names = list(dict.fromkeys(s["name"] for s in seeds if s.get("name")))
     return {"mix": {"discover": 0, "mix": 0, "trending": 0, "focus": 100, "newReleases": 0},
-            "relatedArtists": [s["mbid"] for s in seeds], "recentListening": False,
+            "relatedArtists": [s["mbid"] for s in seeds if s.get("mbid")] + names, "recentListening": False,
             "tags": [], "autoDownload": False, "size": generated_size(), "scheduleDays": [5], "scheduleTime": "00:00"}
+
+
+async def weekly_config(user):
+    return weekly_settings(await discovery_profile.recommendations(user))
 
 
 async def configure_weekly(user, flow_id, config):
@@ -117,7 +125,7 @@ async def flows(sess=Depends(get_current_session)):
     user = owner(sess)
     remote = str(integrations.account(user).get("aurral_user_id"))
     data = await integrations.aurral_request(user, "/api/playlists/status")
-    return {"flows": [{k: f.get(k) for k in ("id", "name", "autoDownload", "ownerUserId", "enabled", "nextRunAt")}
+    return {"flows": [{k: f.get(k) for k in ("id", "name", "autoDownload", "ownerUserId", "enabled", "nextRunAt", "lastRunAt")}
                       for f in data.get("flows", []) if str(f.get("ownerUserId")) == remote]}
 
 
@@ -150,6 +158,34 @@ async def weekly(sess=Depends(get_current_session)):
         # Enabling the native schedule also queues its initial run; do not start twice.
         await integrations.aurral_request(user, "/api/playlists/flows/" + quote(created["id"], safe="") + "/enabled", "PUT", {"enabled": True})
         return {"id": created["id"], "created": True}
+
+
+async def rerun_weekly(user, flow_id, personal, again):
+    """Hands Aurral the current seeds and, when they changed or a new list was asked for ([again]),
+    runs the weekly flow now instead of on its day. Returns when it was asked to run (ms), or None."""
+    config = weekly_settings(personal)
+    with store.connection() as c:
+        row = c.execute("SELECT value FROM discovery_weekly WHERE owner=? AND flow=?", (user, flow_id)).fetchone()
+    try:
+        stored = json.loads(row[0]) if row and row[0] else None
+    except ValueError:
+        stored = None
+    if not again and stored == config:
+        return None
+    await configure_weekly(user, flow_id, config)
+    asked = int(time.time() * 1000)
+    # Aurral owns the generation queue. Never call a download endpoint.
+    await integrations.aurral_request(user, "/api/playlists/start/" + quote(flow_id, safe=""), "POST", {"limit": generated_size()})
+    return asked
+
+
+async def weekly_last_run(user, flow_id):
+    """When Aurral last finished building the weekly flow (ms; it marks it once the songs are listed), or None."""
+    remote = str(integrations.account(user).get("aurral_user_id"))
+    data = await integrations.aurral_request(user, "/api/playlists/status")
+    flow = next((f for f in data.get("flows", []) if f.get("id") == flow_id and str(f.get("ownerUserId")) == remote), None)
+    run = flow.get("lastRunAt") if flow else None
+    return run if isinstance(run, (int, float)) and not isinstance(run, bool) else None
 
 
 async def private_flow(flow_id, sess):
@@ -196,7 +232,8 @@ async def flow_tracks(flow_id: str, sess=Depends(get_current_session)):
     # this user's identified seeds is personal even when its artist is beyond the short list of
     # similar artists shown in Inicio (or is itself another seed). Blocked artists stay out.
     seeds = {s["mbid"] for s in personal["seeds"] if s.get("status") == "identified" and s.get("mbid")}
-    eligible |= {name_key(s["name"]) for s in personal["seeds"] if s.get("status") == "identified"}
+    seed_names = {name_key(s["name"]) for s in personal["seeds"] if s.get("status") == "identified"}
+    eligible |= seed_names
     blocked = None
     data = await integrations.aurral_request(user, "/api/playlists/jobs/" + quote(flow_id, safe="") + "?limit=100")
     tracks = []
@@ -204,8 +241,9 @@ async def flow_tracks(flow_id: str, sess=Depends(get_current_session)):
     for item in data[:100]:
         key = name_key(item.get("artistName") or "")
         if key not in eligible:
-            related = re.fullmatch(r"Similar to ([0-9a-f-]{36})", str(item.get("reason") or ""))
-            if not related or related.group(1) not in seeds:
+            # The seed as given to Aurral: its MBID, or its name (see weekly_settings).
+            related = re.fullmatch(r"Similar to (.+)", str(item.get("reason") or ""), re.S)
+            if not related or (related.group(1) not in seeds and name_key(related.group(1)) not in seed_names):
                 reasons["not_personal"] += 1
                 continue
             if blocked is None:
