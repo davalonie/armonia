@@ -1,10 +1,11 @@
 import asyncio
+import time
 
 import pytest
 from fastapi import HTTPException
 
 import db
-from homelab import discovery_profile, store
+from homelab import discovery_profile, integrations, store
 from homelab import generated_playlists as g
 from routes import discover
 from routes.library import RecentPlaylist, recent_playlists, remember_playlist
@@ -32,6 +33,9 @@ class Lab:
                                      {"name": "Gamma", "sourceArtist": "Semilla", "seeds": [{"name": "Semilla", "mbid": SEED}]}]}
         self.flow_error = False
         self.searches = []
+        self.aurral = []  # Calls to Aurral: (path, method, body)
+        self.last_run = None  # When Aurral last finished the weekly flow (ms)
+        self.finishes = True  # Whether a run asked for has finished by the time it is checked
 
 
 @pytest.fixture
@@ -61,8 +65,22 @@ def lab(tmp_path, monkeypatch):
         state.searches.append(query)
         return state.external.get(query, [])
 
+    async def aurral(user, path, method="GET", body=None):
+        state.aurral.append((path, method, body))
+        if path == "/api/playlists/status":
+            return {"flows": [{"id": "flow-" + user, "ownerUserId": 1, "lastRunAt": state.last_run}]}
+        if method == "PUT" and path == "/api/playlists/flows/flow-" + user:
+            return {"success": True}
+        assert path == "/api/playlists/start/flow-" + user and method == "POST"
+        if state.finishes:
+            state.last_run = int(time.time() * 1000) + 1
+        return {"queued": True}
+
     monkeypatch.setattr(discovery_profile, "recommendations", recommendations)
     monkeypatch.setattr(discover, "flow_tracks", flow_tracks)
+    monkeypatch.setattr(integrations, "aurral_request", aurral)
+    monkeypatch.setattr(integrations, "account", lambda user: {"aurral_user_id": 1})
+    monkeypatch.setattr(g, "RUN_WAIT", 0)
     monkeypatch.setattr(navidrome_client, "search_songs", search_songs)
     monkeypatch.setattr(ytdlp_service, "search", search)
     monkeypatch.setattr(ytdlp_service, "search_artists", lambda name, limit: [
@@ -143,6 +161,35 @@ def test_saved_copy_is_independent_of_later_refreshes(lab):
     assert all("cover" not in i for i in saved["items"])
     with pytest.raises(HTTPException):
         store.playlist("bob", copy["id"])
+
+
+def test_weekly_flow_gets_the_seed_names_and_runs_again_when_they_change_or_on_regenerate(lab):
+    alice = session("alice")
+    activate("alice")  # Configured before the seed names went along
+    run("alice", alice)
+    # Last.fm may not know a seed's MBID: its name goes along too, and Aurral runs now, not on Friday.
+    assert [b["relatedArtists"] for _, m, b in lab.aurral if m == "PUT"] == [[SEED, "Semilla"]]
+    assert [p for p, _, _ in lab.aurral if "/start/" in p] == ["/api/playlists/start/flow-alice"]
+    # Same seeds: a later read does not run it again.
+    lab.aurral.clear()
+    asyncio.run(g.build_weekly("alice", alice, lambda: None, lab.personal))
+    assert not any("/start/" in p for p, _, _ in lab.aurral)
+    # «Regenerar» does.
+    run("alice", alice, force=True)
+    assert sum("/start/" in p for p, _, _ in lab.aurral) == 1
+
+
+def test_empty_weekly_says_whether_aurral_is_still_building_it_or_found_nothing(lab):
+    alice = session("alice")
+    activate("alice")
+    lab.flow, lab.finishes = [], False
+    run("alice", alice)
+    assert g.detail("alice", "weekly")["error"] == "La lista semanal todavia se esta generando en Aurral."
+    lab.finishes = True
+    g._last_manual.clear()
+    run("alice", alice, force=True)
+    weekly = g.detail("alice", "weekly")
+    assert weekly["state"] == "empty" and weekly["error"].startswith("Aurral no encontro canciones para tus artistas")
 
 
 def test_weekly_is_offered_inactive_only_when_it_can_be_activated(lab):

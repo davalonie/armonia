@@ -35,6 +35,7 @@ WEEKLY_NAME = "Armonia semanal"
 _tasks = {}
 _last_manual = {}
 _reports = {}  # Last weekly breakdown per user, persisted with the status row.
+RUN_WAIT = 120  # Seconds a refresh waits for a weekly run it asked Aurral for.
 
 
 def size():
@@ -249,7 +250,25 @@ def _reusable(user, key):
     return row, known
 
 
-async def build_weekly(user, sess, active, personal):
+async def _weekly_run(user, flow_id, asked, active):
+    """When Aurral last finished the weekly flow; after asking it to run, that run's (waited for a while), or None."""
+    from routes import discover
+
+    deadline = time.monotonic() + RUN_WAIT
+    while True:
+        try:
+            run = await discover.weekly_last_run(user, flow_id)
+        except HTTPException:
+            return None
+        if not asked or (run is not None and run >= asked):
+            return run
+        if time.monotonic() >= deadline:
+            return None
+        active()
+        await asyncio.sleep(5)
+
+
+async def build_weekly(user, sess, active, personal, again=False):
     from routes import discover  # Lazy: the route module owns Aurral flow access and provenance filtering.
 
     discovery_profile.init()
@@ -266,6 +285,12 @@ async def build_weekly(user, sess, active, personal):
             with store.connection(write=True) as c:
                 c.execute("DELETE FROM generated_playlists WHERE owner=? AND key='weekly'", (user,))
         return
+    try:
+        asked = await discover.rerun_weekly(user, flow[0], personal, again)
+    except HTTPException:
+        asked = None  # Aurral unreachable or no identified seed: read what it already has.
+    active()
+    run = await _weekly_run(user, flow[0], asked, active)
     try:
         flow_result = await discover.flow_tracks(flow[0], sess)
         recordings = flow_result["tracks"]
@@ -301,8 +326,9 @@ async def build_weekly(user, sess, active, personal):
     failed = report["provider_error"] > 0
     if not items:
         # Never replace a playable list with an empty one because providers failed or nothing matched.
-        message = ("La lista semanal todavia se esta generando en Aurral." if not recordings else
-                   "No hay una fuente disponible para las canciones propuestas esta semana.")
+        message = ("No hay una fuente disponible para las canciones propuestas esta semana." if recordings else
+                   "La lista semanal todavia se esta generando en Aurral." if run is None else
+                   "Aurral no encontro canciones para tus artistas esta semana. Prueba a regenerarla o revisa las semillas en Descubrir.")
         _write(user, "weekly", WEEKLY_NAME, description, previous, "ready" if previous else "empty", message, touch=False)
         return
     changed = [i["track"]["source_id"] for i in items] != [i["track"]["source_id"] for i in previous]
@@ -409,7 +435,7 @@ def _has_delivered_listen(user):
                          (user,)).fetchone() is not None
 
 
-async def _run(user, sess, force):
+async def _run(user, sess, force, again):
     def active():
         db.require_active_session(sess)
 
@@ -419,7 +445,7 @@ async def _run(user, sess, force):
         personal = await discovery_profile.recommendations(user)
         profile = personal["state"]
         active()
-        await build_weekly(user, sess, active, personal)
+        await build_weekly(user, sess, active, personal, again)
         await build_similar(user, sess, active, personal, force)
         await build_artists(user, active, personal, force)
     except HTTPException as exc:
@@ -451,8 +477,9 @@ def due(user):
     return time.time() - row["updated"] > (300 if soon else REREAD_AFTER)
 
 
-def refresh(user, sess, force=False):
-    """Start at most one background run per user; returns whether a run is active."""
+def refresh(user, sess, force=False, again=None):
+    """Start at most one background run per user; returns whether a run is active. A manual one ([force])
+    also has Aurral build the weekly list again ([again], unless it is already building its first one)."""
     if running(user):
         return True
     if force:
@@ -462,5 +489,5 @@ def refresh(user, sess, force=False):
         _last_manual[user] = now
     elif not due(user):
         return False
-    _tasks[user] = asyncio.get_running_loop().create_task(_run(user, dict(sess), force))
+    _tasks[user] = asyncio.get_running_loop().create_task(_run(user, dict(sess), force, force if again is None else again))
     return True
