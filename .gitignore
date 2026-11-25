@@ -62,3 +62,8 @@ runtime/
 /tools/lab/navidrome-data/
 /tools/lab/armonia-data/
 /tools/web/capturas/
+
+# Gradle wrapper of the Capacitor app: not used (builds go through runtime/oidc-e2e/gradle.sh) and unpinned.
+/android-capacitor/gradle/
+/android-capacitor/gradlew
+/android-capacitor/gradlew.bat
