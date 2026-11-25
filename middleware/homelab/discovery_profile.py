@@ -16,13 +16,19 @@ from urllib.parse import urlencode
 from uuid import UUID
 from weakref import WeakValueDictionary
 
+import httpx
 from fastapi import HTTPException
 
-from homelab import artist_ids, integrations, store
+from homelab import artist_ids, integrations, matcher, store
 
 METADATA_USER_AGENT = "ArmoniaHomelab/0.1 (private artist identity adapter)"
 VERSION = 1
 MAX_SEEDS = 5
+# MusicBrainz sheds load with 503 + Retry-After on about a third of requests (measured 25-11-2026, at any
+# pace and with any User-Agent): those are retried after the wait it asks for, up to this many tries.
+MB_ATTEMPTS = 4
+MB_MAX_WAIT = 5
+_FEAT = re.compile(r"\s+(?:feat\.?|ft\.?|featuring)\s+", re.I)
 _network = asyncio.Semaphore(2)
 _mb_lock = asyncio.Lock()
 _next_mb = 0.0
@@ -69,9 +75,31 @@ def filter_ranking(user, ranking):
     return result
 
 
+def seed_names(name):
+    """The artists of one ranking entry, split as matcher.credits splits a credit (continuation._names does
+    the same): Koito can list «A, B» as one artist. Only commas and feat. split; «&» and «y» are part of band
+    names. The original spelling is kept for the queries; anything credits reads differently stays whole."""
+    main, *guests = _FEAT.split(name)
+    parts = [p.strip() for p in main.split(",")] + [p.strip() for g in guests for p in re.split(r"[,;]", g)]
+    unique = {}
+    for part in parts:
+        if matcher.normalized(part):
+            unique.setdefault(matcher.normalized(part), part)
+    if set(unique) != matcher.credits({"title": "x", "artist": name})[1]:
+        return [name]
+    return list(unique.values())
+
+
+def _credited(name):
+    return matcher.credits({"title": "x", "artist": name or ""})[1]
+
+
 def local_context(user, name):
+    """Titles heard by this artist (alone or in a credit with others) and the IDs its own songs carry.
+    IDs come only from songs credited to this artist alone: a shared credit is no name -> ID mapping."""
     ignored = set(quarantine(user).get("event_ids", []))
     titles, ids = set(), set()
+    wanted = matcher.normalized(name)
     with store.connection() as c:
         rows = c.execute(
             "SELECT id,coalesce(canonical,payload) FROM play_events WHERE owner=? ORDER BY created DESC LIMIT 5000",
@@ -81,10 +109,11 @@ def local_context(user, name):
         if key in ignored:
             continue
         track = json.loads(payload)["track"]
-        if artist_ids.name_key(track["artist"]) != artist_ids.name_key(name):
+        alone = artist_ids.name_key(track["artist"]) == artist_ids.name_key(name)
+        if not alone and wanted not in _credited(track["artist"]):
             continue
         titles.add(track["title"])
-        for ident in track.get("artist_mbids", []):
+        for ident in track.get("artist_mbids", []) if alone else []:
             try:
                 ids.add(str(UUID(ident)))
             except (ValueError, TypeError):
@@ -111,11 +140,23 @@ def literal(value):
     return '"' + re.sub(r'([+\-!(){}\[\]^"~*?:\\/|&])', r"\\\1", value) + '"'
 
 
+def _shed_wait(exc):
+    """Seconds MusicBrainz asked to wait when it shed the request (503), or None for any other failure."""
+    cause = exc.__cause__
+    if not isinstance(cause, httpx.HTTPStatusError) or cause.response.status_code != 503:
+        return None
+    try:
+        return min(MB_MAX_WAIT, max(1.1, float(cause.response.headers.get("Retry-After", 1))))
+    except ValueError:
+        return 1.1
+
+
 async def musicbrainz(kind, query=None, *, browse=None):
     global _next_mb
     if os.environ.get("MUSIC_METADATA_PROXY_ENABLED") != "true":
         raise HTTPException(503, "metadata disabled")
-    for attempt in range(2):
+    other_failures = 0
+    for attempt in range(MB_ATTEMPTS):
         try:
             async with _mb_lock:
                 await asyncio.sleep(max(0, _next_mb - time.monotonic()))
@@ -129,8 +170,18 @@ async def musicbrainz(kind, query=None, *, browse=None):
                     params={"fmt": "json", "limit": 25, **(browse if browse is not None else {"query": query})},
                 )
         except HTTPException as exc:
-            if attempt or exc.status_code != 502:
+            if exc.status_code != 502:
                 raise
+            wait = _shed_wait(exc)
+            if wait is None:
+                other_failures += 1
+                if other_failures > 1:
+                    raise
+            elif attempt == MB_ATTEMPTS - 1:
+                raise
+            else:
+                _next_mb = max(_next_mb, time.monotonic() + wait)
+    raise HTTPException(502, "linked music service unavailable")
 
 
 async def identify(user, artist):
@@ -163,11 +214,15 @@ async def identify(user, artist):
         )
     try:
         async with _network:
-            data = await musicbrainz("artist", "artist:" + literal(name))
+            # The name or one of its MusicBrainz aliases, exactly («EAZYBOI» is an alias of EAZIBOY).
+            # A name alone never identifies: a heard recording still has to back one candidate.
+            data = await musicbrainz("artist", "artist:" + literal(name) + " OR alias:" + literal(name))
+            key = artist_ids.name_key(name)
             candidates = {
-                a["id"]: a
+                str(UUID(a["id"])): a
                 for a in data.get("artists", [])
-                if artist_ids.name_key(a.get("name", "")) == artist_ids.name_key(name)
+                if artist_ids.name_key(a.get("name", "")) == key
+                or any(artist_ids.name_key(alias.get("name") or "") == key for alias in a.get("aliases") or [])
             }
             if not candidates:
                 return cache_identity(user, name, context, {**base, "reason": "not_found"}, 12 * 3600)
@@ -177,9 +232,9 @@ async def identify(user, artist):
                 )
             supported = set()
             for title in titles:
-                recordings = await musicbrainz(
-                    "recording", "artist:" + literal(name) + " AND recording:" + literal(title)
-                )
+                # By the credited name or by a candidate's ID (credits under the main name of an alias).
+                by = " OR ".join(["artist:" + literal(name)] + ["arid:" + ident for ident in candidates])
+                recordings = await musicbrainz("recording", "(" + by + ") AND recording:" + literal(title))
                 if recordings.get("count", 0) > 25:
                     continue
                 for recording in recordings.get("recordings", []):
@@ -216,10 +271,18 @@ async def profile(user):
     init()
     ranking = filter_ranking(user, await integrations.koito_read(user, limit=50))
     artists = [e["item"] for e in ranking.get("items", []) if e.get("item", {}).get("name")]
-    # Provider order is Koito's listening ranking. No global-library or chart seeds.
+    # Provider order is Koito's listening ranking. No global-library or chart seeds. An entry that is a
+    # credit of several artists gives each of them (its Koito MBID, if any, belongs to no single one).
+    wanted, seen = [], set()
+    for artist in artists[:MAX_SEEDS]:
+        names = seed_names(artist["name"])
+        for name in names:
+            if artist_ids.name_key(name) not in seen:
+                seen.add(artist_ids.name_key(name))
+                wanted.append(artist if len(names) == 1 else {"name": name})
     seeds = []
     deadline = time.monotonic() + 25
-    for artist in artists[:MAX_SEEDS]:
+    for artist in wanted:
         try:
             async with asyncio.timeout(max(0.01, deadline - time.monotonic())):
                 seeds.append(await identify(user, artist))
