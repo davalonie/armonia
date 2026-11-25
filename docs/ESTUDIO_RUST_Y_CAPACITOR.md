@@ -40,6 +40,21 @@ Anthropic describio como comparo su API de mensajes en Python con una implementa
 - **Comparar lo que importa.** Verificar los bytes devueltos al adelantar una pista, el orden de una importacion reanudada, la ausencia de descargas duplicadas y la revocacion de una sesion durante una operacion. Comparar tambien archivos, etiquetas y cambios en la base de datos. Los identificadores generados pueden diferir si mantienen las mismas relaciones.
 - **Decidir con resultados.** Registrar las diferencias intencionadas y medir rendimiento una vez comprobado el comportamiento. Si se despliega Rust por etapas, asignar a una sola version las escrituras de cada operacion y ensayar la vuelta a Python con una copia de la base de datos antes de cambiar el esquema.
 
+## Resultado de la prueba de Capacitor
+
+Recorrido hecho el 25-11-2026 en el emulador del laboratorio (Android 15) con cuentas ficticias y la APK Capacitor, que usa el mismo servicio Media3 que la app Kotlin.
+
+- **Sesion.** Entrada con usuario y contraseña en una segunda cuenta, que no ve la cola ni las descargas de la primera. Vuelta a la primera con Authentik: conserva su playlist descargada (2 de 2).
+- **Pantalla bloqueada.** Con la pantalla apagada la cancion sigue sonando (de 3,4 s a 13,1 s en 10 s). La notificacion es `MediaStyle`, va unida a la sesion multimedia y es visible en la pantalla de bloqueo.
+- **Auriculares.** Pausa, reproducir, pausa/reproducir, el boton del auricular y siguiente actuan sobre la sesion con la pantalla encendida y apagada. Con la pantalla apagada se probaron entregando la tecla a la sesion multimedia, que es el camino de los botones reales: el emulador descarta las teclas inyectadas con `input` mientras la pantalla esta apagada.
+- **Android Auto.** `CarLibraryTest` navega por el servicio, elige la playlist y la reproduce sin abrir la interfaz: 2 pruebas correctas. Cada reproduccion valida deja una escucha en Koito y otra en Armonia, sin duplicados ni escuchas en la otra cuenta.
+- **Sin conexion.** Con la playlist descargada, el telefono reiniciado en modo avion abre Inicio con «En el telefono» y la playlist suena (de 7,4 s a 17,4 s, sin errores).
+- **Cola.** Reordenar, quitar y continuar con musica similar se comprobaron en el emulador; las canciones añadidas se marcan como «Musica similar» y no repiten las de la cola.
+
+No se midieron el arranque ni la memoria en un telefono de uso diario, ni unos auriculares o un coche reales.
+
+**Decision.** Capacitor pasa a ser la unica interfaz Android. Kotlin conserva el nucleo: reproduccion, descargas, sesion y Android Auto. La interfaz Compose queda apartada en `android/app/src/compose/` como referencia y para poder volver a ella.
+
 ## Seguimiento
 
 Si se inicia trabajo, abriria un issue para **probar una playlist en una APK con Capacitor y Media3** y otro para **medir el backend actual y elegir un posible piloto en Rust**. Cada uno se puede cerrar con sus mediciones y una decision, incluida la de mantener la arquitectura actual.
