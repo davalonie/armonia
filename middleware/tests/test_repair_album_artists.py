@@ -30,7 +30,7 @@ def test_only_songs_with_an_existing_album_are_sure_and_names_with_commas_surviv
     proposed = repair.plan(LIBRARY)
     changes = {c["path"]: (c["to"], c["evidence"]) for c in proposed["changes"]}
     assert changes["a3"] == changes["a4"] == ("Lúa Norte", "seguro")
-    # The comma inside the trio's name is kept: the song rejoins the trio's album, not «Trío Uno».
+    # The comma inside the trio's name is kept: the song rejoins the trio's album, not «Trio Uno».
     assert changes["d2"] == ("Trío Uno, Dos & Tres", "seguro") and "d1" not in changes
     assert changes["e1"] == ("Faro Sur", "probable")
     # A band whose name starts like another artist is only ever "probable", never applied by default.

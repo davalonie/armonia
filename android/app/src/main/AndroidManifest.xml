@@ -19,6 +19,23 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Armonia">
 
+        <!-- The whole interface is the bundled web app (middleware/frontend) inside Capacitor; the
+             Kotlin core does playback, downloads, cache, session and Android Auto. -->
+        <activity android:name=".web.LaunchActivity" android:exported="true"
+            android:theme="@style/Theme.Armonia">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".web.LoginActivity" android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" android:windowSoftInputMode="adjustResize" />
+        <!-- adjustNothing: the keyboard covers the bottom bar; LibraryActivity tells the page how much
+             it covers instead of Capacitor shrinking the WebView. -->
+        <activity android:name=".web.LibraryActivity" android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar" android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustNothing" />
+
         <activity android:name=".security.LoginReturnActivity" android:exported="true"
             android:excludeFromRecents="true">
             <intent-filter>

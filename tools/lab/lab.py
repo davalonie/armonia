@@ -1,9 +1,9 @@
-"""Laboratorio aislado para la revisión de interfaz: Navidrome 0.64.2 propio + Armonia real.
+"""Laboratorio aislado para la revision de interfaz: Navidrome 0.64.2 propio + Armonia real.
 
 Todo es ficticio (nombres, portadas, tonos generados con ffmpeg). Solo escucha en 127.0.0.1,
-usa contenedor, datos y puertos propios y no comparte nada con la instalación en uso.
+usa contenedor, datos y puertos propios y no comparte nada con la instalacion en uso.
 
-    python lab.py fixtures     # genera la música de prueba (etiquetada como lo hacía la importación)
+    python lab.py fixtures     # genera la musica de prueba (etiquetada como lo hacia la importacion)
     python lab.py up           # arranca Navidrome de laboratorio y crea la usuaria «ana»
     python lab.py seed         # playlist, favoritas y reproducciones de referencia
     python lab.py server       # Armonia (uvicorn) contra ese Navidrome, en primer plano
@@ -31,7 +31,7 @@ CONTAINER, ND_PORT, APP_PORT = "armonia-lab-navidrome", 14533, 18480
 def lab_password():
     path = LAB / "navidrome.password"
     if not path.exists():
-        # El enlace solo se crea cuando la contraseña ya está escrita por completo.
+        # El enlace solo se crea cuando la contraseña ya esta escrita por completo.
         with tempfile.NamedTemporaryFile(mode="w", dir=LAB) as temp:
             temp.write(secrets.token_urlsafe(32))
             temp.flush()
@@ -46,7 +46,7 @@ USER = "ana"
 PASSWORD = lab_password()
 ND = f"http://127.0.0.1:{ND_PORT}"
 
-# (artista de álbum real, álbum, [(título, [intérpretes])]) — etiquetado «antiguo»: ALBUMARTIST = todos.
+# (artista de album real, album, [(titulo, [interpretes])]) — etiquetado «antiguo»: ALBUMARTIST = todos.
 CATALOG = [
     ("Lúa Norte", "Mareas", [("Bajamar", ["Lúa Norte"]), ("Luz de enero", ["Lúa Norte"]), ("Mapa sin nombre", ["Lúa Norte"]),
                              ("Cristal", ["Lúa Norte"]), ("Últimas farolas", ["Lúa Norte"]),
@@ -84,7 +84,7 @@ def fixtures():
                             "-frames:v", "1", str(cover)], check=True)
         for index, (title, artists) in enumerate(songs):
             text = ", ".join(artists)
-            # The same layout the importer publishes: <artista>/<artista - título>.m4a
+            # The same layout the importer publishes: <artista>/<artista - titulo>.m4a
             target = MUSIC / safe(text) / (safe(f"{text} - {title}") + (" (directo)" if "directo" in album else "") + ".m4a")
             count += 1
             if target.exists():
@@ -94,7 +94,7 @@ def fixtures():
                             f"sine=frequency={220 + 37 * ((seed + index) % 17)}:duration=24", "-ac", "1", "-c:a", "aac", "-b:a", "48k",
                             str(target)], check=True)
             audio = MP4(str(target))
-            # Como lo escribía la importación antes de la corrección: artista de álbum = texto completo.
+            # Como lo escribia la importacion antes de la correccion: artista de album = texto completo.
             audio["\xa9ART"], audio["\xa9nam"], audio["\xa9alb"], audio["aART"] = text, title, album, text
             audio["covr"] = [MP4Cover(cover.read_bytes(), imageformat=MP4Cover.FORMAT_JPEG)]
             audio.save()
@@ -140,9 +140,9 @@ def up():
     try:
         http(f"{ND}/auth/createAdmin", {"username": USER, "password": PASSWORD})
     except urllib.error.HTTPError:
-        pass  # ya existía
+        pass  # ya existia
     scan(full=True)
-    print("Navidrome de laboratorio listo:", len(subsonic("getAlbumList2", type="alphabeticalByName", size=500)["albumList2"].get("album", [])), "álbumes")
+    print("Navidrome de laboratorio listo:", len(subsonic("getAlbumList2", type="alphabeticalByName", size=500)["albumList2"].get("album", [])), "albumes")
 
 
 def seed():

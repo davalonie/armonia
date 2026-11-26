@@ -1,6 +1,6 @@
 """Armonia real con los proveedores externos simulados (solo laboratorio).
 
-Cualquier enlace de playlist devuelve una lista ficticia y las búsquedas externas devuelven
+Cualquier enlace de playlist devuelve una lista ficticia y las busquedas externas devuelven
 candidatos ficticios: no se contacta con Spotify ni con YouTube.
 """
 import hashlib
@@ -49,13 +49,13 @@ ytdlp_service.search = search
 ytdlp_service.search_artists = lambda *a, **k: []
 
 if __import__("os").environ.get("ARMONIA_LAB_CARATULAS_ANTES") == "1":
-    # Como el servidor en uso (r20): ninguna carátula se puede guardar en el móvil (private, no-store).
+    # Como el servidor en uso (r20): ninguna caratula se puede guardar en el movil (private, no-store).
     import main  # noqa: E402
     main._cacheable_cover = lambda request, response: False
 
 if __import__("os").environ.get("ARMONIA_LAB_DESCARGAS") in ("1", "fallo"):
     # «Descargar y guardar» sin YouTube: una pista del laboratorio hace de audio descargado. El trabajo de
-    # descarga, el etiquetado, la publicación en la biblioteca y el escaneo de Navidrome son los reales.
+    # descarga, el etiquetado, la publicacion en la biblioteca y el escaneo de Navidrome son los reales.
     import shutil  # noqa: E402
     import time  # noqa: E402
 
@@ -72,8 +72,8 @@ if __import__("os").environ.get("ARMONIA_LAB_DESCARGAS") in ("1", "fallo"):
 
     ytdlp_service._download_staged = _download_staged
 
-    # Escuchar una canción de «Hecho para ti» que no está en la biblioteca, también sin YouTube: su audio sale del
-    # búfer de memoria del servidor (el mismo que usa para lo ya preparado), relleno con la pista del laboratorio.
+    # Escuchar una cancion de «Hecho para ti» que no esta en la biblioteca, tambien sin YouTube: su audio sale del
+    # bufer de memoria del servidor (el mismo que usa para lo ya preparado), relleno con la pista del laboratorio.
     from services import stream_buffer  # noqa: E402
 
     LAB_PREVIEWS = {"LabFaroEnc1", "LabFaroNie1"}

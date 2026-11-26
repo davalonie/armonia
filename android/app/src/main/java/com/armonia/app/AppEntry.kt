@@ -4,9 +4,9 @@ import android.content.Context
 import android.content.Intent
 
 /**
- * The app's own way in, as the launcher opens it: MainActivity in the Kotlin app, LaunchActivity in
- * the Capacitor one. The core (notifications, Android Auto, the sign-in return) opens the app through
- * here, so it works with either interface. A task that is already open is brought to the front.
+ * The app's own way in, as the launcher opens it (web.LaunchActivity). The core (notifications,
+ * Android Auto, the sign-in return) opens the app through here. A task that is already open is
+ * brought to the front.
  */
 object AppEntry {
     fun intent(context: Context): Intent =

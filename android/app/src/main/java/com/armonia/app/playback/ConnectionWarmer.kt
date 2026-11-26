@@ -23,7 +23,7 @@ import javax.inject.Singleton
  * connection the audio uses keeps that connection alive and notices a broken path before the
  * tap, so the song request rides an open connection instead of opening one.
  *
- * Only while the app is visible (see MainActivity): in the background it would keep the mobile
+ * Only while the app is visible (see web.LibraryActivity): in the background it would keep the mobile
  * radio awake for nothing, and the next song in a queue is fetched well before it is needed.
  */
 @Singleton

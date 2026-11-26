@@ -56,7 +56,13 @@ RUN mkdir -p /app/data /app/secrets /music \
     && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ARG ARMONIA_COMMIT
-LABEL org.opencontainers.image.revision=$ARMONIA_COMMIT
+ARG ARMONIA_VERSION=dev
+LABEL org.opencontainers.image.revision=$ARMONIA_COMMIT \
+      org.opencontainers.image.version=$ARMONIA_VERSION \
+      org.opencontainers.image.source=https://github.com/davalonie/armonia \
+      org.opencontainers.image.title=Armonia \
+      org.opencontainers.image.description="Self-hosted music server and web app on top of Navidrome, Koito and Aurral" \
+      org.opencontainers.image.licenses=GPL-3.0-only
 
 EXPOSE 8000
 USER 1000:1000

@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("--user-id", required=True)
     args = parser.parse_args()
     if not db.DB_PATH.is_file():
-        parser.error("Ejecuta el comando en una instalación inicializada")
+        parser.error("Ejecuta el comando en una instalacion inicializada")
     # The server owns database initialization and job recovery.
     asyncio.run(enroll(args.subject, args.username, args.user_id))
-    print("Vinculación guardada.")
+    print("Vinculacion guardada.")

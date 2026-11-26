@@ -1,9 +1,7 @@
 package com.armonia.app.data.api
 
 import com.google.gson.annotations.SerializedName
-import androidx.compose.runtime.Immutable
 
-@Immutable
 data class SubsonicResponseWrapper(
     @SerializedName("subsonic-response")
     val response: SubsonicResponse
@@ -31,12 +29,10 @@ data class SubsonicError(
 
 // ── Songs & lists ────────────────────────────────────────────────────────────
 
-@Immutable
 data class SongList(
     val song: List<Song> = emptyList()
 )
 
-@Immutable
 data class Song(
     val id: String,
     val parent: String?,

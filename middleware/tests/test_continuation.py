@@ -1,4 +1,4 @@
-"""«Continuar con música similar»: per-user setting and a bounded, private batch of related songs."""
+"""«Continuar con musica similar»: per-user setting and a bounded, private batch of related songs."""
 import asyncio
 import random
 

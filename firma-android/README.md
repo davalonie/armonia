@@ -1,47 +1,46 @@
 # firma-android
 
-Esta carpeta guarda **tu** clave de firma de la app Android. Git solo sigue este README: los archivos de clave estan
-excluidos en `.gitignore` y nunca se suben.
+This folder holds **your** Android signing key. Git only tracks this README: the key files are excluded in
+`.gitignore` and never pushed.
 
-## Que va aqui
+## What goes here
 
-| Archivo | Contenido |
-|---|---|
-| `test-signing.jks` | El almacen de claves (keystore) con la clave de firma. |
-| `test-signing.password` | Una sola linea con la contraseña del almacen. |
+| File | Contents |
+| --- | --- |
+| `test-signing.jks` | The keystore with the signing key |
+| `test-signing.password` | One line with the keystore password |
 
-Los nombres son los que usa la guia; puedes usar otros si ajustas las variables de abajo.
+These names are the ones the guides use; you can use others if you adjust the variables below.
 
-## Por que aqui y no en `secrets/`
+## Why here and not in `secrets/`
 
-El stack completo monta los secretos de cada servicio por separado. El Compose minimo monta `secrets/` dentro del
-servidor para las cookies de yt-dlp. La clave de firma vive en un directorio exclusivo de la compilacion Android.
+The full stack mounts each service's secrets one by one, and the minimal Compose mounts `secrets/` inside the server
+(for the yt-dlp cookies). The signing key lives in a folder of its own, used only by the Android build.
 
-## Crear una clave nueva (si aun no tienes)
+## Create a new key (if you have none)
 
 ```sh
 chmod 700 firma-android
 keytool -genkeypair -v -keystore firma-android/test-signing.jks -alias armonia \
   -keyalg RSA -keysize 4096 -validity 10000
-# escribe la contraseña elegida en una sola linea:
-printf '%s\n' 'TU_CONTRASEÑA' > firma-android/test-signing.password   # o con un editor, para no dejarla en el historial
+# write the chosen password on a single line, with an editor so it stays out of the shell history
 chmod 600 firma-android/*
 ```
 
-## Usarla al compilar
+## Use it when building
 
 ```sh
 export MUSIC_KEYSTORE_FILE="$PWD/firma-android/test-signing.jks"
 export MUSIC_KEYSTORE_PASSWORD_FILE="$PWD/firma-android/test-signing.password"
-export MUSIC_KEY_ALIAS=armonia            # el alias que pusiste al crearla
+export MUSIC_KEY_ALIAS=armonia            # the alias you chose when creating it
 python3 tools/android/build_android.py :app:assembleRelease
 ```
 
-Mas detalles en [`docs/ENTORNO.md`](../docs/ENTORNO.md).
+More in [docs/android.md](../docs/android.md#signing).
 
-## Importante
+## Important
 
-- **Guarda una copia cifrada fuera del equipo.** Android solo instala una actualizacion encima de la app si esta firmada
-  con la misma clave. Si la pierdes, hay que desinstalar la app (y se pierde lo descargado en el movil).
-- **No uses `git clean -x`** en el repositorio: borra los archivos ignorados, y la clave es uno de ellos.
-- No la compartas ni la subas a ningun sitio: quien la tenga puede publicar actualizaciones que tu movil aceptara.
+- **Keep a ciphered copy off the machine.** Android only installs an update over the app if it is signed with the
+  same key. If you lose it, the app has to be uninstalled, and everything it kept on the phone is lost.
+- **Do not run `git clean -x`** in the repository: it deletes ignored files, and the key is one of them.
+- Never share or upload it: whoever has it can publish updates your phone will accept.

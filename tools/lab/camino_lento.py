@@ -1,14 +1,14 @@
 """Laboratorio: un camino lento entre el emulador y el Armonia de laboratorio, con su velocidad y su retraso.
 
-El emulador de esta versión no aplica `network speed`/`network delay` (medido 19-11-2026: las canciones llegaban
-al ritmo del propio servidor y el ping a 0,7 ms). Así que la app habla con este intermediario (127.0.0.1:18480,
-el puerto que ya usa) y él con Armonia (127.0.0.1:18481).
+El emulador de esta version no aplica `network speed`/`network delay` (medido 19-11-2026: las canciones llegaban
+al ritmo del propio servidor y el ping a 0,7 ms). Asi que la app habla con este intermediario (127.0.0.1:18480,
+el puerto que ya usa) y el con Armonia (127.0.0.1:18481).
 
-Un solo enlace compartido hacia el móvil, como una conexión real: todo lo que va al móvil hace cola en él y sale
-a la velocidad elegida, y cada trozo llega además con el retraso de ida. La cola admite como mucho QUEUE_S
-segundos de datos (como el búfer de un router o una antena); llena, deja de leer del servidor (TCP lo frena).
+Un solo enlace compartido hacia el movil, como una conexion real: todo lo que va al movil hace cola en el y sale
+a la velocidad elegida, y cada trozo llega ademas con el retraso de ida. La cola admite como mucho QUEUE_S
+segundos de datos (como el bufer de un router o una antena); llena, deja de leer del servidor (TCP lo frena).
 Hacia el servidor solo el retraso. Velocidad y retraso se leen de camino-lento.json en cada trozo:
-    {"kbps": 400, "delay_ms": 60}      kbps 0 = sin límite
+    {"kbps": 400, "delay_ms": 60}      kbps 0 = sin limite
 """
 import asyncio
 import json

@@ -33,7 +33,7 @@
   let recent=[],generated=[],status={},artists=[],frequent=[],newest=[];
   let loaded=false,homeError='',detail=null,pages=[],busy=false,poll=null,token=0;
   // «En el telefono» only without a connection (the user's choice, phone only): no network, or a server
-  // that answers none of Inicio's requests (the same rule as «Copia guardada en el teléfono»).
+  // that answers none of Inicio's requests (the same rule as «Copia guardada en el telefono»).
   let serverDown=false;
   $: offline=!$phoneOnline||serverDown;
   let wasOnline=true;

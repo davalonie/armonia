@@ -56,7 +56,7 @@ object NetworkModule {
             }
             val response = chain.proceed(request.build())
             // The server no longer knows our session (expired, or dropped by a backend
-            // upgrade/restart). Forget it so MainActivity falls back to the login
+            // upgrade/restart). Forget it so the app falls back to the login
             // screen instead of every screen — and Android Auto — silently showing
             // nothing.
             if (sessionId.isNotEmpty() && sessionId == prefs.cachedSessionId &&

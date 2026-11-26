@@ -1,4 +1,7 @@
-"""Compila Android en Linux con Bubblewrap y el wrapper de Gradle del proyecto."""
+"""Compila la app Android en Linux con Bubblewrap y el wrapper de Gradle del proyecto.
+
+La web empaquetada (middleware/frontend en modo capacitor) se compila antes, fuera del aislamiento,
+con el Node del sistema; Gradle la recibe ya hecha con -PmusicPrebuiltWeb."""
 import os
 from pathlib import Path
 import shutil
@@ -18,7 +21,7 @@ def main():
     cache = Path(os.environ.get("GRADLE_USER_HOME", OUTPUT / "gradle-cache")).resolve()
     java = Path(os.environ["JAVA_HOME"]).resolve()
     if not (sdk / "build-tools/36.0.0").is_dir() or not (java / "bin/java").is_file():
-        sys.exit("Revisa ANDROID_HOME y JAVA_HOME en docs/ENTORNO.md.")
+        sys.exit("Revisa ANDROID_HOME y JAVA_HOME en docs/development.md.")
     cache.mkdir(parents=True, exist_ok=True)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     env = {"HOME": "/work/home", "PATH": "/jdk/bin:/usr/bin:/bin", "JAVA_HOME": "/jdk",
@@ -33,6 +36,12 @@ def main():
             ".gradle", ".kotlin", "build", "local.properties", "keystore.properties",
             "*.jks", "*.keystore", "*.password", "*.apk"))
         (work / "home").mkdir()
+        frontend = ROOT / "middleware/frontend"
+        if not (frontend / "node_modules").is_dir():
+            sys.exit("Instala antes las dependencias de la web: npm ci en middleware/frontend.")
+        subprocess.run(["npm", "run", "build", "--", "--mode", "capacitor", "--outDir",
+                        str(work / "web/public"), "--emptyOutDir"], cwd=frontend, check=True,
+                       env={**os.environ, "VITE_APP_NAME": "Armonia"})
         args = ["bwrap", "--unshare-all", "--die-with-parent", "--new-session"]
         for path in ("/usr", "/bin", "/lib", "/lib64", "/etc/ssl", "/etc/alternatives"):
             if Path(path).exists():
@@ -52,7 +61,7 @@ def main():
                 env["MUSIC_KEYSTORE_PASSWORD"] = Path(os.environ["MUSIC_KEYSTORE_PASSWORD_FILE"]).read_text().rstrip("\r\n")
         bridge = ('/usr/bin/python3 /work/proxy.py bridge >/dev/null 2>&1 & '
                   'exec ./gradlew --no-daemon -Dorg.gradle.workers.max=1 --console=plain "$@"')
-        args.extend(["/bin/sh", "-c", bridge, "gradle", *(sys.argv[1:] or TASKS)])
+        args.extend(["/bin/sh", "-c", bridge, "gradle", "-PmusicPrebuiltWeb=/work/web", *(sys.argv[1:] or TASKS)])
         proxy = subprocess.Popen([sys.executable, str(PROXY), "host", str(work / "proxy.sock")],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:

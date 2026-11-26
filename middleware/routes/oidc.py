@@ -14,8 +14,9 @@ from services import oidc
 router = APIRouter(prefix="/api/oidc")
 BROWSER = "armonia_oidc_browser"
 PATH = "/api/oidc/callback"
-Mobile = Literal["kotlin", "kotlin-debug", "capacitor", "capacitor-debug"]
-SUFFIX = {"kotlin": "", "kotlin-debug": ".debug", "capacitor": ".capacitor", "capacitor-debug": ".capacitor.debug"}
+# The Android app signs in through the browser and comes back to <application id>://oidc/callback.
+Mobile = Literal["android", "android-debug"]
+SUFFIX = {"android": "", "android-debug": ".debug"}
 
 
 @router.get("/config")

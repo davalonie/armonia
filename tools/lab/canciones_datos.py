@@ -1,8 +1,8 @@
 """Laboratorio: canciones ficticias del tamaño de las reales para medir datos y arranque.
 
-Como la biblioteca real (18-11-2026): AAC-LC 128 kbit/s estéreo, 3:20-4:30, con una carátula grande incrustada
-(~500 KB, la mediana real es 456-519 KB). Ruido rosa más un tono: se comprime como la música, no como un tono puro.
-Álbum «Datos» de «Medición Datos», cuenta ficticia «ana». Solo se crean si faltan.
+Como la biblioteca real (18-11-2026): AAC-LC 128 kbit/s estereo, 3:20-4:30, con una caratula grande incrustada
+(~500 KB, la mediana real es 456-519 KB). Ruido rosa mas un tono: se comprime como la musica, no como un tono puro.
+Album «Datos» de «Medicion Datos», cuenta ficticia «ana». Solo se crean si faltan.
 """
 import subprocess
 import sys

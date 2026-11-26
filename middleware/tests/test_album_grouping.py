@@ -101,7 +101,7 @@ def test_an_owner_export_keeps_each_performer_and_the_album_artist():
     assert first["album_artist"] == "Banda Ficticia"
     assert second["artists"] == ["Trío Uno, Dos & Tres", "Invitada"] and second["album_artist"] is None
     assert third["artists"] == ["Solista A", "Solista B"]
-    # "Artista - Título" lines give no list: nothing is guessed from the text.
+    # "Artista - Titulo" lines give no list: nothing is guessed from the text.
     plain = spotify_client.parse_export("Trío Uno, Dos & Tres - Tema\n", "Lista")["tracks"][0]
     assert "artists" not in plain and plain["artist"] == "Trío Uno, Dos & Tres"
 
